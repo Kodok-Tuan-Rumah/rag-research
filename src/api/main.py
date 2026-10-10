@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from src.api.config import settings
 from src.controller.policy_engine import PolicyEngine
+from src.generation.generator import PARTIAL_TRUST_CHUNK_LIMIT, apply_partial_trust_policy
 from typing import Optional
 
 load_dotenv()
@@ -48,8 +49,11 @@ async def lifespan(app: FastAPI):
             vector_store=store,
             bm25_chunks_path=settings.bm25_chunks_path,
             rrf_k=settings.hybrid_rrf_k,
-            use_multi_query=settings.use_multi_query,
-            use_hyde=settings.use_hyde,
+            # use_multi_query / use_hyde are no longer constructor arguments.
+            # They were overwritten unconditionally on every search from the
+            # per-query plan, so passing them here had no effect and only
+            # suggested the retriever was configurable globally. The expansion
+            # flags now travel with the search call instead.
         )
 
         generator = GroqGenerator(model=settings.groq_model)
@@ -283,7 +287,7 @@ async def generate_answer(req: GenerateRequest):
             response = await run_in_threadpool(
                 generator.generate,
                 req.query,
-                chunks[:3],  
+                chunks[:PARTIAL_TRUST_CHUNK_LIMIT],  
                 query_type=query_type,
                 max_tokens=int(plan.generation_hint["max_tokens"]),
                 temperature=plan.generation_hint["temperature"],
@@ -292,10 +296,20 @@ async def generate_answer(req: GenerateRequest):
             )
             latency_generation_ms = round((time.time() - t_gen_start) * 1000, 2)
 
+            # One implementation of the PARTIAL_TRUST rule, shared with the
+            # Agent and the generator. The inline `chunks[:3]` plus
+            # f"[Low confidence...] {response.answer}" that used to be here
+            # prefixed abstentions too, so a generator abstain inside this
+            # branch was returned to the client as the literal string
+            # "[Low confidence — verify independently] INSUFFICIENT_CONTEXT".
+            presented_chunks, presented_answer = apply_partial_trust_policy(
+                chunks, getattr(response, "answer", ""), decision
+            )
+
             result = GenerateResponse(
                 query=req.query,
-                answer=f"[Low confidence — verify independently] {response.answer}",
-                retrieved_chunks=_format_chunks(chunks, limit=3),
+                answer=presented_answer,
+                retrieved_chunks=_format_chunks(presented_chunks, limit=PARTIAL_TRUST_CHUNK_LIMIT),
                 retrieval_method=response.retrieval_method,
                 latency_retrieval_ms=latency_retrieval_ms,
                 latency_generation_ms=latency_generation_ms,

@@ -19,26 +19,20 @@ TEST_QUERIES = [
 
 # ── Simulate formulas ─────────────────────────────────────────────────────────
 def _classify_query(query: str) -> int:
-    words = len(query.strip().split())
-    if words <= 5:
-        return 3
-    if words >= 15:
-        return 7
-    return 5
-
+    from src.controller.policy_engine import PolicyEngine
+    return int(PolicyEngine().initial_plan(query).top_k_hint)
 
 def simulate_before(top_k_fixed: int = 5):
     candidate_k = min(top_k_fixed * 4, 20)
     rerank_n = 5
     return candidate_k, rerank_n, top_k_fixed
 
-
 def simulate_after(query: str):
     top_k = _classify_query(query)
-    candidate_k = min(top_k * 3, 30)
+    from src.api.config import settings
+    candidate_k = min(max(top_k * 4, 30), max(top_k, settings.candidate_k))
     rerank_n = min(top_k * 2, 10)
     return candidate_k, rerank_n, top_k
-
 
 def print_comparison_table():
     print("\n" + "=" * 70)
@@ -66,7 +60,6 @@ def print_comparison_table():
   - LONG query: before sama, after fetch 21 rerank 10 return 7
 """)
 
-
 def run_live_benchmark():
     """Jalanin benchmark dengan Qdrant aktif."""
     print("\n" + "=" * 70)
@@ -79,12 +72,7 @@ def run_live_benchmark():
         print(f"\n  [SKIP] Qdrant tidak tersedia: {e}")
         print("  Jalanin dulu: docker compose -f docker-compose.yml up -d qdrant")
         return
-
-    retriever = MasterHybridRetriever(
-        store,
-        use_multi_query=False,
-        use_hyde=False,
-    )
+    retriever = MasterHybridRetriever(store)
 
     print(f"\n  {'Query Type':<12} {'top_k':>6} {'Returned':>9} {'Latency':>10}")
     print("-" * 70)
@@ -97,12 +85,10 @@ def run_live_benchmark():
 
     print("\n  Done.")
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark RAG retrieval formulas")
     parser.add_argument("--live", action="store_true", help="Run live Qdrant benchmark")
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     args = parse_args()

@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     # under rerank, so the API answered a question the other two paths abstained
     # on. 0.0 is the value check_retrieval_confidence() itself defaults to.
     retrieval_min_top1_score: float = 0.0
+    # Confidence decision cuts (PROJECT_GOALS.md §5). These were literals in
+    # ConfidenceEngine.__init__, so Phase 3 calibration required editing source
+    # and Appendix A recorded them as not overridable. Same values, now
+    # configurable. Adjusted per query type by TYPE_ADJUSTMENTS in
+    # src/controller/confidence_engine.py.
+    confidence_reject_threshold: float = 0.35
+    confidence_partial_threshold: float = 0.65
     groq_model: str = "openai/gpt-oss-20b"
     groq_model_fast: str = "openai/gpt-oss-20b"
     generation_max_tokens: int = 768

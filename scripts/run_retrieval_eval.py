@@ -56,6 +56,10 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
     dataset = dataset_records(json.loads(dataset_path.read_text(encoding="utf-8")))
     chunks = json.loads(chunks_path.read_text(encoding="utf-8"))
     chunk_doc = {c["chunk_id"]: c.get("doc_id") for c in chunks}
+    # Passed to evaluate_query so a gold id that is not in the corpus is
+    # reported as evaluation_data_error and dropped from the metric
+    # denominator, instead of being charged to the retriever as a miss.
+    corpus_ids = set(chunk_doc)
 
     store = QdrantVectorStore()
     retriever = MasterHybridRetriever(vector_store=store)
@@ -68,25 +72,30 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
         out = retriever.search_with_trace(item["question"], top_k=top_k, rerank=True)
         elapsed = (time.perf_counter() - t0) * 1000.0
         trace = out["trace"]
+        gold_ids = normalize_gold_chunk_ids(item)
         for stage, key in STAGE_TRACE_KEYS.items():
             ids = trace.get(key, [])
             docs = [chunk_doc.get(cid, "") for cid in ids]
             row = evaluate_query(
                 query_id=item["query_id"],
                 question=item["question"],
-                gold_chunk_ids=normalize_gold_chunk_ids(item),
+                gold_chunk_ids=gold_ids,
                 gold_doc_id=item.get("gold_doc_id"),
                 retrieved_chunk_ids=ids,
                 retrieved_doc_ids=docs,
                 stage=stage,
                 latency_ms=trace.get("latency_ms", {}).get(STAGE_LATENCY_KEYS[stage], elapsed),
+                corpus_chunk_ids=corpus_ids,
             )
             per_stage_rows[stage].append(row)
         per_query.append({
             "query_id": item["query_id"],
             "question": item["question"],
-            "gold_chunk_ids": normalize_gold_chunk_ids(item),
+            "gold_chunk_ids": gold_ids,
             "gold_doc_id": item.get("gold_doc_id"),
+            "missing_gold_chunk_ids": [
+                g for g in gold_ids if g not in corpus_ids
+            ],
             "stages": {
                 stage: {
                     "retrieved_chunk_ids": row.retrieved_chunk_ids,
@@ -97,6 +106,8 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
                     "hit_at_5": row.hit_at_5,
                     "hit_at_10": row.hit_at_10,
                     "latency_ms": row.latency_ms,
+                    "retrieval_failure_type": row.retrieval_failure_type,
+                    "missing_gold_chunk_ids": row.missing_gold_chunk_ids,
                 }
                 for stage, rows in per_stage_rows.items()
                 for row in rows[-1:]
@@ -113,11 +124,28 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
         agg = aggregate_rows(rows)
         agg["stage"] = stage
         summary[stage] = agg
+        excluded = agg.get("excluded_evaluation_data_errors", 0)
         print(
             f"{stage:15s} recall@5={agg.get('recall@5')} recall@10={agg.get('recall@10')} "
             f"mrr@10={agg.get('mrr@10')} avg_cand={agg.get('avg_candidates')} "
-            f"avg_gold_rank_hit={agg.get('avg_gold_rank_when_hit')} failures={agg.get('failure_counts')}"
+            f"avg_gold_rank_hit={agg.get('avg_gold_rank_when_hit')} "
+            f"n={agg.get('n')} excluded_data_errors={excluded} "
+            f"failures={agg.get('failure_counts')}"
         )
+
+    total_excluded = sum(
+        s.get("excluded_evaluation_data_errors", 0) for s in summary.values()
+    ) // len(summary) if summary else 0
+    if total_excluded:
+        bad = sorted({
+            cid
+            for q in per_query
+            for cid in q.get("missing_gold_chunk_ids", [])
+        })
+        print(f"[WARNING] {total_excluded} row(s) per stage excluded as "
+              f"evaluation_data_error. Gold ids absent from the corpus: {bad}")
+        print("          They are NOT counted as retrieval failures and NOT in "
+              "your favour. Fix the labels or the corpus.")
 
     payload = {
         "dataset": str(dataset_path),

@@ -113,21 +113,6 @@ def remove_table_noise(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
-# remove lines dengan banyak simbol aneh
-def remove_symbol_noise(text):
-    lines = text.split("\n")
-    clean = []
-    
-    for line in lines:
-        symbol_ratio = sum(not c.isalnum() and not c.isspace() for c in line) / max(len(line),1)
-        
-        if symbol_ratio > 0.3:
-            continue
-            
-        clean.append(line)
-    
-    return "\n".join(clean)
-
 def load_text(filepath: str, tier: int) -> Optional[Document]:
     path = Path(filepath)
     if not path.exists():

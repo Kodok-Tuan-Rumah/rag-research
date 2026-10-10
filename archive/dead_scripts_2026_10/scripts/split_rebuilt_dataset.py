@@ -1,11 +1,7 @@
-"""
-Split rebuilt ground truth dataset into train (80%) and holdout (20%) stratified by question_type.
-"""
-
 import json
 from pathlib import Path
 from collections import defaultdict
-from sklearn.model_selection import train_test_split
+import sklearn.model_selection
 
 # ── Config ──────────────────────────────────────────────────────────────────
 INPUT_PATH = "data/processed/ground_truth_qa_rebuilt.json"
@@ -13,7 +9,6 @@ TRAIN_OUTPUT_PATH = "data/processed/train_eval_v2.json"
 HOLDOUT_OUTPUT_PATH = "data/processed/holdout_eval_v2.json"
 TRAIN_RATIO = 0.8
 RANDOM_STATE = 42
-
 
 def main():
     print("=" * 80)
@@ -31,13 +26,12 @@ def main():
 
     # ── Stratified split ─────────────────────────────────────────────────────
     print(f"\n[Splitting] 80/20 stratified by question_type...")
-    train_indices, holdout_indices = train_test_split(
+    train_indices, holdout_indices = sklearn.model_selection.train_test_split(
         range(len(data)),
         train_size=TRAIN_RATIO,
         stratify=question_types,
         random_state=RANDOM_STATE,
     )
-
     train_data = [data[i] for i in train_indices]
     holdout_data = [data[i] for i in holdout_indices]
 
@@ -91,7 +85,6 @@ def main():
     print(f"Holdout samples (20%)   : {len(holdout_data)}")
     print(f"Holdout zero-gold       : {zero_gold_holdout}")
     print("=" * 80)
-
 
 if __name__ == "__main__":
     main()

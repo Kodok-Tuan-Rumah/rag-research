@@ -1,0 +1,490 @@
+{
+  "corpus": {
+    "total_chunks": 796,
+    "reference_chunks": 258,
+    "reference_share_pct": 32.4,
+    "reference_char_share_pct": 30.7,
+    "reference_text_chars": {
+      "mean": 537.6,
+      "median": 411.0,
+      "max": 2156
+    },
+    "other_text_chars": {
+      "mean": 583.0,
+      "median": 462.0,
+      "max": 2099
+    },
+    "length_separable": false,
+    "median_ratio": 0.89
+  },
+  "gold_labels": {
+    "retrieval_eval_dataset.json": {
+      "queries": 14,
+      "gold_pointing_at_references": 0,
+      "details": []
+    },
+    "retrieval_eval_dataset_v2.json": {
+      "queries": 13,
+      "gold_pointing_at_references": 0,
+      "details": []
+    },
+    "retrieval_eval_dataset_v3.json": {
+      "queries": 10,
+      "gold_pointing_at_references": 0,
+      "details": []
+    },
+    "retrieval_train_eval.json": {
+      "queries": 8,
+      "gold_pointing_at_references": 0,
+      "details": []
+    },
+    "retrieval_holdout_eval.json": {
+      "queries": 6,
+      "gold_pointing_at_references": 0,
+      "details": []
+    }
+  },
+  "gold_pointing_at_references_total": 0,
+  "pipeline": {
+    "dataset": "/home/malikimazyar/projects/ai-infra-workspace/rag-research/data/evaluation/retrieval_eval_dataset_v2.json",
+    "queries": 13,
+    "stages": {
+      "dense": {
+        "reference": 93,
+        "total": 520,
+        "share_pct": 17.9
+      },
+      "bm25": {
+        "reference": 87,
+        "total": 520,
+        "share_pct": 16.7
+      },
+      "rrf": {
+        "reference": 0,
+        "total": 520,
+        "share_pct": 0.0
+      },
+      "reranked": {
+        "reference": 0,
+        "total": 260,
+        "share_pct": 0.0
+      },
+      "final": {
+        "reference": 0,
+        "total": 130,
+        "share_pct": 0.0
+      }
+    },
+    "rerank_input": {
+      "reference": 0,
+      "total": 260,
+      "share_pct": 0.0
+    },
+    "blocked_by_strict_filter_total": 0,
+    "per_query": [
+      {
+        "query_id": "q01",
+        "stages": {
+          "dense": {
+            "reference": 13,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 10,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q02",
+        "stages": {
+          "dense": {
+            "reference": 11,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 8,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q03",
+        "stages": {
+          "dense": {
+            "reference": 3,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 7,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q04",
+        "stages": {
+          "dense": {
+            "reference": 5,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 7,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q06",
+        "stages": {
+          "dense": {
+            "reference": 0,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 4,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q09",
+        "stages": {
+          "dense": {
+            "reference": 6,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 5,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q10",
+        "stages": {
+          "dense": {
+            "reference": 5,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 5,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q11",
+        "stages": {
+          "dense": {
+            "reference": 1,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 5,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q13",
+        "stages": {
+          "dense": {
+            "reference": 14,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 6,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q14",
+        "stages": {
+          "dense": {
+            "reference": 5,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 8,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q16",
+        "stages": {
+          "dense": {
+            "reference": 10,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 4,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q19",
+        "stages": {
+          "dense": {
+            "reference": 11,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 6,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      },
+      {
+        "query_id": "q20",
+        "stages": {
+          "dense": {
+            "reference": 9,
+            "total": 40
+          },
+          "bm25": {
+            "reference": 12,
+            "total": 40
+          },
+          "rrf": {
+            "reference": 0,
+            "total": 40
+          },
+          "reranked": {
+            "reference": 0,
+            "total": 20
+          },
+          "final": {
+            "reference": 0,
+            "total": 10
+          }
+        },
+        "rerank_input": {
+          "reference": 0,
+          "total": 20
+        },
+        "blocked_by_strict_filter": 0,
+        "filter_stage": "strict"
+      }
+    ]
+  }
+}

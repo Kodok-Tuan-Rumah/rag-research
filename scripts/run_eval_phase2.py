@@ -10,7 +10,13 @@ from dotenv import load_dotenv
 from datetime import datetime
 
 # Config 
-DATASET_PATH           = "data/processed/holdout_eval_v2.json"
+# Was data/processed/holdout_eval_v2.json, removed in the migration to
+# data/evaluation/. The metric functions in this module (normalize,
+# exact_match, token_f1) are still live — tests/test_em_normalization.py covers
+# all 20 normalization cases and run_single_query.py imports exact_match from
+# here — so only the dataset path was wrong. §2.1 calls the canonical v2 file
+# the current set; the holdout split is not derivable from it.
+DATASET_PATH           = "data/evaluation/retrieval_eval_dataset_v2.json"
 OUTPUT_PATH            = f"results/eval_phase2_results.json"
 TOP_K                  = 10
 SLEEP                  = 0.3

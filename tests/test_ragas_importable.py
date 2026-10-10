@@ -80,6 +80,75 @@ def test_ragas_evaluator_is_importable():
     assert hasattr(evaluator, "RAGASEvaluator")
 
 
+def test_importing_ragas_does_not_patch_asyncio():
+    """ragas/executor.py calls nest_asyncio.apply() at module level.
+
+    On Python 3.14 that patch makes asyncio.tasks.current_task() return None
+    inside loop.run_until_complete(), so asyncio.wait_for raises
+    "Timeout should be used inside a task" and every RAGAS metric dies.
+    src/_compat neutralizes it.
+    """
+    import asyncio
+    import src._compat  # noqa: F401
+    import src.evaluation.ragas_evaluator  # noqa: F401
+
+    assert not getattr(asyncio, "_nest_patched", False), (
+        "nest_asyncio was applied; asyncio.wait_for will raise 'Timeout should "
+        "be used inside a task' on Python 3.14 and every RAGAS metric will fail"
+    )
+
+
+def test_asyncio_wait_for_works_after_importing_ragas():
+    """The actual failure mode, exercised without any API call."""
+    import asyncio
+    import src._compat  # noqa: F401
+    import src.evaluation.ragas_evaluator  # noqa: F401
+
+    async def probe():
+        return 1.0
+
+    loop = asyncio.new_event_loop()
+    try:
+        result = loop.run_until_complete(asyncio.wait_for(probe(), timeout=10))
+    except RuntimeError as exc:
+        pytest.fail(f"asyncio.wait_for is broken after importing ragas: {exc}")
+    finally:
+        loop.close()
+
+    assert result == 1.0
+
+
+def test_metrics_bind_a_ragas_llm_not_a_raw_langchain_llm():
+    """MetricWithLLM.init() calls self.llm.set_run_config(...).
+
+    A raw ChatGroq has no such method, so binding one makes evaluate() raise
+    "AttributeError: 'ChatGroq' object has no attribute 'set_run_config'".
+    """
+    from ragas.llms.base import BaseRagasLLM
+    from ragas.llms import LangchainLLMWrapper
+    from langchain_groq import ChatGroq
+    import src._compat  # noqa: F401
+    import src.evaluation.ragas_evaluator as evaluator
+
+    assert not hasattr(ChatGroq, "set_run_config"), (
+        "premise changed: ChatGroq now has set_run_config, so this test may be "
+        "checking the wrong thing"
+    )
+    assert issubclass(LangchainLLMWrapper, BaseRagasLLM)
+    assert hasattr(LangchainLLMWrapper, "set_run_config")
+
+    source = (REPO_ROOT / "src" / "evaluation" / "ragas_evaluator.py").read_text(
+        encoding="utf-8"
+    )
+    assert "LangchainLLMWrapper" in source, (
+        "ragas_evaluator must wrap the LangChain LLM in LangchainLLMWrapper"
+    )
+    assert "LangchainEmbeddingsWrapper" in source, (
+        "ragas_evaluator must wrap HuggingFaceEmbeddings for the same reason"
+    )
+    assert evaluator.DEFAULT_EMBED_MODEL == evaluator.settings.embed_model
+
+
 def test_run_eval_script_imports():
     """Phase 2 exit criterion: run_eval.py must load its module body cleanly.
 

@@ -1,12 +1,3 @@
-def _classify_query(query: str) -> int:
-    words = len(query.strip().split())
-    if words <= 5:
-        return 3
-    if words >= 15:
-        return 7
-    return 5
-
-
 def _retriever_with_fused_candidates(monkeypatch, fused, reranker):
     from types import SimpleNamespace
     from src.retrieval.hybrid_retriever import MasterHybridRetriever
@@ -21,21 +12,35 @@ def _retriever_with_fused_candidates(monkeypatch, fused, reranker):
             max_ref_ratio=0.0,
         )
     )
-    retriever.use_multi_query = False
-    retriever.use_hyde = False
     retriever.reranker = reranker
     monkeypatch.setattr(retriever, "_choose_candidate_k", lambda top_k: 40)
-    monkeypatch.setattr(retriever, "_expand_and_hyde_parallel", lambda query: ([query], None))
+    monkeypatch.setattr(
+        retriever, "_expand_and_hyde_parallel",
+        lambda query, use_mq=False, use_hyde=False: ([query], None),
+    )
     monkeypatch.setattr(retriever, "_dense_search", lambda query, k: fused)
     monkeypatch.setattr(retriever, "_bm25_search", lambda query, k: [])
     monkeypatch.setattr(retriever, "_rrf_fuse", lambda *args, **kwargs: fused)
     return retriever
 
 
-def test_query_classifier():
-    assert _classify_query('what is RAG') == 3
-    assert _classify_query('this example query contains significantly more than fifteen words to ensure long query behavior extra tokens') == 7
-    assert _classify_query('explain the difference between dense and BM25 retrieval techniques in RAG systems') == 5
+def test_query_classifier_resolves_from_the_policy():
+    """top_k comes from PolicyEngine (5/8/10), not a word-count heuristic.
+
+    This test used to define its own `_classify_query` returning 3/5/7 and
+    assert against that — a fifth copy, testing itself rather than the code
+    under test. It kept passing after the production copy was deleted.
+    """
+    from types import SimpleNamespace
+    from src.retrieval.hybrid_retriever import MasterHybridRetriever
+
+    retriever = MasterHybridRetriever.__new__(MasterHybridRetriever)
+    retriever._policy = SimpleNamespace(
+        initial_plan=lambda query: SimpleNamespace(top_k_hint=8, query_type="general")
+    )
+
+    assert retriever._resolve_top_k("what is RAG", 0) == 8
+    assert retriever._resolve_top_k("what is RAG", 10) == 10
 
 
 def test_search_returns_empty_results_when_no_candidates_remain(monkeypatch):
@@ -50,8 +55,6 @@ def test_search_returns_empty_results_when_no_candidates_remain(monkeypatch):
             allow_hyde=False,
         )
     )
-    retriever.use_multi_query = False
-    retriever.use_hyde = False
     retriever.reranker = None
 
     monkeypatch.setattr(retriever, "_choose_candidate_k", lambda top_k: 30)
@@ -72,8 +75,6 @@ def test_search_abstains_instead_of_falling_back_to_fragment(monkeypatch):
             query_type="general", allow_multi_query=False, allow_hyde=False,
         )
     )
-    retriever.use_multi_query = False
-    retriever.use_hyde = False
     retriever.reranker = None
     fragment = {
         "chunk_id": "fragment", "doc_id": "doc", "retrieval_score": 0.2,
@@ -100,8 +101,6 @@ def test_rerank_candidates_preserve_rrf_order(monkeypatch):
             query_type="general", allow_multi_query=False, allow_hyde=False,
         )
     )
-    retriever.use_multi_query = False
-    retriever.use_hyde = False
     retriever.reranker = None
 
     class FakeDense:
@@ -148,8 +147,6 @@ def test_default_search_is_rrf_only_and_filters_full_candidate_list(monkeypatch)
             max_ref_ratio=0.0,
         )
     )
-    retriever.use_multi_query = False
-    retriever.use_hyde = False
     retriever.reranker = object()
     references = [
         {
@@ -174,7 +171,10 @@ def test_default_search_is_rrf_only_and_filters_full_candidate_list(monkeypatch)
     reranker_calls = []
 
     monkeypatch.setattr(retriever, "_choose_candidate_k", lambda top_k: 40)
-    monkeypatch.setattr(retriever, "_expand_and_hyde_parallel", lambda query: ([query], None))
+    monkeypatch.setattr(
+        retriever, "_expand_and_hyde_parallel",
+        lambda query, use_mq=False, use_hyde=False: ([query], None),
+    )
     monkeypatch.setattr(
         retriever,
         "_dense_search",
@@ -459,15 +459,13 @@ def test_multi_query_and_hyde_are_used_by_dense_and_sparse_search(monkeypatch):
             max_ref_ratio=0.0,
         )
     )
-    retriever.use_multi_query = False
-    retriever.use_hyde = False
     retriever.reranker = None
     dense_queries = []
     bm25_queries = []
     monkeypatch.setattr(retriever, "_choose_candidate_k", lambda top_k: 30)
     monkeypatch.setattr(
         retriever, "_expand_and_hyde_parallel",
-        lambda query: ([query, "alternative"], "hypothetical"),
+        lambda query, use_mq=False, use_hyde=False: ([query, "alternative"], "hypothetical"),
     )
     monkeypatch.setattr(
         retriever, "_dense_search",

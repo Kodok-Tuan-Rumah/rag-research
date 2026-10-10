@@ -50,6 +50,77 @@ def test_subchunk_counts_as_hit():
     assert r.hit_at_1 is True and r.gold_rank == 1
 
 
+# --- evaluation_data_error -----------------------------------------------
+#
+# FAILURE_EVAL_DATA was defined but never assigned. A gold id absent from the
+# corpus was therefore scored as a retrieval_miss and kept in the denominator,
+# so a labelling mistake looked exactly like a retrieval failure and silently
+# lowered recall.
+
+
+def _eval_data_row(query_id: str, gold: str, **kw):
+    return evaluate_query(
+        query_id=query_id,
+        question="Q?",
+        gold_chunk_ids=[gold],
+        retrieved_chunk_ids=["x", "y"],
+        stage="rrf_fused",
+        corpus_chunk_ids={"c1", "c2"},
+        **kw,
+    )
+
+
+def test_gold_absent_from_corpus_is_an_evaluation_data_error():
+    r = _eval_data_row("q1", "ghost")
+    assert r.retrieval_failure_type == "evaluation_data_error"
+    assert r.missing_gold_chunk_ids == ["ghost"]
+    assert r.gold_rank is None
+    assert r.hit_at_1 is False and r.hit_at_10 is False
+    assert r.reciprocal_rank == 0.0
+
+
+def test_gold_present_in_corpus_is_unaffected():
+    r = _eval_data_row("q1", "c1")
+    assert r.retrieval_failure_type != "evaluation_data_error"
+    assert r.missing_gold_chunk_ids == []
+
+
+def test_without_the_corpus_nothing_is_flagged():
+    """Backward compatible: callers that do not supply the corpus cannot know."""
+    r = evaluate_query(
+        query_id="q1",
+        question="Q?",
+        gold_chunk_ids=["ghost"],
+        retrieved_chunk_ids=["x"],
+        stage="rrf_fused",
+    )
+    assert r.retrieval_failure_type == "retrieval_miss"
+    assert r.missing_gold_chunk_ids == []
+
+
+def test_data_error_row_is_excluded_from_the_denominator():
+    """It must not lower recall, and must not raise it either."""
+    good_hit = _row("q1", "g", ["g"])
+    good_miss = _row("q2", "g", ["x"])
+    bad = _eval_data_row("q3", "ghost")
+
+    without = aggregate_rows([good_hit, good_miss])
+    with_bad = aggregate_rows([good_hit, good_miss, bad])
+
+    assert with_bad["recall@10"] == without["recall@10"] == 0.5
+    assert with_bad["mrr@10"] == without["mrr@10"]
+    assert with_bad["n"] == 2, "the invalid row must not stay in the denominator"
+    assert with_bad["excluded_evaluation_data_errors"] == 1
+    assert with_bad["failure_counts"]["evaluation_data_error"] == 1
+
+
+def test_all_rows_invalid_does_not_crash():
+    agg = aggregate_rows([_eval_data_row("q1", "ghost"), _eval_data_row("q2", "phantom")])
+    assert agg["n"] == 0
+    assert agg["excluded_evaluation_data_errors"] == 2
+    assert "recall@10" not in agg
+
+
 def test_aggregate_rates():
     rows = [
         _row("q1", "g", ["g"]),

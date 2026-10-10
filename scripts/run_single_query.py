@@ -842,7 +842,12 @@ def run_single_query(
     # Exact Match Metric
     exact_match = None
     if ground_truth:
-        exact_match = response.answer.strip().lower() == ground_truth.strip().lower()
+        # §2.1 makes normalization mandatory: lowercase, strip punctuation,
+        # remove articles, collapse whitespace. A bare strip().lower()
+        # comparison scores 0 for answers that are in fact exact whenever "the"
+        # or punctuation differs.
+        from scripts.run_eval_phase2 import exact_match as _exact_match
+        exact_match = _exact_match(response.answer, ground_truth)
 
     answer_status = {
         "ANSWERED": "answered",

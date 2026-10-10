@@ -44,8 +44,3 @@ class AgentState:
 
     def is_budget_exhausted(self) -> bool:
         return self.step_count >= self.MAX_STEPS
-
-    def extend_chunks(self, chunks: list) -> None:
-        if not chunks:
-            return
-        self.retrieved_chunks.extend(chunks)

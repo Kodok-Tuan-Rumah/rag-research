@@ -281,7 +281,7 @@ bash scripts/bootstrap_env.sh --verify   # check only, install nothing
     OK  protobuf upb shim (src/_compat.py, needed on Python 3.14)
 
 ==> Test suite
-    166 passed
+    305 passed
 ```
 
 Verify the key and the pipeline:
@@ -317,9 +317,37 @@ python scripts/run_eval.py
 # Visualize (needs matplotlib)
 python scripts/visualize.py
 
+# CI contracts — import surface, corpus fingerprint, dataset integrity
+python scripts/check_ci_contracts.py
+
+# Script manifest — every scripts/*.py must be classified here
+python scripts/check_script_manifest.py
+
+# Measure what the 258 REFERENCES chunks cost (no API key needed)
+python scripts/measure_reference_impact.py
+
 # Start Go dashboard
 go run cmd/server/main.go
 ```
+
+### Script inventory
+
+`scripts/` holds 37 entries and is larger than `src/`. `scripts/MANIFEST.json`
+records what each one is, and `check_script_manifest.py` fails CI when a script
+has no entry, when it reads data that no longer exists, or when a
+canonical/library script is undocumented.
+
+| Status | Meaning | Count |
+|---|---|---:|
+`canonical` | documented entrypoint — the ones below | 6 |
+`library` | imported for its functions, not run as a script | 1 |
+`diagnostic` | single-purpose tooling for one investigation | 30 |
+
+`scripts/run_eval_phase2.py` is a library, not dead code: it supplies
+`normalize`, `exact_match` and `token_f1` to `tests/test_em_normalization.py`,
+and `token_f1` is the metric §2.1 calls Semantic F1. Its `__main__` path is
+dead because `data/processed/holdout_eval_v2.json` was removed; that is
+recorded in `ACKNOWLEDGED_DEAD_PATHS` rather than silently tolerated.
 
 ### Tests
 
@@ -327,7 +355,7 @@ go run cmd/server/main.go
 python3 -m pytest tests/ -q
 ```
 
-Baseline: **166 passed, 0 failed**. No `--ignore` flags are needed.
+Baseline: **305 passed, 0 failed**. No `--ignore` flags are needed.
 
 > **If a test fails with** `ImportError: cannot load module more than once per process` **from `numpy/fft/_pocketfft.py`** — that is a test-harness problem, not a numpy or Python 3.14 defect. `unittest.mock.patch.dict(sys.modules, ...)` snapshots `sys.modules` and restores it wholesale on exit, evicting modules first imported *inside* the block. `numpy.fft._pocketfft_umath` is a C extension, and CPython forbids re-initialising the same extension twice in one process. Fix: pre-import `numpy.fft` above the `patch.dict` block. See `tests/test_qdrant_store.py` and `tests/test_semantic_chunker.py`.
 
@@ -370,7 +398,7 @@ rag-research/
 │   ├── _compat.py                    # Python 3.14 protobuf shim (import FIRST)
 │   ├── ingestion/
 │   │   ├── document_loader.py        # PyMuPDF PDF parsing
-│   │   ├── chunker.py                # Fixed-size chunker (regression baseline)
+│   │   ├── chunker.py                # Legacy chunker, 3 strategies (fixed_size/paragraph/semantic). Outputs chunks_legacy_chunker.json — NOT the live corpus. Its __main__ block no longer writes chunks_semantic_v2.json.
 │   │   ├── semantic_chunker.py       # Python semantic chunker (Makefile entrypoint)
 │   │   └── semantic_chunker_rust/    # Rust chunker (PyO3 + Maturin)
 │   ├── retrieval/
@@ -395,7 +423,7 @@ rag-research/
 │       ├── main.py                   # FastAPI endpoint
 │       └── config.py                 # Settings (pydantic-settings)
 ├── scripts/                          # ~40 diagnostic + eval scripts (6.6k LOC)
-├── tests/                            # pytest suite (166 passed, 0 failed)
+├── tests/                            # pytest suite (305 passed, 0 failed)
 ├── experiments/                      # Phase 1 ablation (legacy stack)
 ├── archive/
 │   └── legacy_2026_10/               # Zero-import modules + provenance README
@@ -415,7 +443,7 @@ rag-research/
 │   ├── debug/failure_analysis.json   # Failure mode breakdown
 │   └── qdrant_storage/               # Local Qdrant persistent (796 vectors)
 ├── results/
-│   ├── metrics/                      # 119 artifacts (Phase A–J + K1 evidence)
+│   ├── metrics/                      # 128 artifacts + INDEX.md (see results/metrics/INDEX.md)
 │   ├── debug/
 │   └── logs/
 ├── cmd/server/main.go                # Go dashboard server

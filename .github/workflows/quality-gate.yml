@@ -1,0 +1,97 @@
+name: Quality gate
+
+# Manual, not on push.
+#
+# Answer-quality measurement calls Groq and takes minutes: 2 samples took 5m53s
+# for the RAGAS stage alone. That does not belong in a per-push gate, and it
+# cannot be a *quality* gate yet either.
+#
+# PROJECT_GOALS.md §2.1 sets Faithfulness >= 0.88, Answer Relevancy >= 0.88 and
+# Hallucination Rate 0%. Those are targets, not measured baselines. The only
+# measurement taken so far is a 2-sample smoke on the canonical configuration,
+# which returned Faithfulness 0.75 and Answer Relevancy 0.32. Gating against an
+# unmeasured target would fail forever for reasons that say nothing about a
+# change under test, which is how the previous CI job became decorative.
+#
+# So this workflow REPORTS. It records the numbers and uploads the artifact.
+# Phase 2 must produce a calibrated baseline before thresholds can gate; until
+# then the correct signal is the measurement, not a red X.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: "Labeled dataset (relative to repo root)"
+        default: "data/evaluation/retrieval_eval_dataset_v2.json"
+      limit:
+        description: "Number of queries to run (blank = all)"
+        default: ""
+      top_k:
+        description: "top_k for retrieval"
+        default: "10"
+
+jobs:
+  ragas:
+    name: RAGAS on ${{ github.event.inputs.dataset }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Build the native Rust chunker
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: maturin develop
+        run: maturin develop --manifest-path src/ingestion/semantic_chunker_rust/Cargo.toml
+
+      - name: Install the project itself
+        run: python -m pip install -e . --no-deps
+
+      # The Qdrant index lives in data/qdrant_storage and is not in git, so the
+      # pipeline must be rebuilt before it can answer anything. That step is
+      # not automated yet; this workflow assumes the index has been built.
+      - name: Run answer-quality evaluation
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          python scripts/run_eval.py \
+            --dataset "${{ github.event.inputs.dataset }}" \
+            --limit ${{ github.event.inputs.limit || '999' }} \
+            --top-k ${{ github.event.inputs.top_k || '10' }}
+
+      - name: Upload the run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generation-run-report
+          path: |
+            results/metrics/generation_run_report.json
+            results/metrics/ragas_results.json
+
+      - name: Summarise
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("results/metrics/generation_run_report.json")
+          if not p.exists():
+              print("no report produced"); raise SystemExit(0)
+          d = json.loads(p.read_text())
+          print("pipeline:", json.dumps(d["pipeline"], indent=2))
+          r = d.get("ragas")
+          if not r:
+              print("ragas: not scored (all queries abstained or errored)"); raise SystemExit(0)
+          for k in ("avg_faithfulness","avg_answer_relevancy","avg_context_precision",
+                    "avg_context_recall","avg_answer_correctness","hallucination_rate",
+                    "total_samples","nan_counts"):
+              print(f"{k}: {r.get(k)}")
+          PY

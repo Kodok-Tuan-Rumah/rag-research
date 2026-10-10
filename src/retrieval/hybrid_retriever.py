@@ -115,13 +115,9 @@ class MasterHybridRetriever:
         bm25_chunks_path: str = "data/processed/chunks_semantic_v2.json",
         reranker_model: Optional[str] = None,
         rrf_k: int = 60,
-        use_multi_query: bool = False,
-        use_hyde: bool = False,
     ):
         self.vector_store = vector_store
         self.rrf_k = rrf_k
-        self.use_multi_query = use_multi_query
-        self.use_hyde = use_hyde
         self._policy = PolicyEngine()
         self._chunks = []
         self._bm25 = None
@@ -150,15 +146,8 @@ class MasterHybridRetriever:
             self.groq = None
             logger.info(f"[MasterRetriever] No GROQ_API_KEY available")
 
-    def _is_valid_section(self, metadata: dict) -> bool:
-        section = str(metadata.get("section", "")).lower()
-        return section not in ["references", "bibliography"]
     def _is_reference_chunk(self, chunk) -> bool:
         return _cf_is_reference_chunk(chunk)
-
-    def _is_title_or_author_chunk(self, chunk) -> bool:
-        """Deteksi chunk yang isinya judul paper atau baris author/afiliasi."""
-        return _cf_is_title_or_author_chunk(chunk)
 
     @staticmethod
     def _section_boost(metadata: dict) -> float:
@@ -189,7 +178,12 @@ class MasterHybridRetriever:
         )
         return resp.choices[0].message.content.strip()
 
-    def _expand_and_hyde_parallel(self, query: str):
+    def _expand_and_hyde_parallel(
+        self,
+        query: str,
+        use_multi_query: bool = False,
+        use_hyde: bool = False,
+    ):
         queries = [query]
         hyde_text = None
 
@@ -198,12 +192,12 @@ class MasterHybridRetriever:
 
         futures = {}
         with ThreadPoolExecutor(max_workers=2) as executor:
-            if self.use_multi_query:
+            if use_multi_query:
                 futures["mq"] = executor.submit(
                     self._call_groq,
                     MULTI_QUERY_PROMPT.format(query=query), 0.7, 100
                 )
-            if self.use_hyde:
+            if use_hyde:
                 futures["hyde"] = executor.submit(
                     self._call_groq,
                     HYDE_PROMPT.format(query=query), 0.5, 150
@@ -226,25 +220,29 @@ class MasterHybridRetriever:
                 logger.info(f"[HyDE] Failed: {e}")
         return queries, hyde_text
 
-    def _expand_queries(self, query: str) -> List[str]:
-        return [query]
-
-    def _generate_hyde(self, query: str) -> Optional[str]:
-        return None
-
-    def _classify_query(self, query: str) -> int:
-        words = len(query.strip().split())
-        if words <= 5:
-            return 3
-        if words >= 15:
-            return 7
-        return 5
-
     def _resolve_top_k(self, query: str, top_k: int) -> int:
-        if top_k <= 0:
-            top_k = self._classify_query(query)
-            logger.info(f"[TopK] auto-selected top_k={top_k} for query length={len(query.split())}")
-        return top_k
+        """Resolve an unset top_k from the single canonical policy.
+
+        This used to call `_classify_query`, a word-count heuristic returning
+        3/5/7. `PolicyEngine.retrieval_strategy()` returns 5/8/10 for the same
+        decision, and `scripts/benchmark_retrieval.py` carried a third copy of
+        the 3/5/7 version. Two different answers to "how many chunks for this
+        query" is the same class of defect as the API/Agent retry divergence:
+        whichever path a caller took changed the result.
+
+        Adapters already resolve top_k from the plan before calling search
+        (`api/main.py:207`, `agent.py:131`), and the API rejects top_k < 1, so
+        only the explicit `top_k=0` escape hatch reached the old heuristic.
+        """
+        if top_k > 0:
+            return top_k
+        plan = self._policy.initial_plan(query)
+        resolved = int(plan.top_k_hint)
+        logger.info(
+            "[TopK] top_k not supplied; policy resolved top_k=%d for query_type=%s",
+            resolved, plan.query_type,
+        )
+        return resolved
 
     def _choose_candidate_k(self, top_k: int) -> int:
         return min(max(top_k * 4, 30), max(top_k, settings.candidate_k))
@@ -454,15 +452,26 @@ class MasterHybridRetriever:
         allow_references = getattr(plan, "allow_references", False) if allow_references is None else allow_references
         max_ref_ratio = getattr(plan, "max_ref_ratio", 0.0) if max_ref_ratio is None else max_ref_ratio
         max_ref_ratio = min(max(float(max_ref_ratio), 0.0), 1.0)
-        self.use_multi_query = plan.allow_multi_query if use_multi_query is None else use_multi_query
-        self.use_hyde = plan.allow_hyde if use_hyde is None else use_hyde
+        # Locals, not instance state. `src/api/main.py` builds one retriever at
+        # startup and dispatches every request through it with
+        # `run_in_threadpool`, so FastAPI serves concurrent requests on the same
+        # object. Assigning self.use_multi_query here let one request overwrite
+        # another request's expansion flags between this line and the read
+        # inside _expand_and_hyde_parallel. Harmless while both flags are False,
+        # which they always are — PROJECT_GOALS.md §9 forbids re-enabling them —
+        # but §13.3 graceful degradation needs per-request control, and mutable
+        # instance state cannot provide it.
+        resolved_multi_query = plan.allow_multi_query if use_multi_query is None else use_multi_query
+        resolved_hyde = plan.allow_hyde if use_hyde is None else use_hyde
         logger.info(
             f"[POLICY] query_type={plan.query_type} | "
-            f"multi_query={self.use_multi_query} | hyde={self.use_hyde}"
+            f"multi_query={resolved_multi_query} | hyde={resolved_hyde}"
         )
         candidate_k = self._choose_candidate_k(top_k)
 
-        query_variants, hyde_query = self._expand_and_hyde_parallel(query)
+        query_variants, hyde_query = self._expand_and_hyde_parallel(
+            query, resolved_multi_query, resolved_hyde
+        )
         dense_queries = list(query_variants)
         if hyde_query:
             dense_queries.append(hyde_query)

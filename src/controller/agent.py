@@ -7,7 +7,7 @@ from src.controller.agent_state import AgentState, AgentStatus
 from src.controller.policy_engine import PolicyEngine, PlanHints
 from src.controller.confidence_engine import ConfidenceEngine
 from src.api.config import settings
-from src.generation.generator import GroqGenerator
+from src.generation.generator import GroqGenerator, apply_partial_trust_policy
 from src.retrieval.qdrant_store import QdrantVectorStore
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
 from src.retrieval.tools import RetrievalTools
@@ -75,11 +75,9 @@ class Agent:
         retrieval_decision: str | None = None,
         retrieval_confidence: float | None = None,
     ) -> Optional[AgentResponse]:
-        generation_chunks = (
-            state.retrieved_chunks[:3]
-            if retrieval_decision == "PARTIAL_TRUST"
-            else state.retrieved_chunks
-        )
+        generation_chunks = apply_partial_trust_policy(
+            state.retrieved_chunks, "", retrieval_decision
+        )[0]
         result = await self.tools.call_tool("generate_answer", {
             "query": state.query,
             "chunks": generation_chunks,
@@ -95,8 +93,9 @@ class Agent:
         state.add_observation("generate_answer", result)
         response = result.get("response")
         answer = response.answer if response else None
-        if retrieval_decision == "PARTIAL_TRUST" and answer:
-            answer = f"[Low confidence — verify independently] {answer}"
+        _, answer = apply_partial_trust_policy(
+            state.retrieved_chunks, answer, retrieval_decision
+        )
 
         if response and response.status == "ANSWERED":
             state.status = AgentStatus.ANSWERED

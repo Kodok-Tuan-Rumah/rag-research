@@ -7,10 +7,43 @@ import logging
 
 logger = logging.getLogger("rag.confidence_engine")
 
+# Per-query-type adjustment applied to each threshold (confidence_engine.py:118).
+# factual is nudged up, reasoning down, so the two classes do not share a cut.
+TYPE_ADJUSTMENTS: Dict[str, tuple[float, float]] = {
+    "factual":   (+0.05, +0.05),
+    "reasoning": (-0.05, -0.05),
+    "general":   (0.0, 0.0),
+}
+
+
 class ConfidenceEngine:
-    def __init__(self):
-        self.reject_threshold = 0.35
-        self.partial_threshold = 0.65
+    def __init__(
+        self,
+        reject_threshold: Optional[float] = None,
+        partial_threshold: Optional[float] = None,
+    ):
+        """Thresholds come from Settings so Phase 3 can calibrate them.
+
+        They were literals in this constructor, which meant calibration required
+        editing source and the four instances created per process (agent.py:29,
+        agent.py:36, api/main.py:45, generator.py:326) each carried their own
+        private copy. PROJECT_GOALS.md §5 defines these as calibration
+        parameters; Appendix A records that they were not overridable.
+
+        Defaults are unchanged: 0.35 and 0.65, the exact values that were
+        hardcoded. Passing a value still overrides, which keeps existing tests
+        and any caller constructing an engine with explicit numbers working.
+        """
+        from src.api.config import settings
+
+        self.reject_threshold = (
+            settings.confidence_reject_threshold
+            if reject_threshold is None else float(reject_threshold)
+        )
+        self.partial_threshold = (
+            settings.confidence_partial_threshold
+            if partial_threshold is None else float(partial_threshold)
+        )
 
     def _normalize_scores(self, scores: List[float], score_type: str = "cosine") -> np.ndarray:
         arr = np.array(scores, dtype=float)
@@ -24,10 +57,6 @@ class ConfidenceEngine:
             if arr.max() == arr.min():
                 return np.ones_like(arr) * 0.5
             return (arr - arr.min()) / (arr.max() - arr.min() + 1e-9)
-
-    def _sigmoid(self, x: float) -> float:
-        import math
-        return 1.0 / (1.0 + math.exp(-x))
 
     def _calculate_entropy(self, scores: List[float]) -> float:
         if scores is None or len(scores) < 2:
@@ -117,12 +146,17 @@ class ConfidenceEngine:
 
     def _decision_for_score(self, confidence_score: float, query_type: Optional[str] = None) -> str:
         reject, partial = self.reject_threshold, self.partial_threshold
-        if query_type == "factual":
-            reject += 0.05
-            partial = min(1.0, partial + 0.05)
-        elif query_type == "reasoning":
-            reject = max(0.0, reject - 0.05)
-            partial = max(reject, partial - 0.05)
+        reject_delta, partial_delta = TYPE_ADJUSTMENTS.get(query_type or "general", (0.0, 0.0))
+
+        # factual raises both cuts; reasoning lowers both. The clamps are
+        # preserved exactly: reject never goes below 0, partial never exceeds 1,
+        # and partial never drops below reject.
+        if reject_delta >= 0:
+            reject += reject_delta
+        else:
+            reject = max(0.0, reject + reject_delta)
+        partial = min(1.0, partial + partial_delta) if partial_delta >= 0 else max(reject, partial + partial_delta)
+
         if confidence_score < reject:
             return "REJECT"
         if confidence_score < partial:

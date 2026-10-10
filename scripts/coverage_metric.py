@@ -10,6 +10,10 @@ import urllib.request
 import urllib.error
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from dotenv import load_dotenv
+
+load_dotenv()
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -25,10 +29,11 @@ logger = logging.getLogger("coverage_metric")
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+EVAL_DIR     = PROJECT_ROOT / "data" / "evaluation"
 PRIMARY_FILE = PROJECT_ROOT / "results/failure_cases/failure_analysis.json"
 LOG_DIR      = PROJECT_ROOT / "results/logs"
 RAGAS_DIR    = PROJECT_ROOT / "results/metrics"
-GT_FILE      = PROJECT_ROOT / "data/processed/ground_truth_qa.json"
+GT_FILE      = EVAL_DIR / "retrieval_eval_dataset_v2.json"
 OUTPUT_DIR   = PROJECT_ROOT / "results/debug"
 OUTPUT_JSON  = OUTPUT_DIR / "coverage_report.json"
 OUTPUT_MD    = OUTPUT_DIR / "coverage_report.md"

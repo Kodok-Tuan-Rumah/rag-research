@@ -11,9 +11,13 @@ from typing import List, Optional
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="ragas")
 
-from datasets import Dataset
+import src._compat  # noqa: F401  must precede ragas; neutralizes nest_asyncio on 3.14
+
 from ragas import evaluate
 from ragas.run_config import RunConfig  
+from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.metrics import (
     Faithfulness,
     AnswerRelevancy,
@@ -68,6 +72,10 @@ class AblationResult:
     avg_latency_ms:         float
     hallucination_rate:     float   
     total_samples:          int
+    # How many samples produced no usable score for each metric. ragas swallows
+    # per-job exceptions when raise_exceptions is False and yields NaN, so a run
+    # in which every metric failed used to print 0.0000 and look like a result.
+    nan_counts:             dict = field(default_factory=dict)
 
 # RAGAS Evaluator 
 class RAGASEvaluator:
@@ -105,20 +113,31 @@ class RAGASEvaluator:
         print(f"[RAGASEvaluator] Init Embeddings: {embed_model}")
         self.embeddings = HuggingFaceEmbeddings(model_name=embed_model)
         self.include_answer_correctness = include_answer_correctness
-        
-        # Bind metrics
-        self._faithfulness        = Faithfulness(llm=self.llm)
-        self._answer_relevancy    = AnswerRelevancy(llm=self.llm, embeddings=self.embeddings)
-        self._context_precision   = ContextPrecision(llm=self.llm)
-        self._context_recall      = ContextRecall(llm=self.llm)
-        self._answer_correctness  = AnswerCorrectness(llm=self.llm)
-    
+
         # CONFIG SUPER SABAR
         self.run_config = RunConfig(
             max_retries=20,    
             timeout=180,       
             max_workers=1     
         )
+
+        # ragas metrics do not accept a LangChain LLM directly.
+        # MetricWithLLM.init() calls self.llm.set_run_config(...), which only
+        # exists on a BaseRagasLLM, so a raw ChatGroq raises
+        # "AttributeError: 'ChatGroq' object has no attribute 'set_run_config'".
+        # evaluate() would normally wrap the llm= argument for us, but it only
+        # assigns it to metrics whose llm is None; binding the raw object here
+        # suppressed that path.
+        self.ragas_llm = LangchainLLMWrapper(self.llm, run_config=self.run_config)
+        self.ragas_embeddings = LangchainEmbeddingsWrapper(self.embeddings)
+
+        # Bind metrics
+        self._faithfulness        = Faithfulness(llm=self.ragas_llm)
+        self._answer_relevancy    = AnswerRelevancy(llm=self.ragas_llm, embeddings=self.ragas_embeddings)
+        self._context_precision   = ContextPrecision(llm=self.ragas_llm)
+        self._context_recall      = ContextRecall(llm=self.ragas_llm)
+        self._answer_correctness  = AnswerCorrectness(llm=self.ragas_llm)
+
         self.metrics_no_ref = [self._faithfulness, self._answer_relevancy]
         self.metrics_with_ref = [
             self._faithfulness,
@@ -140,17 +159,31 @@ class RAGASEvaluator:
         has_reference = all(s.ground_truth for s in samples)
         active_metrics = self.metrics_with_ref if has_reference else self.metrics_no_ref
 
-        data = {
-            "question": [s.question for s in samples],
-            "answer":   [s.answer for s in samples],
-            "contexts": [s.contexts for s in samples],
-        }
-        if has_reference:
-            data["ground_truth"] = [s.ground_truth for s in samples]
-        
-        dataset = Dataset.from_dict(data)
+        # Build an EvaluationDataset rather than a `datasets.Dataset`.
+        #
+        # `datasets.Dataset` cannot be constructed in this environment. datasets
+        # 3.6.0 pins dill<0.3.9, and dill 0.3.8's StockPickler.save_dict calls
+        # Pickler._batch_setitems(items, obj) while CPython 3.14 expects the
+        # 3-argument form, so any fingerprinting raises
+        # "TypeError: Pickler._batch_setitems() takes 2 positional arguments but
+        # 3 were given". Upgrading dill alone is not possible: datasets caps it,
+        # and only datasets>=4.1.0 lifts that cap.
+        #
+        # This is also the forward path, not a workaround. evaluate() handles a
+        # HF Dataset by running convert_v1_to_v2_dataset on it; an
+        # EvaluationDataset is the native v2 type and skips that conversion.
+        eval_dataset = EvaluationDataset(samples=[
+            SingleTurnSample(
+                user_input=s.question,
+                reference=s.ground_truth,
+                response=s.answer,
+                retrieved_contexts=s.contexts,
+            )
+            for s in samples
+        ])
+
         ragas_result = evaluate(
-            dataset=dataset,
+            dataset=eval_dataset,
             metrics=active_metrics,
             llm=self.llm,
             embeddings=self.embeddings,
@@ -183,6 +216,30 @@ class RAGASEvaluator:
             if not vals:
                 return 0.0
             return sum(vals) / len(vals)
+
+        def nan_count(key):
+            return sum(
+                1 for r in eval_results
+                if getattr(r, key) is None or np.isnan(getattr(r, key))
+            )
+
+        nan_counts = {
+            key: nan_count(key)
+            for key in ("faithfulness", "answer_relevancy", "context_precision",
+                        "context_recall", "answer_correctness")
+        }
+        empty = [
+            key for key, count in nan_counts.items()
+            if count == len(eval_results) and eval_results
+        ]
+        if empty:
+            raise RuntimeError(
+                "RAGAS produced no usable score for: "
+                + ", ".join(empty)
+                + ". Every scoring job failed. Scores would be reported as "
+                  "0.0000, which is not a measurement. Re-run with "
+                  "raise_exceptions=True to see the underlying error."
+            )
         
         successful_faithfulness = [
             r.faithfulness for r in eval_results
@@ -207,6 +264,7 @@ class RAGASEvaluator:
             avg_latency_ms=avg("latency_ms"),
             hallucination_rate=hallucination_rate,
             total_samples=len(samples),
+            nan_counts=nan_counts,
         )
 
         self._print_summary(result)
@@ -224,6 +282,12 @@ class RAGASEvaluator:
             print(f"  Answer Correctness : {result.avg_answer_correctness:.4f}")
         print(f"  Hallucination Rate : {result.hallucination_rate:.1%}")
         print(f"  Samples            : {result.total_samples}")
+        if result.nan_counts:
+            degraded = {k: v for k, v in result.nan_counts.items() if v}
+            if degraded:
+                detail = ", ".join(f"{k}={v}/{result.total_samples}"
+                                   for k, v in degraded.items())
+                print(f"  [WARNING] incomplete metrics: {detail}")
         print(f"{'='*55}\n")
 
     def save_result(self, result: AblationResult, output_path: str) -> None:

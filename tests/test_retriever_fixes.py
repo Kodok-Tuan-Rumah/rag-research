@@ -74,42 +74,97 @@ def test_fix1_adaptive_rerank_n():
             f"rerank_n={rerank_n}"
         )
 
-# Query Classifier 
-def _classify_query(query: str) -> int:
-    words = query.strip().split()
-    n = len(words)
-    if n <= 5:
-        return 3
-    if n >= 15:
-        return 7
-    return 5
+# Query Classifier
+#
+# This used to define a local _classify_query (3/5/7 by word count) and assert
+# against it — a fourth copy of a heuristic, testing itself rather than the
+# production path. The retriever had its own copy, the benchmark script had a
+# third, and PolicyEngine returned 5/8/10 for the same decision.
+#
+# _resolve_top_k now delegates to PolicyEngine, so that is what gets tested.
 
-def test_fix2_query_classifier():
-    print("\n[FIX 2] Adaptive top_k via query classifier")
 
-    cases = [
-        ("RAG", 3, "1 word → 3"),
-        ("what is RAG", 3, "3 words → 3"),
-        ("what is retrieval augmented generation", 3, "5 words → 3"),
-        ("how does hybrid search improve RAG quality", 5, "7 words → 5"),
-        ("explain the difference between dense and BM25 retrieval", 5, "8 words → 5"),
-        (
-            "what are the main architectural differences between dense and sparse "
-            "retrieval methods in modern RAG systems and how do they affect faithfulness",
-            7,
-            "≥15 words → 7"
-        ),
-    ]
+def test_fix2_query_classifier_uses_the_canonical_policy():
+    from src.controller.policy_engine import PolicyEngine
+    from src.retrieval.hybrid_retriever import MasterHybridRetriever
 
-    for query, expected, note in cases:
-        result = _classify_query(query)
-        check(note, result == expected, f"words={len(query.split())}, got top_k={result}")
+    retriever = MasterHybridRetriever.__new__(MasterHybridRetriever)
+    retriever._policy = PolicyEngine()
 
-    query = "what is RAG"
-    top_k = 0
-    if top_k == 0:
-        top_k = _classify_query(query)
-    check("top_k=0 trigger → auto-detect", top_k == 3, f"resolved to {top_k}")
+    for query in (
+        "RAG",
+        "what is RAG",
+        "what is retrieval augmented generation",
+        "how does hybrid search improve RAG quality",
+        "explain the difference between dense and BM25 retrieval",
+        "what are the main architectural differences between dense and sparse "
+        "retrieval methods in modern RAG systems and how do they affect faithfulness",
+    ):
+        expected = PolicyEngine().initial_plan(query).top_k_hint
+        resolved = retriever._resolve_top_k(query, 0)
+        assert resolved == expected, (
+            f"{query[:40]!r}: resolved {resolved}, policy says {expected}"
+        )
+        assert resolved in (5, 8, 10), f"top_k outside the policy set: {resolved}"
+
+    # An explicit top_k must be returned untouched, including values the policy
+    # would never produce. run_retrieval_eval.py measures at top_k=10.
+    for explicit in (1, 3, 7, 10, 20):
+        assert retriever._resolve_top_k("what is RAG", explicit) == explicit
+
+
+def test_fix2_no_word_count_classifier_survives_anywhere():
+    """The 3/5/7 word-count heuristic must not reappear, in any layer.
+
+    An earlier version of this guard scanned src/ only, and a fifth copy sitting
+    in tests/test_hybrid_retriever.py survived it — defining its own
+    _classify_query and asserting against that. It kept passing after the
+    production copy was deleted, because it never touched the code under test.
+    """
+    import pathlib
+
+    repo = pathlib.Path(__file__).resolve().parents[1]
+    self_path = pathlib.Path(__file__).resolve()
+    offenders = []
+    for folder in ("src", "scripts", "tests"):
+        for path in (repo / folder).rglob("*.py"):
+            if "__pycache__" in path.parts or "target" in path.parts:
+                continue
+            # This file holds the patterns it searches for; it cannot match itself.
+            if path.resolve() == self_path:
+                continue
+            for line in path.read_text(encoding="utf-8").splitlines():
+                stripped = line.strip()
+                if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+                    continue
+                # `words >= 15 -> 7` and `words <= 5 -> 3` is the signature.
+                if "words" in stripped and (">= 15" in stripped or "<= 5" in stripped):
+                    offenders.append(f"{path.relative_to(repo)}: {stripped}")
+    assert not offenders, (
+        "word-count top_k heuristic reintroduced; PolicyEngine is the only "
+        "source:\n" + "\n".join(offenders)
+    )
+
+
+def test_fix2_no_module_may_shadow_the_production_classifier():
+    """A local `def _classify_query` in a test is a copy that tests itself."""
+    import pathlib
+
+    repo = pathlib.Path(__file__).resolve().parents[1]
+    self_path = pathlib.Path(__file__).resolve()
+    allowed = {repo / "scripts" / "benchmark_retrieval.py"}  # delegates to PolicyEngine
+    offenders = []
+    for folder in ("src", "tests"):
+        for path in (repo / folder).rglob("*.py"):
+            if "__pycache__" in path.parts or path.resolve() == self_path:
+                continue
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.startswith("def _classify_query") and path not in allowed:
+                    offenders.append(str(path.relative_to(repo)))
+    assert not offenders, (
+        "a module defines its own _classify_query; that copy tests itself "
+        "rather than MasterHybridRetriever:\n" + "\n".join(offenders)
+    )
 
 
 # Consistent candidate pipeline 

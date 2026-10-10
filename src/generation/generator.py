@@ -24,6 +24,44 @@ DEFAULT_MAX_CHARS = settings.generation_max_chars
 DEFAULT_TEMP      = settings.generation_temperature
 DEFAULT_TOP_K     = 10
 
+ABSTAIN_ANSWER   = "INSUFFICIENT_CONTEXT"
+
+# PARTIAL_TRUST presentation rule. Both values used to be inlined at four
+# sites; see apply_partial_trust_policy below.
+PARTIAL_TRUST_CHUNK_LIMIT = 3
+PARTIAL_TRUST_PREFIX = "[Low confidence — verify independently] "
+
+
+def apply_partial_trust_policy(
+    chunks: list,
+    answer: str,
+    retrieval_decision: Optional[str],
+) -> tuple[list, str]:
+    """Return (chunks, answer) after the PARTIAL_TRUST presentation rule.
+
+    §4 requires a low-confidence answer to be visibly qualified and grounded on
+    fewer chunks. This existed in four copies — agent.py truncated, agent.py
+    prefixed, api/main.py did both, generator.py truncated again — and the copies
+    had drifted:
+
+    - the API prefixed unconditionally, so a generator abstain inside the
+      PARTIAL_TRUST branch returned the literal string
+      "[Low confidence — verify independently] INSUFFICIENT_CONTEXT" as the
+      answer. check_retrieval_confidence() can still abstain after the confidence
+      engine said PARTIAL_TRUST, so that path was reachable.
+    - the Agent skipped the prefix when the answer was empty, so the two
+      adapters disagreed on the same condition.
+
+    An abstention is not a low-confidence answer. It must pass through untouched.
+    """
+    if retrieval_decision != "PARTIAL_TRUST":
+        return chunks, answer
+
+    limited = list(chunks[:PARTIAL_TRUST_CHUNK_LIMIT])
+    if not answer or answer == ABSTAIN_ANSWER:
+        return limited, answer
+    return limited, f"{PARTIAL_TRUST_PREFIX}{answer}"
+
 SYSTEM_PROMPT = (
     "You are a Technical Research Assistant. Answer the query using ONLY the provided CONTEXT.\n\n"
     "STRICT RULES:\n"
@@ -362,7 +400,7 @@ class GroqGenerator:
                 retrieval_decision=retrieval_decision,
             )
         if retrieval_decision == "PARTIAL_TRUST":
-            chunks = chunks[:3]
+            chunks = chunks[:PARTIAL_TRUST_CHUNK_LIMIT]
 
         top_k_scores = [_get_score(c) for c in chunks[:5]]
 
@@ -561,14 +599,6 @@ class GroqGenerator:
 def generate(query: str, chunks: list, **kwargs) -> RAGResponse:
     gen = GroqGenerator(model=kwargs.get("model_name", DEFAULT_MODEL))
     return gen.generate(query, chunks)
-
-
-def save_response(response: RAGResponse, output_path: str) -> None:
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    data = asdict(response)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    logger.info(f"[Saved] -> {output_path}")
 
 
 # Self-contained sanity-check tests

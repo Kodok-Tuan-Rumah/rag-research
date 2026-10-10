@@ -62,10 +62,6 @@ def is_retrieval_candidate(chunk: Any) -> bool:
     return not is_low_quality_chunk(chunk)
 
 
-def is_fragment_chunk(chunk: Any) -> bool:
-    return is_fragment_text(get_text(chunk))
-
-
 def is_reference_chunk(chunk: Any) -> bool:
     meta = get_metadata(chunk)
     text = get_text(chunk)
@@ -253,10 +249,6 @@ def filter_breakdown(chunks: List[Any], *, allow_references: bool = False) -> Di
     for c in chunks:
         counts[classify_chunk(c, allow_references=allow_references)] += 1
     return counts
-
-
-def passes_minimum_filter_text(text: str) -> bool:
-    return passes_minimum_filter({"text": text, "metadata": {}})
 
 
 def reference_policy_allows(section: str, allow_references: bool) -> bool:

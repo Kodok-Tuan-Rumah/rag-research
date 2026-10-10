@@ -194,5 +194,20 @@ def main(argv: Optional[List[str]] = None) -> Dict[str, Any]:
     return report
 
 
+def _exit_code(report: Dict[str, Any]) -> int:
+    """Non-zero when any row is an evaluation_data_error.
+
+    Without this the CLI always exited 0, so wiring it into CI produced a gate
+    that could not fail no matter what the data contained.
+    """
+    invalid = report["summary"].get("TOTAL_QA", 0) - report["summary"].get("VALID_QA", 0)
+    if invalid:
+        logger.error("%s of %s rows are invalid", invalid, report["summary"]["TOTAL_QA"])
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+
+    sys.exit(_exit_code(main()))

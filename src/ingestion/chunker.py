@@ -87,39 +87,6 @@ def detect_section(text: str, position: float = 1.0) -> str:
 # Hard-limit splitter (safety net for FIX 1)
 # ---------------------------------------------------------------------------
 
-def _hard_split(text: str, max_chars: int = SEMANTIC_MAX_CHARS) -> list[str]:
-    """
-    Force-split any string that still exceeds max_chars after the main loop.
-    Tries sentence boundary first; falls back to char split.
-    Never drops content.
-    """
-    if len(text) <= max_chars:
-        return [text]
-
-    parts = []
-    remaining = text
-
-    while len(remaining) > max_chars:
-        window = remaining[:max_chars]
-        # Find the last sentence boundary inside the window
-        last_boundary = None
-        for m in re.finditer(r'(?<=[.!?])\s+', window):
-            last_boundary = m
-        if last_boundary:
-            cut = last_boundary.start()
-            parts.append(remaining[:cut].strip())
-            remaining = remaining[cut:].strip()
-        else:
-            # No boundary found — hard char cut
-            parts.append(remaining[:max_chars].strip())
-            remaining = remaining[max_chars:].strip()
-
-    if remaining and len(remaining) >= 50:
-        parts.append(remaining.strip())
-
-    return [p for p in parts if p]
-
-
 # ---------------------------------------------------------------------------
 # Chunking strategies
 # ---------------------------------------------------------------------------
@@ -466,4 +433,22 @@ if __name__ == "__main__":
     chunks = chunk_documents(docs, strategy="semantic")
     print_stats(chunks)
     print_samples(chunks, n_body=3, n_ref=1)
-    save_chunks(chunks, "data/processed/chunks_semantic_v2.json")
+
+    # NOT data/processed/chunks_semantic_v2.json.
+    #
+    # That path is the live corpus. It is read by src/api/config.py
+    # (bm25_chunks_path), indexed by src/retrieval/qdrant_store.py, and its
+    # sha256 is recorded as corpus_chunks_sha256 in the v2 dataset envelope.
+    # This module's chunk_semantic emits a different corpus from the production
+    # path: 582 chunks with {doc_id}_s0000 ids, against 796 chunks with
+    # {doc_id}_rs_0000 ids, zero overlap, and it strips the references section
+    # that semantic_chunker.py keeps. Writing here replaced the whole index.
+    #
+    # The name carries the distinction because a log line does not: this block
+    # prints stats and samples for ~15 lines before the write, so any warning
+    # emitted here would scroll past the moment it mattered.
+    output = "data/processed/chunks_legacy_chunker.json"
+    if Path(output).exists():
+        print(f"[WARNING] Overwriting {output}. This is NOT the corpus the "
+              f"retriever and the dataset envelopes use.")
+    save_chunks(chunks, output)

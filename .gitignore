@@ -28,8 +28,12 @@ ENV/
 # Environment Variables
 # =============================================================================
 .env
-.env.local
+.env.*
+*.env
 *.secret
+# Credentials that are not .env-shaped
+credentials*.json
+*service*account*.json
 
 # =============================================================================
 # IDE / Editor
@@ -80,7 +84,16 @@ data/processed/index_minilm/
 data/processed/index_bm25/
 
 # Keep processed datasets (.json) under version control
+#
+# The negation is the point. `data/processed/*` on its own ignored exactly the
+# files the comment above promised to keep, and nothing under data/processed/
+# was tracked — including chunks_semantic_v2.json, the live corpus that
+# src/api/config.py reads, that BM25 indexes, and whose sha256 is recorded as
+# corpus_chunks_sha256 in the v2 dataset envelope. A fresh clone had no corpus:
+# BM25 silently degraded to an empty index (`self._bm25` stays None, so
+# `bm25_search` returns []) and every recorded baseline became unreproducible.
 data/processed/*
+!data/processed/*.json
 
 # =============================================================================
 # Generated Results
@@ -106,8 +119,10 @@ results/metrics/eval_phase2_*.json
 # =============================================================================
 # Raw Data & Binaries (Tambahan Penting)
 # =============================================================================
+# data/raw/ holds the source papers. Ignored on purpose: ~7 PDFs, tens of MB.
+# Consequence: chunks_semantic*.json cannot be regenerated from a fresh clone,
+# which is why the processed JSON above IS committed. See the note there.
 data/raw/
-*.pdf
 *.zip
 
 # =============================================================================

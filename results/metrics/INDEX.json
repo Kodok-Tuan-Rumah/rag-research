@@ -1,0 +1,858 @@
+{
+  "total_files": 126,
+  "by_group": {
+    "Ablations": [
+      {
+        "name": "ablation_final.json",
+        "bytes": 1534,
+        "ext": "json",
+        "sha256_12": "f5e6fed434a8"
+      },
+      {
+        "name": "ablation_per_category.json",
+        "bytes": 9639,
+        "ext": "json",
+        "sha256_12": "d9860ffba10e"
+      },
+      {
+        "name": "ablation_sprint2.json",
+        "bytes": 83235,
+        "ext": "json",
+        "sha256_12": "a69a6237a445"
+      }
+    ],
+    "Canonical baseline snapshots": [
+      {
+        "name": "canonical_retrieval_baseline_20261005T121033Z.json",
+        "bytes": 286444,
+        "ext": "json",
+        "sha256_12": "1f07e56416fb"
+      },
+      {
+        "name": "canonical_retrieval_post_truncation_fix_20261005T130430Z.json",
+        "bytes": 81804,
+        "ext": "json",
+        "sha256_12": "dbbd02ecf587"
+      }
+    ],
+    "D3 consistency audit": [
+      {
+        "name": "d3_consistency_audit.md",
+        "bytes": 9747,
+        "ext": "md",
+        "sha256_12": "a253e0d82a4a"
+      }
+    ],
+    "D7 candidate selection": [
+      {
+        "name": "d7_baseline_freeze.json",
+        "bytes": 552,
+        "ext": "json",
+        "sha256_12": "d9113b127579"
+      },
+      {
+        "name": "d7_candidate_selection_audit.md",
+        "bytes": 11028,
+        "ext": "md",
+        "sha256_12": "2ff38ed4687d"
+      },
+      {
+        "name": "d7_candidate_selection_fix_report.md",
+        "bytes": 5270,
+        "ext": "md",
+        "sha256_12": "4edeeac83a6d"
+      }
+    ],
+    "Eval set label audit": [
+      {
+        "name": "eval_set_label_audit.json",
+        "bytes": 90,
+        "ext": "json",
+        "sha256_12": "56783e7c63d5"
+      }
+    ],
+    "Evidence inventory": [
+      {
+        "name": "evidence_inventory.json",
+        "bytes": 7787,
+        "ext": "json",
+        "sha256_12": "c690fdf52478"
+      },
+      {
+        "name": "evidence_inventory.md",
+        "bytes": 2175,
+        "ext": "md",
+        "sha256_12": "6880bbd73140"
+      }
+    ],
+    "Filter precision": [
+      {
+        "name": "filter_precision_audit.json",
+        "bytes": 13143,
+        "ext": "json",
+        "sha256_12": "570f9979346f"
+      },
+      {
+        "name": "filter_precision_audit.md",
+        "bytes": 163,
+        "ext": "md",
+        "sha256_12": "db886fe344be"
+      }
+    ],
+    "Gold label audits": [
+      {
+        "name": "gold_data_audit.json",
+        "bytes": 3873,
+        "ext": "json",
+        "sha256_12": "94d87693c238"
+      },
+      {
+        "name": "gold_data_audit_v3.json",
+        "bytes": 2804,
+        "ext": "json",
+        "sha256_12": "c0fdaa9afa5e"
+      },
+      {
+        "name": "gold_loss_by_stage.json",
+        "bytes": 4489,
+        "ext": "json",
+        "sha256_12": "6010ec091e9f"
+      },
+      {
+        "name": "gold_loss_by_stage.md",
+        "bytes": 1295,
+        "ext": "md",
+        "sha256_12": "24a463e98867"
+      },
+      {
+        "name": "gold_rank_movement.json",
+        "bytes": 8648,
+        "ext": "json",
+        "sha256_12": "da7d68bd7c47"
+      },
+      {
+        "name": "gold_rank_movement.md",
+        "bytes": 1345,
+        "ext": "md",
+        "sha256_12": "6455f993001e"
+      }
+    ],
+    "K1 — baseline freeze, generation stability, coverage audits": [
+      {
+        "name": "k1_baseline_freeze.json",
+        "bytes": 180404,
+        "ext": "json",
+        "sha256_12": "455227e8616b"
+      },
+      {
+        "name": "k1_baseline_freeze.md",
+        "bytes": 5555,
+        "ext": "md",
+        "sha256_12": "098fec392283"
+      },
+      {
+        "name": "k1_baseline_freeze_v1_14q.json",
+        "bytes": 195219,
+        "ext": "json",
+        "sha256_12": "a73c949c0adf"
+      },
+      {
+        "name": "k1_baseline_freeze_v2_verify.json",
+        "bytes": 180402,
+        "ext": "json",
+        "sha256_12": "623d01b0a1f6"
+      },
+      {
+        "name": "k1_confounder_topk8.json",
+        "bytes": 2516,
+        "ext": "json",
+        "sha256_12": "d8dafee51de8"
+      },
+      {
+        "name": "k1_confounder_topk8.md",
+        "bytes": 1192,
+        "ext": "md",
+        "sha256_12": "595b403d34c1"
+      },
+      {
+        "name": "k1_generation_flakiness.json",
+        "bytes": 7277,
+        "ext": "json",
+        "sha256_12": "993c7deb2fbf"
+      },
+      {
+        "name": "k1_generation_flakiness.md",
+        "bytes": 2154,
+        "ext": "md",
+        "sha256_12": "998568e68fd1"
+      },
+      {
+        "name": "k1_generation_flakiness_rerank.json",
+        "bytes": 3838,
+        "ext": "json",
+        "sha256_12": "9f2bb2723fe3"
+      },
+      {
+        "name": "k1_generation_flakiness_rerank.md",
+        "bytes": 1455,
+        "ext": "md",
+        "sha256_12": "2bec76be44e8"
+      },
+      {
+        "name": "k1_generation_stability_ab.md",
+        "bytes": 6619,
+        "ext": "md",
+        "sha256_12": "78f5b3be2c7e"
+      },
+      {
+        "name": "k1_generation_triage.json",
+        "bytes": 6059,
+        "ext": "json",
+        "sha256_12": "9ba06b365dad"
+      },
+      {
+        "name": "k1_generation_triage.md",
+        "bytes": 6027,
+        "ext": "md",
+        "sha256_12": "3d84927d98a4"
+      },
+      {
+        "name": "k1_overengineering_audit.md",
+        "bytes": 8886,
+        "ext": "md",
+        "sha256_12": "d8de37dc2d57"
+      },
+      {
+        "name": "k1_q15_reconciliation.md",
+        "bytes": 5169,
+        "ext": "md",
+        "sha256_12": "193b98cdcaac"
+      }
+    ],
+    "K2 — RAGAS lineage and evidence integrity": [
+      {
+        "name": "k2_ragas_legacy_lineage.md",
+        "bytes": 5476,
+        "ext": "md",
+        "sha256_12": "a31515fd151b"
+      }
+    ],
+    "K3 — REFERENCES chunk impact": [
+      {
+        "name": "k3_reference_impact.json",
+        "bytes": 10523,
+        "ext": "json",
+        "sha256_12": "a6eae56a17ec"
+      },
+      {
+        "name": "k3_reference_impact.md",
+        "bytes": 5615,
+        "ext": "md",
+        "sha256_12": "da997e164661"
+      }
+    ],
+    "K4 — over-engineering causes": [
+      {
+        "name": "k4_overengineering_causes.md",
+        "bytes": 4961,
+        "ext": "md",
+        "sha256_12": "3284c218581e"
+      }
+    ],
+    "K5 — proposals needing approval": [
+      {
+        "name": "k5_behaviour_changes.md",
+        "bytes": 4888,
+        "ext": "md",
+        "sha256_12": "8c70f00c6993"
+      }
+    ],
+    "K7 — coverage, latency, forensics, reranker decision": [
+      {
+        "name": "k710_coverage_audit_20261008T063515Z.json",
+        "bytes": 21860,
+        "ext": "json",
+        "sha256_12": "84e6e071eb06"
+      },
+      {
+        "name": "k710_coverage_audit_20261008T063515Z.md",
+        "bytes": 2734,
+        "ext": "md",
+        "sha256_12": "878ac96469eb"
+      },
+      {
+        "name": "k711_latency_replication_20261008T064223Z.json",
+        "bytes": 326446,
+        "ext": "json",
+        "sha256_12": "8ebc6d9d24e2"
+      },
+      {
+        "name": "k711_latency_replication_20261008T064223Z.md",
+        "bytes": 10096,
+        "ext": "md",
+        "sha256_12": "25337541fb71"
+      },
+      {
+        "name": "k712_q11_q20_forensics_20261008T065401Z.json",
+        "bytes": 9696,
+        "ext": "json",
+        "sha256_12": "1b40fcd0ba4f"
+      },
+      {
+        "name": "k712_q11_q20_forensics_20261008T065401Z.md",
+        "bytes": 4812,
+        "ext": "md",
+        "sha256_12": "d710a792c558"
+      },
+      {
+        "name": "k713_retrieval_decision_20261008.md",
+        "bytes": 7384,
+        "ext": "md",
+        "sha256_12": "7384cc95f8dc"
+      }
+    ],
+    "Latency budget": [
+      {
+        "name": "latency_budget_analysis.md",
+        "bytes": 1479,
+        "ext": "md",
+        "sha256_12": "9405e1eb1884"
+      }
+    ],
+    "Per-query regression": [
+      {
+        "name": "per_query_regression_recovery.json",
+        "bytes": 9537,
+        "ext": "json",
+        "sha256_12": "3174de1b5a26"
+      },
+      {
+        "name": "per_query_regression_recovery.md",
+        "bytes": 1516,
+        "ext": "md",
+        "sha256_12": "229fb1018576"
+      }
+    ],
+    "Phase F — reranker ablation": [
+      {
+        "name": "fase_e_reranker_analysis.md",
+        "bytes": 7018,
+        "ext": "md",
+        "sha256_12": "fe98f93eb951"
+      },
+      {
+        "name": "fase_f_reranker_ablation.json",
+        "bytes": 3298,
+        "ext": "json",
+        "sha256_12": "914910630c34"
+      },
+      {
+        "name": "fase_f_reranker_ablation.md",
+        "bytes": 7107,
+        "ext": "md",
+        "sha256_12": "e04ab215b14e"
+      },
+      {
+        "name": "fase_f_reranker_ablation_replica_20261010.json",
+        "bytes": 3311,
+        "ext": "json",
+        "sha256_12": "bcada8a021b0"
+      },
+      {
+        "name": "fase_h_rrf_bm25_analysis.md",
+        "bytes": 7645,
+        "ext": "md",
+        "sha256_12": "f868ab5d391a"
+      },
+      {
+        "name": "fase_i1_dense_failure_analysis.json",
+        "bytes": 3432,
+        "ext": "json",
+        "sha256_12": "36584c93ea67"
+      },
+      {
+        "name": "fase_i2_dataset_sufficiency.md",
+        "bytes": 3191,
+        "ext": "md",
+        "sha256_12": "78b5a0f3c5ed"
+      },
+      {
+        "name": "fase_i3_reranker_necessity.md",
+        "bytes": 1568,
+        "ext": "md",
+        "sha256_12": "5df08514e98d"
+      },
+      {
+        "name": "fase_i4_decision_support.md",
+        "bytes": 2470,
+        "ext": "md",
+        "sha256_12": "4a2766a02dfa"
+      },
+      {
+        "name": "fase_i5_dataset_extension_feasibility.md",
+        "bytes": 1676,
+        "ext": "md",
+        "sha256_12": "86bb4e01dd08"
+      },
+      {
+        "name": "fase_i_dense_analysis.md",
+        "bytes": 7079,
+        "ext": "md",
+        "sha256_12": "601961f2758e"
+      },
+      {
+        "name": "fase_j_confidence_dataset_architecture.md",
+        "bytes": 4847,
+        "ext": "md",
+        "sha256_12": "6c76094c5b27"
+      }
+    ],
+    "Phase H": [
+      {
+        "name": "phase_h_failure_taxonomy.md",
+        "bytes": 1650,
+        "ext": "md",
+        "sha256_12": "c3e4568e755c"
+      }
+    ],
+    "Phase H — failure taxonomy and per-query forensics": [
+      {
+        "name": "h0_metric_reconciliation.md",
+        "bytes": 1954,
+        "ext": "md",
+        "sha256_12": "d90d0d9598ba"
+      },
+      {
+        "name": "h10_controlled_interpretation.md",
+        "bytes": 1418,
+        "ext": "md",
+        "sha256_12": "9860a458ec97"
+      },
+      {
+        "name": "h11_rrf_value_assessment.md",
+        "bytes": 974,
+        "ext": "md",
+        "sha256_12": "0e2a7916f552"
+      },
+      {
+        "name": "h2_rrf_regressions.md",
+        "bytes": 541,
+        "ext": "md",
+        "sha256_12": "30f8c0f9288e"
+      },
+      {
+        "name": "h3_rrf_contribution_forensics.md",
+        "bytes": 1146,
+        "ext": "md",
+        "sha256_12": "d93a01aef114"
+      },
+      {
+        "name": "h4_source_overlap.md",
+        "bytes": 1634,
+        "ext": "md",
+        "sha256_12": "9320b0f01e6c"
+      },
+      {
+        "name": "h5_section_boost.md",
+        "bytes": 1059,
+        "ext": "md",
+        "sha256_12": "e2e330ccc566"
+      },
+      {
+        "name": "h6_q06_forensic.md",
+        "bytes": 932,
+        "ext": "md",
+        "sha256_12": "46ef848c0fab"
+      },
+      {
+        "name": "h7_q15_forensic.md",
+        "bytes": 819,
+        "ext": "md",
+        "sha256_12": "ba7f3a55ee2f"
+      },
+      {
+        "name": "h8_rrf_value_assessment.md",
+        "bytes": 1472,
+        "ext": "md",
+        "sha256_12": "9fc7d699bfa4"
+      }
+    ],
+    "Phase J — evaluation gate and statistical sufficiency": [
+      {
+        "name": "j0_evaluation_gate.md",
+        "bytes": 857,
+        "ext": "md",
+        "sha256_12": "5c0da8dd88b6"
+      },
+      {
+        "name": "j1_dataset_expansion_feasibility.md",
+        "bytes": 1937,
+        "ext": "md",
+        "sha256_12": "3793d33479da"
+      },
+      {
+        "name": "j2_confidence_readiness.md",
+        "bytes": 1354,
+        "ext": "md",
+        "sha256_12": "7f3ca051029e"
+      },
+      {
+        "name": "j3_statistical_sufficiency.md",
+        "bytes": 1648,
+        "ext": "md",
+        "sha256_12": "efee7f650746"
+      },
+      {
+        "name": "j4_reranker_decision.md",
+        "bytes": 1846,
+        "ext": "md",
+        "sha256_12": "7db3aa6b104a"
+      },
+      {
+        "name": "j5_latency_decision.md",
+        "bytes": 859,
+        "ext": "md",
+        "sha256_12": "271d9bf2605e"
+      },
+      {
+        "name": "j6_documentation_drift.md",
+        "bytes": 1448,
+        "ext": "md",
+        "sha256_12": "fff45686ae10"
+      },
+      {
+        "name": "j7_architecture_readiness_gate.md",
+        "bytes": 1287,
+        "ext": "md",
+        "sha256_12": "5fad2b508124"
+      }
+    ],
+    "Post-fix verification": [
+      {
+        "name": "postfix_behavioral_audit.md",
+        "bytes": 8448,
+        "ext": "md",
+        "sha256_12": "05203af066d3"
+      },
+      {
+        "name": "postfix_failure_taxonomy.json",
+        "bytes": 2658,
+        "ext": "json",
+        "sha256_12": "3de6c32db5cb"
+      },
+      {
+        "name": "postfix_failure_taxonomy.md",
+        "bytes": 1745,
+        "ext": "md",
+        "sha256_12": "e6c7b5689153"
+      },
+      {
+        "name": "postfix_rank_movement.json",
+        "bytes": 8648,
+        "ext": "json",
+        "sha256_12": "da7d68bd7c47"
+      },
+      {
+        "name": "postfix_rank_movement.md",
+        "bytes": 1345,
+        "ext": "md",
+        "sha256_12": "6455f993001e"
+      }
+    ],
+    "Q15/Q20 forensics": [
+      {
+        "name": "q15_manual_judgment.md",
+        "bytes": 4906,
+        "ext": "md",
+        "sha256_12": "baf041539afe"
+      },
+      {
+        "name": "q15_rank_forensic.json",
+        "bytes": 576,
+        "ext": "json",
+        "sha256_12": "01be4d9d4046"
+      },
+      {
+        "name": "q15_rank_forensic.md",
+        "bytes": 610,
+        "ext": "md",
+        "sha256_12": "803945e96102"
+      },
+      {
+        "name": "q20_reranker_deep_dive.md",
+        "bytes": 2932,
+        "ext": "md",
+        "sha256_12": "198614af9ca1"
+      }
+    ],
+    "RRF mechanism and regression investigations": [
+      {
+        "name": "rrf_contribution_ledger.json",
+        "bytes": 13200,
+        "ext": "json",
+        "sha256_12": "e6df27b26630"
+      },
+      {
+        "name": "rrf_mechanism_audit.json",
+        "bytes": 963,
+        "ext": "json",
+        "sha256_12": "aee4fdc6c04f"
+      },
+      {
+        "name": "rrf_mechanism_audit.md",
+        "bytes": 687,
+        "ext": "md",
+        "sha256_12": "425534fc62c4"
+      },
+      {
+        "name": "rrf_regression_table.json",
+        "bytes": 3107,
+        "ext": "json",
+        "sha256_12": "2c262dd38996"
+      },
+      {
+        "name": "rrf_regression_table.md",
+        "bytes": 1152,
+        "ext": "md",
+        "sha256_12": "8ae1402b63dd"
+      },
+      {
+        "name": "rrf_to_candidate_slot_drift.json",
+        "bytes": 7691,
+        "ext": "json",
+        "sha256_12": "5796cb46c5d1"
+      },
+      {
+        "name": "rrf_to_candidate_slot_drift.md",
+        "bytes": 874,
+        "ext": "md",
+        "sha256_12": "0c9cf493e555"
+      },
+      {
+        "name": "rrf_vs_bm25_rank_forensics.md",
+        "bytes": 1675,
+        "ext": "md",
+        "sha256_12": "ec2587a81653"
+      },
+      {
+        "name": "rrf_vs_reranker5_decision_20261005T141527Z.json",
+        "bytes": 90718,
+        "ext": "json",
+        "sha256_12": "b39688706fb8"
+      }
+    ],
+    "Reranker value, latency and depth": [
+      {
+        "name": "reranker_candidate_count_ablation_20261005T140325Z.json",
+        "bytes": 106083,
+        "ext": "json",
+        "sha256_12": "bcedf4789b4e"
+      },
+      {
+        "name": "reranker_latency_profile.json",
+        "bytes": 6165,
+        "ext": "json",
+        "sha256_12": "9e8693086922"
+      },
+      {
+        "name": "reranker_max_length_ablation_20261005T202428Z.json",
+        "bytes": 187841,
+        "ext": "json",
+        "sha256_12": "76f93191af70"
+      },
+      {
+        "name": "reranker_score_distribution.json",
+        "bytes": 14070,
+        "ext": "json",
+        "sha256_12": "0290eb1c2074"
+      },
+      {
+        "name": "reranker_score_distribution.md",
+        "bytes": 2497,
+        "ext": "md",
+        "sha256_12": "cbcd8972d10b"
+      },
+      {
+        "name": "reranker_value_assessment.json",
+        "bytes": 2727,
+        "ext": "json",
+        "sha256_12": "f46fda2f99e0"
+      },
+      {
+        "name": "reranker_value_assessment.md",
+        "bytes": 1631,
+        "ext": "md",
+        "sha256_12": "6a4c9ca44387"
+      }
+    ],
+    "Retrieval stage benchmarks": [
+      {
+        "name": "retrieval_recall_k_diag.json",
+        "bytes": 831,
+        "ext": "json",
+        "sha256_12": "cc0409b02dc3"
+      },
+      {
+        "name": "retrieval_recall_k_diag.md",
+        "bytes": 877,
+        "ext": "md",
+        "sha256_12": "e67a4586e945"
+      },
+      {
+        "name": "retrieval_stage_eval.json",
+        "bytes": 7931,
+        "ext": "json",
+        "sha256_12": "14cbf887c788"
+      },
+      {
+        "name": "retrieval_stage_eval_adversarial.json",
+        "bytes": 9969,
+        "ext": "json",
+        "sha256_12": "7b321a0cbd19"
+      },
+      {
+        "name": "retrieval_stage_eval_after.json",
+        "bytes": 7997,
+        "ext": "json",
+        "sha256_12": "1a21fb66c512"
+      },
+      {
+        "name": "retrieval_stage_eval_before.json",
+        "bytes": 7931,
+        "ext": "json",
+        "sha256_12": "14cbf887c788"
+      },
+      {
+        "name": "retrieval_stage_eval_filtered_final.json",
+        "bytes": 8006,
+        "ext": "json",
+        "sha256_12": "f0645d9cd251"
+      },
+      {
+        "name": "retrieval_stage_eval_filterfix.json",
+        "bytes": 8006,
+        "ext": "json",
+        "sha256_12": "126d7b8f6c68"
+      },
+      {
+        "name": "retrieval_stage_eval_postfix.json",
+        "bytes": 8029,
+        "ext": "json",
+        "sha256_12": "3428bdc33f7f"
+      },
+      {
+        "name": "retrieval_stage_eval_stability_run1.json",
+        "bytes": 8006,
+        "ext": "json",
+        "sha256_12": "d3d03c291565"
+      },
+      {
+        "name": "retrieval_stage_eval_stability_run2.json",
+        "bytes": 8006,
+        "ext": "json",
+        "sha256_12": "1405e8edc05b"
+      },
+      {
+        "name": "retrieval_stage_eval_stability_run3.json",
+        "bytes": 8006,
+        "ext": "json",
+        "sha256_12": "640911199f00"
+      }
+    ],
+    "Stage latency": [
+      {
+        "name": "stage_latency_diag.json",
+        "bytes": 783,
+        "ext": "json",
+        "sha256_12": "fd123478f98c"
+      },
+      {
+        "name": "stage_latency_diag.md",
+        "bytes": 824,
+        "ext": "md",
+        "sha256_12": "d571b8dc4e1a"
+      }
+    ],
+    "other — not classified": [
+      {
+        "name": "candidate_depth_sensitivity.json",
+        "bytes": 295,
+        "ext": "json",
+        "sha256_12": "f9b2c939ef98"
+      },
+      {
+        "name": "candidate_depth_sensitivity.md",
+        "bytes": 707,
+        "ext": "md",
+        "sha256_12": "5c8ad41d7a88"
+      },
+      {
+        "name": "radar_chart.png",
+        "bytes": 110077,
+        "ext": "png",
+        "sha256_12": "ca59363725ff"
+      },
+      {
+        "name": "ragas_phase2_postfix.json",
+        "bytes": 6868,
+        "ext": "json",
+        "sha256_12": "f4b0c2600ebb"
+      },
+      {
+        "name": "ragas_phase2_postfix_8b.json",
+        "bytes": 19457,
+        "ext": "json",
+        "sha256_12": "079325f44f54"
+      },
+      {
+        "name": "ragas_results.json",
+        "bytes": 127583,
+        "ext": "json",
+        "sha256_12": "f919a4e86827"
+      }
+    ]
+  },
+  "json_without_companion_md": [
+    "ablation_final.json",
+    "ablation_per_category.json",
+    "ablation_sprint2.json",
+    "canonical_retrieval_baseline_20261005T121033Z.json",
+    "canonical_retrieval_post_truncation_fix_20261005T130430Z.json",
+    "d7_baseline_freeze.json",
+    "eval_set_label_audit.json",
+    "fase_f_reranker_ablation_replica_20261010.json",
+    "fase_i1_dense_failure_analysis.json",
+    "gold_data_audit.json",
+    "gold_data_audit_v3.json",
+    "k1_baseline_freeze_v1_14q.json",
+    "k1_baseline_freeze_v2_verify.json",
+    "ragas_phase2_postfix.json",
+    "ragas_phase2_postfix_8b.json",
+    "ragas_results.json",
+    "reranker_candidate_count_ablation_20261005T140325Z.json",
+    "reranker_latency_profile.json",
+    "reranker_max_length_ablation_20261005T202428Z.json",
+    "retrieval_stage_eval.json",
+    "retrieval_stage_eval_adversarial.json",
+    "retrieval_stage_eval_after.json",
+    "retrieval_stage_eval_before.json",
+    "retrieval_stage_eval_filtered_final.json",
+    "retrieval_stage_eval_filterfix.json",
+    "retrieval_stage_eval_postfix.json",
+    "retrieval_stage_eval_stability_run1.json",
+    "retrieval_stage_eval_stability_run2.json",
+    "retrieval_stage_eval_stability_run3.json",
+    "rrf_contribution_ledger.json",
+    "rrf_vs_reranker5_decision_20261005T141527Z.json"
+  ],
+  "replica_pairs": {
+    "fase_f_reranker_ablation.json": [
+      "fase_f_reranker_ablation_replica_20261010.json"
+    ]
+  },
+  "known_stale": {
+    "fase_f_reranker_ablation.json": "mtime 2026-10-05 predates commit 50796bf (2026-10-07); its 0.8571 is stale. Replicated at fase_f_reranker_ablation_replica_20261010.json."
+  },
+  "baseline_reference": "results/metrics/k1_baseline_freeze.json",
+  "baseline_stage_count": 5
+}

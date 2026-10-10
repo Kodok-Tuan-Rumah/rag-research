@@ -52,11 +52,34 @@ This is not a chatbot. This is an **engineering-grade QA system** where answer r
 
 | Metric | Target | Measurement Protocol | Status |
 |---|---|---|---|
-| Exact Match (EM) | ≥ 70% | Token-level F1 after normalization (lowercase, strip punct, remove articles). NOT raw string match. | `TODO` |
-| Semantic F1 | ≥ 0.75 | BERTScore F1 against ground truth, averaged over eval set | `TODO` |
-| Faithfulness | ≥ 0.88 | RAGAS faithfulness — NLI entailment between answer and retrieved chunks | `DONE` |
-| Hallucination Rate | 0% | Definition: answer contains claim not entailed by any retrieved chunk. Measured via NLI (≥0.5 entailment threshold). Evaluated on full eval set per release. | `WIP` |
-| Answer Relevancy | ≥ 0.88 | RAGAS answer relevancy metric | `DONE` |
+| Exact Match (EM) | ≥ 70% | Token-level F1 after normalization (lowercase, strip punct, remove articles). NOT raw string match. | `IMPLEMENTED` — see below |
+| Semantic F1 | ≥ 0.75 | BERTScore F1 against ground truth, averaged over eval set | `TODO` — needs `bert-score` |
+| Faithfulness | ≥ 0.88 | RAGAS faithfulness — NLI entailment between answer and retrieved chunks | `RUNNABLE` — never run on the canonical set |
+| Hallucination Rate | 0% | Definition: answer contains claim not entailed by any retrieved chunk. Measured via NLI (≥0.5 entailment threshold). Evaluated on full eval set per release. | `RUNNABLE` — never run on the canonical set |
+| Answer Relevancy | ≥ 0.88 | RAGAS answer relevancy metric | `RUNNABLE` — never run on the canonical set |
+
+**Status vocabulary change (2026-10-11).** `DONE` previously meant "implemented",
+but these metrics were labelled `DONE` while RAGAS could not be imported at all
+— `langchain-community` 0.4.2 had removed the module ragas needs, and nothing
+in the suite imported it. `IMPLEMENTED` means the code exists and is tested.
+`RUNNABLE` additionally means the code can execute today; it does **not** mean
+a number has been produced. No row here has a current measurement.
+
+**Exact Match (EM).** Implemented in `scripts/run_eval_phase2.py` as
+`normalize()`, `exact_match()` and `token_f1()`, with all 20 normalization cases
+covered by `tests/test_em_normalization.py`. It was blocked from running only by
+a dataset path pointing at `data/processed/holdout_eval_v2.json`, which the
+migration to `data/evaluation/` removed; that path now resolves to the canonical
+v2 file. EM has never been measured.
+
+A second, non-compliant implementation existed in
+`scripts/run_single_query.py`: `answer.strip().lower() == ground_truth.strip().lower()`,
+which violates the mandatory normalization rules below and scores 0 for answers
+that are in fact exact. It now calls `run_eval_phase2.exact_match`.
+
+**`token_f1` is not Semantic F1.** It is bag-of-token overlap and is the
+measurement protocol for EM above. It cannot stand in for BERTScore: it scores 0
+for any paraphrase, which is the case Semantic F1 exists to catch.
 
 **EM Normalization Rules (mandatory):**
 ```
@@ -756,7 +779,7 @@ System does NOT:
 
 
 
-## Appendix A — Current Runtime Snapshot (Source-Verified 2026-10-08)
+## Appendix A — Current Runtime Snapshot (Source-Verified 2026-10-11)
 
 ```json
 {
@@ -784,10 +807,8 @@ This snapshot describes defaults and code behavior, not a calibrated quality bas
 
 ### Where each value lives
 
-Every value above was re-verified against source on 2026-10-10. All are correct.
-However, they are **not** all in `src/api/config.py`, and the ones marked below
-are not overridable through environment or `.env`. A value listed here is not
-necessarily configurable.
+Re-verified against source on 2026-10-11. A value listed here is not
+necessarily configurable, and two of them changed on that date.
 
 | Key | Source | Env-overridable |
 |---|---|---|
@@ -804,14 +825,76 @@ necessarily configurable.
 | `hyde_enabled` | `settings.use_hyde` | yes |
 | `multi_query_enabled` | `settings.use_multi_query` | yes |
 | `llm_model` | `settings.groq_model` | yes |
-| `confidence_reject_threshold` | `ConfidenceEngine.__init__` | **no** |
-| `confidence_partial_threshold` | `ConfidenceEngine.__init__` | **no** |
+| `confidence_reject_threshold` | `settings.confidence_reject_threshold` | **yes** (was `no` until 2026-10-11) |
+| `confidence_partial_threshold` | `settings.confidence_partial_threshold` | **yes** (was `no` until 2026-10-11) |
 | `api_retrieval_attempts` | `for attempt in range(2)` in `api/main.py` | no |
 | `context_max_chars` | `settings.generation_max_chars` | yes |
 
-> The two confidence thresholds are hardcoded in `src/controller/confidence_engine.py`
-> and cannot be changed without editing source. Phase 3 calibration will need
-> them configurable, or it will rewrite the constructor.
+### Changed 2026-10-11 — confidence thresholds are now configurable
+
+Both cuts were literals in `ConfidenceEngine.__init__`. Phase 3 calibration
+required editing source, which is why this table previously marked them **no**.
+They now come from `Settings` with the same values, so the numbers above are
+unchanged and only the configurability changed.
+
+`tests/test_confidence_thresholds.py` re-implements the original inline branch
+verbatim and compares it against the refactored version across six threshold
+pairs and six query types: **zero behavioural difference**. The constructor
+still accepts explicit arguments, which take precedence.
+
+Two properties are preserved deliberately rather than fixed, because changing
+them would alter behaviour:
+
+- `reject` is floored at `0.0` for `reasoning` queries. If `confidence_reject_threshold`
+  is set below `0.05`, reasoning queries cannot be rejected at all.
+- `partial` is floored at `reject`.
+
+### Changed 2026-10-11 — the retriever holds no per-request state
+
+`_run_search` used to assign `self.use_multi_query` and `self.use_hyde` before
+calling `_expand_and_hyde_parallel`, which read them back. `api/main.py` builds
+one retriever at startup and serves every request through it with
+`run_in_threadpool`, so concurrent requests could overwrite each other's
+flags.
+
+The flags are now local variables passed as arguments, and the constructor
+parameters that were always overridden have been removed. `search()` still
+accepts them. Impact was nil while both flags are False, which §9 requires;
+§13.3 graceful degradation could not have been implemented with the old shape.
+
+Also consolidated on 2026-10-11: the PARTIAL_TRUST presentation rule had four
+implementations that had drifted, and `top_k` had three schemes plus two tests
+that asserted against their own local copy of a retired heuristic. Both now
+have a single source — `apply_partial_trust_policy` and `PolicyEngine`.
+
+### Correction — `min_score_threshold` filters nothing
+
+§3.4 names three retry actions, the third being "filtering relaxed
+(`min_score`: `0.0` → `-0.1`)". **Measured, that action does nothing.**
+
+`hybrid_retriever.py` applies `min_score_threshold` as a floor on
+`retrieval_score`, which is the RRF score: `w * boost / (k + rank + 1)` with
+`k = rrf_k = 60` and `w = 0.5 / 0.5`. That bounds it from above at
+
+```
+max = 0.5 * 1.4 / 61 + 0.5 * 1.4 / 61 = 0.02295   (best-case section boost)
+```
+
+Measured over 120 RRF scores from 3 canonical queries: min `0.005051`,
+max `0.021054`. A floor of `0.0` removes **0** chunks. A floor of `-0.1`
+removes **0** chunks.
+
+The two scales are conflated in `generator.filter_chunks_by_score`, which
+switches on `has_rerank`: with the cross-encoder it reads `rerank_score`
+(roughly -11..+11) and uses `-3.0`, which does work. Without it, `_get_score`
+falls through to `retrieval_score` and uses `settings.min_score_threshold`,
+which is 0.0 on the RRF scale. One threshold variable compared against two
+incompatible distributions.
+
+Consequence for §3.4: of the three retry actions, two are effective (widening
+`k`, shifting BM25 weight) and one is inert **in both the Agent and the API**.
+§3.4 should be corrected before the adapters are aligned to it; see
+`results/metrics/k5_behaviour_changes.md`.
 
 ### Correction — §3.5 context control
 
@@ -836,13 +919,37 @@ linearly with `max_steps` when stagnation detection could not fire. Corrected in
 
 ## Appendix B — Known Issues (Active Blockers)
 
+Updated 2026-10-11. The previous version listed only open-ended quality gaps
+and no mechanical blockers, which is why a RAGAS dependency break and a CI job
+that could never pass both went unrecorded here for as long as they lasted.
+
+### Resolved — closed 2026-10-10/11
+
+| Issue | Was | Resolution |
+|---|---|---|
+| RAGAS unimportable | `ragas/llms/base.py` imports `langchain_community.chat_models.vertexai`, removed in langchain-community 0.4.2 | Pinned `langchain-community==0.4.1`. An earlier revision listed the package as "unused" on a 0-import scan; that reasoning does not hold for a transitive dependency. Guard: `tests/test_ragas_importable.py` |
+| `datasets.Dataset` unusable on 3.14 | datasets 3.6.0 pins `dill<0.3.9`; dill 0.3.8 breaks `Pickler._batch_setitems` | `ragas_evaluator` builds an `EvaluationDataset`, the native v2 type. ragas only runs `convert_v1_to_v2_dataset` on an HF Dataset, so this is also the forward path |
+| Every RAGAS metric returned NaN | `ragas/executor.py:15` calls `nest_asyncio.apply()` at module level; on 3.14 `asyncio.wait_for` then raises "Timeout should be used inside a task". nest_asyncio 1.6.0 is the last release and has no `unpatch()` | Neutralized in `src/_compat.py`. Reproduced without an API call |
+| RAGAS reported 0.0000 on total failure | NaN filtered to 0.0; a run with 55/55 NaN was stored as `0.0` with `hallucination_rate 0.0%` | `nan_counts` per metric plus `RuntimeError` when a metric is entirely NaN. Historical artifact kept and explained in `results/metrics/k2_ragas_legacy_lineage.md` |
+| CI `rag-eval` could never pass | pointed `eval_ci.py` at `data/adversarial/adversarial_queries.json`, which has no `answer`, `contexts` or `ground_truth` | Replaced by `ci.yml` (tests + contracts) and `quality-gate.yml` (manual) |
+| Corpus could be overwritten silently | `chunker.py:469` wrote 582 legacy-format chunks over the 796-chunk live corpus at the same path | Redirected to `chunks_legacy_chunker.json`; `check_ci_contracts.py` verifies the corpus sha256 recorded in the dataset envelope (§15) |
+| Label errors scored as retrieval failures | `FAILURE_EVAL_DATA` defined and never assigned; a gold id absent from the corpus counted as `retrieval_miss` and stayed in the denominator | `evaluate_query` takes `corpus_chunk_ids`; those rows are excluded and reported. One bad label could manufacture 33 recall points on a 3-query set |
+
+### Open
+
 | Issue | Severity | Blocks | Owner |
 |---|---|---|---|
-| Confidence engine not calibrated | **CRITICAL** | Phase 3, Abstain reliability | Phase 2 eval |
+| `reference_policy` cannot be honoured | High | Citation and authorship questions | `allow_references=True` never takes effect: the section boost removes every reference at RRF fusion. Needs `rrf_fuse` to accept a per-query boost — a retrieval behaviour change, not a cleanup |
+| Confidence engine not calibrated | **CRITICAL** | Phase 3, Abstain reliability | Thresholds are configurable now (`settings.confidence_reject_threshold` / `confidence_partial_threshold`) but still uncalibrated. `reasoning` queries cannot be rejected at all if the reject threshold is set below 0.05, because of the `max(0.0, ...)` floor |
 | Query expansion produces noisy multi-query outputs | High | Disabled — do not re-enable | Post Phase 3 |
 | Classifier accuracy not measured | Medium | Phase 4 adaptation | Phase 2 eval |
 | No intra-list diversity metric implemented | Medium | Detecting duplicate retrieval | Phase 2 |
 | No load test conducted | High | Production readiness | Phase 5 |
+| Shared retriever mutates per-request state | Medium | §13 graceful degradation | `hybrid_retriever.py:457` writes `self.use_multi_query`. Harmless while both flags are False, but §13.3 needs per-request control |
+| `min_score_threshold` filters nothing | Medium | §3.4 retry contract | Compared against RRF scores, measured in [0.005, 0.021]. A floor of 0.0 and the `-0.1` retry relaxation each remove zero chunks, so the §3.4 "relax filtering" action is a no-op |
+| `scripts/` is 1.6× `src/` | Low | — | `scripts/MANIFEST.json` classifies all 37; pruning not done |
+| 125 evidence artifacts, no index | Low | — | `results/metrics/` |
+| Git identity is a placeholder | Low, but it blocks archaeology | — | 21 commits recorded as `Your Name <you@example.com>` |
 
 ---
 

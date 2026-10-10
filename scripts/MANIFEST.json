@@ -1,0 +1,204 @@
+{
+  "_doc": "Every scripts/*.py must have an entry here. Statuses: canonical, library, diagnostic, forensic, dead. A new script with no entry fails CI — that absence is exactly how scripts/ grew past src/.",
+  "scripts": {
+    "audit_k710_coverage.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "audit_k712_q11_q20.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "benchmark_retrieval.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_eval_dataset_v3.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_evidence_index.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_evidence_inventory.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_gold_loss_stage.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_reranker_latency_profile.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_retrieval_eval_dataset.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_rrf_candidate_drift.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_rrf_contribution_ledger.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "build_stage_forensics.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "check_ci_contracts.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "check_retrieval_eval_set_labels.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "check_script_manifest.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "clean_dataset.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "coverage_metric.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "diagnose_filter_gold.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "diagnose_generation_flakiness.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "eval_ci.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "fase_f_reranker_ablation.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "fast_ingest.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "gold_rank_forensic.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "measure_reference_impact.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "prepare_stratified_split.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "retrieval_eval.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "run_eval.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "run_eval_phase2.py": {
+      "status": "library",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "run_k711_latency_replication.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "run_retrieval_eval.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "run_single_query.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "split_dataset_stratified.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "split_retrieval_dataset.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "test_manual.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "validate_ground_truth.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "visualize.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    }
+  },
+  "archived": [
+    "archive/dead_scripts_2026_10/experiments/ablation_per_category.py",
+    "archive/dead_scripts_2026_10/experiments/ablation_runner.py",
+    "archive/dead_scripts_2026_10/root/audit_chunk_id_consistency.py",
+    "archive/dead_scripts_2026_10/scripts/build_eval_dataset.py",
+    "archive/dead_scripts_2026_10/scripts/build_ground_truth.py",
+    "archive/dead_scripts_2026_10/scripts/merge_dataset.py",
+    "archive/dead_scripts_2026_10/scripts/rebuild_gold_labels.py",
+    "archive/dead_scripts_2026_10/scripts/remap_ground_truth_chunk_ids.py",
+    "archive/dead_scripts_2026_10/scripts/run_eval_ragas.py",
+    "archive/dead_scripts_2026_10/scripts/split_dataset.py",
+    "archive/dead_scripts_2026_10/scripts/split_rebuilt_dataset.py",
+    "archive/dead_scripts_2026_10/scripts/stress_test_20.py",
+    "archive/decision_unused.py",
+    "archive/legacy_2026_10/evaluation/evaluator.py",
+    "archive/legacy_2026_10/ingestion/dataset_builder.py",
+    "archive/legacy_2026_10/retrieval/bm25_retriever.py",
+    "archive/legacy_2026_10/retrieval/embedder.py"
+  ]
+}

@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-"""
-Audit konsistensi chunk_id antara ground truth / eval files
-dengan corpus chunk yang valid saat ini (chunks_semantic.json).
-
-READ-ONLY — script ini tidak mengubah file apa pun, hanya membaca
-dan mencetak laporan ke stdout (dan opsional menyimpan JSON summary).
-
-Cara pakai (dari root project rag-research):
-    python audit_chunk_id_consistency.py
-
-Atau simpan hasil ke file:
-    python audit_chunk_id_consistency.py --save results/debug/chunk_id_audit.json
-"""
-
 from __future__ import annotations
 import json
 import argparse
@@ -20,10 +5,7 @@ import re
 from pathlib import Path
 from collections import defaultdict
 
-# ---------------------------------------------------------------------------
 # Config
-# ---------------------------------------------------------------------------
-
 CHUNKS_FILE = "data/processed/chunks_semantic.json"
 
 GT_FILES = [
@@ -51,11 +33,7 @@ FOCUS_FILES = {
     "data/processed/holdout_eval_v2.json",
 }
 
-
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
-
 def load_json(path: str):
     p = Path(path)
     if not p.exists():
@@ -68,13 +46,8 @@ def load_json(path: str):
 
 
 def extract_doc_id_from_chunk_id(chunk_id: str) -> str:
-    """
-    Best-effort: strip suffix like _rs_0216 or _s0143 to recover doc_id.
-    Assumes doc_id is everything before the LAST chunk-suffix pattern.
-    """
     if not chunk_id:
         return ""
-    # patterns: _rs_0216  OR  _s0143  OR  _sub<N>
     m = re.match(r"^(.*?)(_rs_\d+|_s\d+|_sub\d+)$", chunk_id)
     if m:
         return m.group(1)
@@ -82,17 +55,11 @@ def extract_doc_id_from_chunk_id(chunk_id: str) -> str:
 
 
 def build_valid_chunk_index(chunks_data) -> tuple[set, dict]:
-    """
-    Returns:
-      valid_ids: set of all valid chunk_id strings currently in corpus
-      doc_to_chunk_ids: dict doc_id -> list of chunk_ids belonging to it
-    """
     valid_ids = set()
     doc_to_chunk_ids = defaultdict(list)
 
     items = chunks_data
     if isinstance(chunks_data, dict):
-        # some pipelines wrap chunks under a key like "chunks"
         for key in ("chunks", "data", "items"):
             if key in chunks_data and isinstance(chunks_data[key], list):
                 items = chunks_data[key]
@@ -114,26 +81,18 @@ def build_valid_chunk_index(chunks_data) -> tuple[set, dict]:
 
 
 def extract_entries(gt_data):
-    """
-    Normalize various ground-truth file shapes into a flat list of dict entries.
-    """
     if isinstance(gt_data, list):
         return gt_data
     if isinstance(gt_data, dict):
         for key in ("data", "samples", "items", "queries", "eval_set"):
             if key in gt_data and isinstance(gt_data[key], list):
                 return gt_data[key]
-        # fallback: maybe dict of id -> entry
         if all(isinstance(v, dict) for v in gt_data.values()):
             return list(gt_data.values())
     return []
 
 
 def get_chunk_refs(entry: dict) -> list[str]:
-    """
-    Pull out every chunk-id-like reference from an entry, across all
-    known field name candidates. Handles both single string and list values.
-    """
     refs = []
     for field in CHUNK_ID_FIELD_CANDIDATES:
         if field in entry and entry[field]:
@@ -145,10 +104,7 @@ def get_chunk_refs(entry: dict) -> list[str]:
     return refs
 
 
-# ---------------------------------------------------------------------------
 # Main audit
-# ---------------------------------------------------------------------------
-
 def audit(base_dir: str = ".") -> dict:
     base = Path(base_dir)
     chunks_path = base / CHUNKS_FILE
@@ -162,7 +118,7 @@ def audit(base_dir: str = ".") -> dict:
     print(f"[OK] {len(doc_to_chunk_ids)} unique doc_id ditemukan di corpus\n")
 
     results = {}
-    example_pool = []  # collect (file, entry_query, old_chunk_id, doc_id, candidate_new_ids)
+    example_pool = []  
 
     print(f"{'FILE':<45} {'TOTAL':>7} {'VALID':>7} {'INVALID':>8} {'%INVALID':>9}")
     print("-" * 80)

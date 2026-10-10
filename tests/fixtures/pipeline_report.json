@@ -1,0 +1,78 @@
+{
+  "dataset": "/home/malikimazyar/projects/ai-infra-workspace/rag-research/data/evaluation/retrieval_eval_dataset_v2.json",
+  "dataset_sha256": "bc96e95372eeb2abebe917c15cb1dbb289c2bb3fe63cbcb1ab4f68c64008c42e",
+  "stage": "pipeline",
+  "config": {
+    "generator": "openai/gpt-oss-20b",
+    "judge": "openai/gpt-oss-20b+json_mode",
+    "retrieval": "hybrid_rerank=True",
+    "top_k": 10,
+    "min_top1_score": 0.0,
+    "embed_model": "sentence-transformers/all-MiniLM-L6-v2"
+  },
+  "pipeline": {
+    "total_queries": 2,
+    "answered": 1,
+    "abstained": 0,
+    "errors": 1,
+    "answer_rate": 0.5,
+    "abstain_reasons": {}
+  },
+  "scoring": {
+    "samples_submitted": 1,
+    "excluded_abstained": 0,
+    "excluded_errors": 1,
+    "excluded_no_ground_truth": 0
+  },
+  "queries": [
+    {
+      "query_id": "q02",
+      "question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+      "answered": true,
+      "status": "ANSWERED",
+      "reason": null,
+      "ground_truth": "They produce hallucinations when handling queries beyond their training data or requiring current information.",
+      "answer": "Large language models often produce hallucinations—fabricated or unsupported information—when faced with queries that go beyond their training data or require up‑to‑date knowledge.",
+      "contexts": [
+        "ARGE language models (LLMs) have achieved remarkable success, though they still face significant limitations, especially in domain-specific or knowledge-intensive tasks [1], notably producing “hallucinations” [2] when handling queries beyond their training data or requiring current information.",
+        "Generation. The posed query and selected documents are synthesized into a coherent prompt to which a large language model is tasked with formulating a response. The model’s approach to answering may vary depending on task-specific criteria, allowing it to either draw upon its inherent parametric knowledge or restrict its responses to the information contained within the provided documents. In cases of ongoing dialogues, any existing conversational history can be integrated into the prompt, enabling the model to engage in multi-turn dialogue interactions effectively. However, Naive RAG encounters notable drawbacks: Retrieval Challenges. The retrieval phase often struggles with precision and recall, leading to the selection of misaligned or irrelevant chunks, and the missing of crucial information. Generation Difficulties. In generating responses, the model may face the issue of hallucination, where it produces content not supported by the retrieved context. This phase can",
+        "Introduction Large Language Models (LLMs) have shown great promise as highly capable AI assistants that excel in complex reasoning tasks requiring expert knowledge across a wide range of fields, including in specialized domains such as programming and creative writing. They enable interaction with humans through intuitive chat interfaces, which has led to rapid and widespread adoption among the general public.",
+        "Large Language Models (LLMs) have achieved excellent performances in various tasks. However, fine-tuning an LLM requires extensive supervision. on the other hand, may improve their reasoning abilities by self-thinking without external inputs. In this work, we demonstrate that an LLM is also capable of",
+        "One of the primary challenges with Naive RAG is its direct reliance on the user’s original query as the basis for Formulating a precise and clear question is difficult, and imprudent queries result in subpar retrieval effectiveness. Sometimes, the question itself is complex, and the language is not well-organized. Another difficulty lies in language complexity ambiguity. Language models often struggle when dealing with specialized vocabulary or ambiguous abbreviations with multiple meanings. For instance, they may not discern whether “LLM” refers to large language model or a Master of Laws in a legal context.",
+        "Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks. However, their ability to access and precisely manipulate knowledge is still limited, and hence on knowledge-intensive tasks, their performance lags behind task-specific architectures.",
+        "Introduction to Retrieval-Augmented Generation Retrieval-Augmented Generation (RAG) is a technique that combines information retrieval with language model generation. It enhances large language models (LLMs) by retrieving relevant document chunks from an external knowledge base before generating an answer. Traditional LLMs are trained on a fixed dataset and cannot access up-to-date or domain-specific information at inference time.",
+        "models (SLMs) such as GPT-2 Small or LLaMA-7B, to detect and remove unimportant tokens, transforming it into a form that is challenging for humans to comprehend but well understood by LLMs. This approach presents a direct and practical method for prompt compression, eliminating the need for additional training of LLMs while balancing language integrity and compression ratio. PRCA tackled this issue by training an information extractor [69].",
+        "a range of Natural Language Processing (NLP) tasks (Wang et al., 2018; 2019; Rajpurkar et al., More importantly, new capabilities have emerged from LLMs as they are scaled to hundreds of billions of parameters (Wei et al., 2022a): in-context few-shot learning (Brown et al., 2020) makes it possible for an LLM to perform well on a task it never trained on with only a handful of examples; Chain-of-Thought (CoT) prompting (Wei et al., 2022b; Kojima et al., 2022) demonstrates strong reasoning ability of LLMs across diverse tasks with or without few-shot examples; self-consistency (Wang et al., 2022b) further improves the performance via self-evaluating multiple reasoning paths. Despite these incredible capabilities of models trained on large text corpus (Brown et al., 2020; Chowdhery et al., 2022), fundamentally improving the model performances beyond few-shot baselines still requires finetuning on an extensive amount of high-quality supervised datasets. FLAN (Wei et al., 2021; Chung et al., 2022) and T0 (Sanh et al., 2022) curated tens of benchmark NLP datasets to boost zero-shot task performances on unseen tasks; InstructGPT (Ouyang et al., 2022) crowd-sourced many human answers for diverse sets of text instructions to better align their model to human instructions. While significant efforts were committed on collecting high-quality",
+        "2022b; Kojima et al., 2022). In our work, we explicitly show that imperfect CoT reasoning (which may lead to incorrect answer) can be used directly for self-improving language models as evidenced in our experiments in Sections 5.2 and 5.3. The overview of our method is illustrated in Fig. 1: We are given a pre-trained Large Language Model (LLM) M and a question-only training dataset Dtrain = {xi}D"
+      ],
+      "num_chunks_retrieved": 10,
+      "num_chunks_used": 7,
+      "context_chunk_ids": [
+        "tier1_advanced_rag_survey_rs_0002",
+        "tier1_advanced_rag_survey_rs_0016",
+        "tier3_llama2_rs_0008",
+        "tier2_large_language_models_rs_0000",
+        "tier1_rag_lewis2020_rs_0000"
+      ],
+      "confidence_score": 0.575,
+      "llm_confidence_score": 0.95,
+      "retrieval_decision": null,
+      "post_generation_decision": "PARTIAL_TRUST",
+      "retrieval_ms": 0.12,
+      "generation_ms": 974.34,
+      "wall_ms": 3915.1599260003422,
+      "num_contexts_for_ragas": 10,
+      "has_ground_truth": true
+    },
+    {
+      "query_id": "q11",
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "answered": false,
+      "status": "ERROR",
+      "reason": "RuntimeError: Groq generation failed: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01khs1w9m2fxtspe52xh459gny` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199736, Requested 880. Please try again in 4m26.111999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}. Periksa koneksi API dan kunci Anda.",
+      "latency_ms": 4045.6830539988005,
+      "has_ground_truth": true
+    }
+  ],
+  "ragas": null
+}
