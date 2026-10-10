@@ -1,0 +1,47 @@
+{
+  "description": "Reranker value assessment on post-D7-fix canonical 14-query dataset",
+  "rank_outcome_taxonomy": {
+    "IMPROVED": {"count": 0, "queries": [], "definition": "RRF rank > 10 AND reranker rank <= 10"},
+    "HARMED": {"count": 0, "queries": [], "definition": "RRF rank <= 10 AND reranker rank > 10"},
+    "DEMOTED_BUT_TOP10": {"count": 2, "queries": ["q11", "q20"], "definition": "RRF rank <= 10 AND reranker rank <= 10 AND reranker rank numerically worse"},
+    "OUTSIDE_TOP10_BOTH": {"count": 1, "queries": ["q15"], "definition": "RRF rank > 10 AND reranker rank > 10"},
+    "UNCHANGED": {"count": 10, "queries": ["q01", "q02", "q03", "q04", "q09", "q10", "q13", "q14", "q16", "q19"], "definition": "same valid rank"},
+    "BEYOND_RERANK_DEPTH": {"count": 1, "queries": ["q06"], "definition": "gold was not passed to reranker"}
+  },
+  "mrr_at_10_effect": {
+    "per_query": [
+      {"query_id": "q01", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q02", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q03", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q04", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q06", "rrf_rr": 0.0417, "reranked_rr": 0, "delta": -0.0417},
+      {"query_id": "q09", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q10", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q11", "rrf_rr": 1.0, "reranked_rr": 0.5, "delta": -0.5},
+      {"query_id": "q13", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q14", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q15", "rrf_rr": 0.0909, "reranked_rr": 0.0526, "delta": -0.0383},
+      {"query_id": "q16", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q19", "rrf_rr": 1.0, "reranked_rr": 1.0, "delta": 0},
+      {"query_id": "q20", "rrf_rr": 1.0, "reranked_rr": 0.125, "delta": -0.875}
+    ],
+    "mrr_at_10_losses": [
+      {"query_id": "q20", "delta": -0.875, "note": "RRF 1 -> reranker 8"},
+      {"query_id": "q11", "delta": -0.5, "note": "RRF 1 -> reranker 2"},
+      {"query_id": "q06", "delta": -0.0417, "note": "RRF 24 -> not in reranker"},
+      {"query_id": "q15", "delta": -0.0383, "note": "RRF 11 -> reranker 19"}
+    ],
+    "mrr_at_10_gains": [],
+    "mrr_at_10_neutral_cases": ["q01", "q02", "q03", "q04", "q09", "q10", "q13", "q14", "q16", "q19"]
+  },
+  "summary": {
+    "net_improvement": 0,
+    "reranker_value_ratio": 0.0,
+    "total_queries": 14,
+    "recall_at_10_rrf": 0.8571,
+    "recall_at_10_reranked": 0.8571,
+    "mrr_at_10_rrf": 0.8666,
+    "mrr_at_10_reranked": 0.7627,
+    "latency_measurement": "NO_DIRECT_MEASUREMENT"
+  }
+}

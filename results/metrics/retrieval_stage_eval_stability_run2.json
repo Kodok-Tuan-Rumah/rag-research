@@ -1,0 +1,282 @@
+{
+  "dataset": "/home/malikimazyar/projects/ai-infra-workspace/rag-research/data/evaluation/retrieval_eval_dataset.json",
+  "corpus": "/home/malikimazyar/projects/ai-infra-workspace/rag-research/data/processed/chunks_semantic_v2.json",
+  "top_k": 10,
+  "stages": {
+    "dense_only": {
+      "n": 14,
+      "recall@1": 0.7143,
+      "recall@5": 0.7857,
+      "recall@10": 0.7857,
+      "mrr@10": 0.7551,
+      "avg_candidates": 40.0,
+      "avg_gold_rank_when_hit": 2.17,
+      "avg_latency_ms": 4135.31,
+      "failure_counts": {
+        "success": 11,
+        "ranking_failure": 1,
+        "retrieval_miss": 2
+      },
+      "stage": "dense_only"
+    },
+    "bm25_only": {
+      "n": 14,
+      "recall@1": 0.8571,
+      "recall@5": 0.9286,
+      "recall@10": 1.0,
+      "mrr@10": 0.8833,
+      "avg_candidates": 40.0,
+      "avg_gold_rank_when_hit": 1.64,
+      "avg_latency_ms": 4135.31,
+      "failure_counts": {
+        "success": 13,
+        "ranking_failure": 1
+      },
+      "stage": "bm25_only"
+    },
+    "rrf_fused": {
+      "n": 14,
+      "recall@1": 0.8571,
+      "recall@5": 0.8571,
+      "recall@10": 0.8571,
+      "mrr@10": 0.8666,
+      "avg_candidates": 40.0,
+      "avg_gold_rank_when_hit": 3.36,
+      "avg_latency_ms": 4135.31,
+      "failure_counts": {
+        "success": 12,
+        "ranking_failure": 2
+      },
+      "stage": "rrf_fused"
+    },
+    "rrf_reranked": {
+      "n": 14,
+      "recall@1": 0.7857,
+      "recall@5": 0.8571,
+      "recall@10": 0.9286,
+      "mrr@10": 0.8361,
+      "avg_candidates": 20.0,
+      "avg_gold_rank_when_hit": 2.57,
+      "avg_latency_ms": 4135.31,
+      "failure_counts": {
+        "success": 12,
+        "ranking_failure": 2
+      },
+      "stage": "rrf_reranked"
+    },
+    "final_filtered": {
+      "n": 14,
+      "recall@1": 0.7857,
+      "recall@5": 0.8571,
+      "recall@10": 0.9286,
+      "mrr@10": 0.8316,
+      "avg_candidates": 10.0,
+      "avg_gold_rank_when_hit": 1.54,
+      "avg_latency_ms": 4135.31,
+      "failure_counts": {
+        "success": 12,
+        "retrieval_miss": 1,
+        "ranking_failure": 1
+      },
+      "stage": "final_filtered"
+    }
+  },
+  "queries": [
+    {
+      "query_id": "q01",
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q02",
+      "question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q03",
+      "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q04",
+      "question": "How are high-confidence predictions filtered in the method described?",
+      "gold_chunk_id": "tier2_large_language_models_rs_0006",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 19,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q06",
+      "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q09",
+      "question": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+      "gold_chunk_id": "tier2_self_instruct_rs_0062",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 19,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q10",
+      "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 19,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q11",
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q13",
+      "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 18,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q14",
+      "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 19,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q15",
+      "question": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0046",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q16",
+      "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q19",
+      "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    },
+    {
+      "query_id": "q20",
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "trace_counts": {
+        "dense": 40,
+        "bm25": 40,
+        "fused": 40,
+        "reranked": 20,
+        "strict_filtered": 20,
+        "final": 10
+      },
+      "filter_stage": "strict"
+    }
+  ]
+}

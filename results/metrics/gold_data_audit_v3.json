@@ -1,0 +1,84 @@
+{
+  "summary": {
+    "TOTAL_QA": 10,
+    "VALID_QA": 10,
+    "MISSING_GOLD_CHUNK": 0,
+    "MISSING_GOLD_DOC": 0,
+    "MISSING_QUESTION": 0,
+    "MISSING_ANSWER": 0,
+    "DUPLICATE_IDS": 0,
+    "INVALID_MAPPING": 0
+  },
+  "rows": [
+    {
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    },
+    {
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "status": "ok",
+      "error_type": null,
+      "details": []
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "summary": {
+    "FUSION_HELPED": 1,
+    "FUSION_NEUTRAL": 11,
+    "FUSION_REGRESSION": 2
+  },
+  "rows": [
+    {
+      "query_id": "q01",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q02",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q03",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q04",
+      "gold_chunk_id": "tier2_large_language_models_rs_0006",
+      "dense_rank": 14,
+      "bm25_rank": 5,
+      "rrf_rank": 1,
+      "rank_delta": -4,
+      "class": "FUSION_HELPED"
+    },
+    {
+      "query_id": "q06",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "dense_rank": null,
+      "bm25_rank": 1,
+      "rrf_rank": 24,
+      "rank_delta": 23,
+      "class": "FUSION_REGRESSION"
+    },
+    {
+      "query_id": "q09",
+      "gold_chunk_id": "tier2_self_instruct_rs_0062",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q10",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q11",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q13",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q14",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q15",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0046",
+      "dense_rank": null,
+      "bm25_rank": 6,
+      "rrf_rank": 11,
+      "rank_delta": 5,
+      "class": "FUSION_REGRESSION"
+    },
+    {
+      "query_id": "q16",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q19",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "dense_rank": 1,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    },
+    {
+      "query_id": "q20",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "dense_rank": 2,
+      "bm25_rank": 1,
+      "rrf_rank": 1,
+      "rank_delta": 0,
+      "class": "FUSION_NEUTRAL"
+    }
+  ]
+}

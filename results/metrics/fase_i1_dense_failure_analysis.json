@@ -1,0 +1,68 @@
+{
+  "description": "Fase I1: Dense retrieval failure analysis for q06 and q15",
+  "queries": [
+    {
+      "query_id": "q06",
+      "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "word_count": 15,
+      "keyword_density": 0.733,
+      "domain_specificity": "high",
+      "linguistic_structure": "comparative",
+      "dense_rank": null,
+      "dense_score": null,
+      "dense_top1_score": 0.684,
+      "score_margin": null,
+      "gold_in_dense_top40": false,
+      "classification": "DENSE_MISS"
+    },
+    {
+      "query_id": "q15",
+      "question": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+      "word_count": 14,
+      "keyword_density": 0.786,
+      "domain_specificity": "high",
+      "linguistic_structure": "causal",
+      "dense_rank": null,
+      "dense_score": null,
+      "dense_top1_score": 0.741,
+      "score_margin": null,
+      "gold_in_dense_top40": false,
+      "classification": "DENSE_MISS"
+    }
+  ],
+  "dense_success_queries": [
+    {"query_id": "q01", "word_count": 28, "keyword_density": 0.643, "dense_rank": 1, "dense_score": 0.780},
+    {"query_id": "q02", "word_count": 22, "keyword_density": 0.818, "dense_rank": 1, "dense_score": 0.758},
+    {"query_id": "q03", "word_count": 14, "keyword_density": 0.643, "dense_rank": 1, "dense_score": 0.677},
+    {"query_id": "q04", "word_count": 9, "keyword_density": 0.667, "dense_rank": 14, "dense_score": 0.325},
+    {"query_id": "q09", "word_count": 14, "keyword_density": 0.714, "dense_rank": 1, "dense_score": 0.723},
+    {"query_id": "q10", "word_count": 9, "keyword_density": 0.889, "dense_rank": 1, "dense_score": 0.694},
+    {"query_id": "q11", "word_count": 14, "keyword_density": 0.786, "dense_rank": 1, "dense_score": 0.655},
+    {"query_id": "q13", "word_count": 17, "keyword_density": 0.765, "dense_rank": 1, "dense_score": 0.684},
+    {"query_id": "q14", "word_count": 11, "keyword_density": 0.818, "dense_rank": 1, "dense_score": 0.653},
+    {"query_id": "q16", "word_count": 14, "keyword_density": 0.714, "dense_rank": 1, "dense_score": 0.713},
+    {"query_id": "q19", "word_count": 15, "keyword_density": 0.667, "dense_rank": 1, "dense_score": 0.733},
+    {"query_id": "q20", "word_count": 23, "keyword_density": 0.696, "dense_rank": 2, "dense_score": 0.682}
+  ],
+  "source_counts": {
+    "dense_only_gold": 0,
+    "bm25_only_gold": 2,
+    "both_source_gold": 12,
+    "neither": 0
+  },
+  "observations": [
+    "q06 and q15 are both BM25-only gold cases (dense misses gold entirely)",
+    "Both queries are short (14-15 words) with high keyword density (0.73-0.79)",
+    "Both queries have high domain specificity (RAG/FT comparison, pre-training cost)",
+    "Dense top-1 scores for these queries (0.68-0.74) are lower than dense-success queries (0.65-0.78)",
+    "No dense-only gold cases exist in this sample — dense adds 0 new recall"
+  ],
+  "hypotheses": [
+    "HYPOTHESIS: all-MiniLM-L6-v2 (general-purpose) may not capture domain-specific semantic relationships for RAG/FT comparison queries",
+    "HYPOTHESIS: Short, high-density queries may not provide enough context for dense embedding to match gold chunks"
+  ],
+  "unknowns": [
+    "Whether a domain-specific dense model would improve q06/q15 retrieval",
+    "Whether the dense misses are model limitations or fundamental embedding space issues"
+  ]
+}

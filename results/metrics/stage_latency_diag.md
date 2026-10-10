@@ -1,0 +1,48 @@
+# Stage Latency Diagnostic
+
+```json
+{
+  "dense": {
+    "p50_ms": 36.13,
+    "p95_ms": 43.6,
+    "min_ms": 23.99,
+    "max_ms": 56.71,
+    "mean_ms": 37.2343
+  },
+  "bm25": {
+    "p50_ms": 5.81,
+    "p95_ms": 6.59,
+    "min_ms": 2.37,
+    "max_ms": 10.03,
+    "mean_ms": 5.505
+  },
+  "fusion": {
+    "p50_ms": 1.45,
+    "p95_ms": 1.77,
+    "min_ms": 0.78,
+    "max_ms": 2.03,
+    "mean_ms": 1.4264
+  },
+  "reranker": {
+    "p50_ms": 2790.95,
+    "p95_ms": 3149.11,
+    "min_ms": 1832.45,
+    "max_ms": 3169.37,
+    "mean_ms": 2716.1029
+  },
+  "fuse_and_rerank": {
+    "p50_ms": 2792.39,
+    "p95_ms": 3151.14,
+    "min_ms": 1833.72,
+    "max_ms": 3170.81,
+    "mean_ms": 2717.5286
+  },
+  "total": {
+    "p50_ms": 2841.38,
+    "p95_ms": 3212.42,
+    "min_ms": 1882.08,
+    "max_ms": 3238.1,
+    "mean_ms": 2772.7157
+  }
+}
+```

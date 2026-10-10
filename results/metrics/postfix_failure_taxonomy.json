@@ -1,0 +1,27 @@
+{
+  "description": "Post-D7-fix failure taxonomy for canonical 14-query dataset",
+  "rows": [
+    {"query_id": "q01", "gold_chunk_id": "tier3_llama2_rs_0086", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q02", "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q03", "gold_chunk_id": "tier1_rag_lewis2020_rs_0023", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q04", "gold_chunk_id": "tier2_large_language_models_rs_0006", "classification": "NO_FAILURE", "evidence": "dense=14, bm25=5, rrf=1 (RRF_HELPED), reranker=1, final=1"},
+    {"query_id": "q06", "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028", "classification": "BEYOND_RERANK_DEPTH", "evidence": "dense=miss, bm25=1, rrf=24 (>20), reranker=NONE, final=out"},
+    {"query_id": "q09", "gold_chunk_id": "tier2_self_instruct_rs_0062", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q10", "gold_chunk_id": "tier1_rag_lewis2020_rs_0027", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q11", "gold_chunk_id": "tier1_rag_lewis2020_rs_0026", "classification": "RERANKER_DEMOTION", "evidence": "dense=1, bm25=1, rrf=1, reranker=2, final=2 (still in top-10)"},
+    {"query_id": "q13", "gold_chunk_id": "tier3_attention_all_you_need_rs_0008", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q14", "gold_chunk_id": "tier3_llama2_rs_0043", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q15", "gold_chunk_id": "tier1_rag_lewis2020_rs_0046", "classification": "RERANKER_DEMOTION", "evidence": "dense=miss, bm25=6, rrf=11, reranker=19, final=out"},
+    {"query_id": "q16", "gold_chunk_id": "tier3_llama2_rs_0007", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q19", "gold_chunk_id": "tier3_llama2_rs_0098", "classification": "NO_FAILURE", "evidence": "dense=1, bm25=1, rrf=1, reranker=1, final=1"},
+    {"query_id": "q20", "gold_chunk_id": "tier3_llama2_rs_0152", "classification": "RERANKER_DEMOTION", "evidence": "dense=2, bm25=1, rrf=1, reranker=8, final=8 (still in top-10)"}
+  ],
+  "summary": {
+    "NO_FAILURE": 10,
+    "RERANKER_DEMOTION": 3,
+    "BEYOND_RERANK_DEPTH": 1,
+    "RRF_HELPED": 1,
+    "RRF_HURT": 0,
+    "FINAL_FILTER_LOSS": 0
+  }
+}

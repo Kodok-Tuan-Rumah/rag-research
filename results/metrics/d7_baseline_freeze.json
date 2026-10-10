@@ -1,0 +1,14 @@
+{
+  "description": "Pre-fix baseline frozen before candidate-selection correctness fix",
+  "q06": {"rrf_rank": 24, "rerank_input_index": 2, "rerank_rank": 1, "final_rank": 1},
+  "q15": {"rrf_rank": 11, "rerank_input_index": 2, "rerank_rank": 16, "final_rank": null},
+  "q20": {"rrf_rank": 1, "rerank_input_index": 12, "rerank_rank": 7, "final_rank": 7},
+  "metrics": {
+    "dense_recall@10": 0.7857,
+    "bm25_recall@10": 1.0,
+    "rrf_recall@10": 0.8571,
+    "rrf_reranked_recall@10": 0.9286,
+    "final_recall@10": 0.9286,
+    "mrr@10": 0.8316
+  }
+}

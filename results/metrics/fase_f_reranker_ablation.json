@@ -1,0 +1,158 @@
+{
+  "config_A": {
+    "config": "A_no_reranker",
+    "n_queries": 14,
+    "recall_at_10": 0.8571,
+    "mrr_at_10": 0.8571,
+    "mean_latency_ms": 48.62,
+    "p50_latency_ms": 48.43,
+    "p95_latency_ms": 62.96
+  },
+  "config_B": {
+    "config": "B_with_reranker",
+    "n_queries": 14,
+    "recall_at_10": 0.8571,
+    "mrr_at_10": 0.7589,
+    "mean_latency_ms": 3240.74,
+    "p50_latency_ms": 3171.28,
+    "p95_latency_ms": 4065.16
+  },
+  "per_query": [
+    {
+      "query_id": "q01",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q02",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q03",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q04",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q06",
+      "A_rank": null,
+      "B_rank": null,
+      "A_RR@10": 0.0,
+      "B_RR@10": 0.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q09",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q10",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q11",
+      "A_rank": 1,
+      "B_rank": 2,
+      "A_RR@10": 1.0,
+      "B_RR@10": 0.5,
+      "delta_RR@10": -0.5,
+      "classification": "DEMOTED_BUT_TOP10"
+    },
+    {
+      "query_id": "q13",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q14",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q15",
+      "A_rank": null,
+      "B_rank": null,
+      "A_RR@10": 0.0,
+      "B_RR@10": 0.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q16",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q19",
+      "A_rank": 1,
+      "B_rank": 1,
+      "A_RR@10": 1.0,
+      "B_RR@10": 1.0,
+      "delta_RR@10": 0.0,
+      "classification": "UNCHANGED"
+    },
+    {
+      "query_id": "q20",
+      "A_rank": 1,
+      "B_rank": 8,
+      "A_RR@10": 1.0,
+      "B_RR@10": 0.125,
+      "delta_RR@10": -0.875,
+      "classification": "DEMOTED_BUT_TOP10"
+    }
+  ],
+  "value_assessment": {
+    "count_improved": 0,
+    "count_harmed": 0,
+    "count_demoted_but_top10": 2,
+    "count_unchanged": 12,
+    "net_improvement": 0,
+    "reranker_value_ratio": 0.0,
+    "recall_at_10_delta": 0.0,
+    "mrr_at_10_delta": -0.0982
+  }
+}
