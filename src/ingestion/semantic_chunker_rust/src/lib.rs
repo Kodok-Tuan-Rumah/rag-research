@@ -23,20 +23,20 @@ fn find_breakpoints_rs(similarities: Vec<f32>, threshold: f32) -> Vec<usize> {
 
 #[pyfunction]
 fn assemble_chunks_rs(
-    sentences: Vec<String>, 
-    breakpoints: Vec<usize>, 
+    sentences: Vec<String>,
+    breakpoints: Vec<usize>,
     overlap_size: usize
 ) -> Vec<Vec<String>> {
     let mut chunks = Vec::new();
     let mut prev_bp = 0;
-    
+
     // Gabungin breakpoints dengan akhir kalimat
     let mut all_bps = breakpoints;
     all_bps.push(sentences.len());
-    
+
     for (i, &bp) in all_bps.iter().enumerate() {
         let mut group: Vec<String> = sentences[prev_bp..bp].to_vec();
-        
+
         // Logic Overlap: Ambil ekor dari chunk sebelumnya (kalo bukan chunk pertama)
         if i > 0 && overlap_size > 0 {
             let tail_start = if prev_bp >= overlap_size { prev_bp - overlap_size } else { 0 };
@@ -46,15 +46,16 @@ fn assemble_chunks_rs(
         } else {
             chunks.push(group);
         }
-        
+
         prev_bp = bp;
     }
     chunks
 }
 
 /// Module Python yang akan di-export
+/// PyO3 0.21+ menggunakan macro baru tanpa parameter _py dan m eksplisit
 #[pymodule]
-fn semantic_chunker_rust(_py: Python, m: &PyModule) -> PyResult<()> {
+fn semantic_chunker_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(split_sentences_rs, m)?)?;
     m.add_function(wrap_pyfunction!(find_breakpoints_rs, m)?)?;
     m.add_function(wrap_pyfunction!(assemble_chunks_rs, m)?)?;

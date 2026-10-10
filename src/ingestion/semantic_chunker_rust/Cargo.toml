@@ -8,6 +8,6 @@ name = "semantic_chunker_rust"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.20", features = ["extension-module"] }
+pyo3 = { version = "0.29", features = ["extension-module"] }
 unicode-segmentation = "1.10"
 rayon = "1.8"

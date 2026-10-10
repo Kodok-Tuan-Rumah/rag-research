@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from dataclasses import dataclass, asdict
 from typing import Optional
-import fitz
+import pymupdf as fitz
 
 @dataclass
 class Document:

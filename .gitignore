@@ -121,3 +121,4 @@ results/figures/
 # External Tools & Binaries
 # =============================================================================
 kirocli/
+.aider*

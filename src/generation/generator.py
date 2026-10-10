@@ -367,7 +367,11 @@ class GroqGenerator:
         )
 
         retrieval_method = _get_attr(chunks[0], "retrieval_method", "hybrid_rrf_baseline")
-        confidence_result = self._confidence.calculate_confidence(filtered_chunks)
+        confidence_result = self._confidence.calculate_confidence(
+            filtered_chunks,
+            answer=answer,
+            contexts=[(_get_attr(c, "text", "") or "") for c in filtered_chunks],
+        )
         final_confidence = float(confidence_result.get("confidence_score", 0.0))
         final_confidence = max(0.0, min(1.0, final_confidence))
         confidence_result["confidence_score"] = final_confidence

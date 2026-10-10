@@ -1,12 +1,15 @@
+import math
+import re
+
 import numpy as np
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
 
 logger = logging.getLogger("rag.confidence_engine")
 
 class ConfidenceEngine:
     def __init__(self):
-        self.reject_threshold = 0.45
+        self.reject_threshold = 0.35
         self.partial_threshold = 0.65
 
     def _normalize_scores(self, scores: List[float], score_type: str = "cosine") -> np.ndarray:
@@ -17,11 +20,11 @@ class ConfidenceEngine:
             if arr.max() > 0:
                 return np.clip(arr / (arr.max() + 1e-9), 0.0, 1.0)
             return np.ones_like(arr) * 0.5
-        else:  
+        else:
             if arr.max() == arr.min():
                 return np.ones_like(arr) * 0.5
             return (arr - arr.min()) / (arr.max() - arr.min() + 1e-9)
-    
+
     def _sigmoid(self, x: float) -> float:
         import math
         return 1.0 / (1.0 + math.exp(-x))
@@ -34,13 +37,12 @@ class ConfidenceEngine:
         probs = exp_scores / exp_scores.sum()
         entropy = -np.sum(probs * np.log(probs + 1e-9))
         return float(entropy / np.log(len(probs)))
-    
+
     def _get_chunk_score(self, chunk: Any) -> float:
         if isinstance(chunk, dict):
             score = chunk.get("rerank_score")
             if score is None:
                 score = chunk.get("retrieval_score")
-
             if score is None:
                 score = chunk.get("score")
             if score is None:
@@ -52,8 +54,16 @@ class ConfidenceEngine:
             if score is None:
                 score = getattr(chunk, "score", None)
         return float(score) if score is not None else None
-    
+
     def _source_agreement(self, chunks) -> float:
+        """
+        Fix 2: Logika dibalik dari versi sebelumnya.
+        Agreement tinggi = top chunks berasal dari sedikit sumber (fokus).
+        Agreement rendah = top chunks tersebar dari banyak sumber (tidak fokus).
+
+        Sebelumnya: min(len(unique) / 3.0, 1.0) → makin banyak doc unik = makin tinggi (SALAH)
+        Sekarang:   1.0 - min((unique - 1) / 4.0, 1.0) → 1 sumber unik = 1.0, 5+ sumber = 0.0
+        """
         doc_ids = []
         for c in chunks[:5]:
             meta = c.get("metadata", {}) if isinstance(c, dict) else getattr(c, "metadata", {})
@@ -62,22 +72,57 @@ class ConfidenceEngine:
                 doc_ids.append(doc_id)
         if not doc_ids:
             return 0.2
-        return min(len(set(doc_ids)) / 3.0, 1.0)
-    
+        unique_count = len(set(doc_ids))
+        # 1 sumber unik → 1.0 (sangat fokus)
+        # 2 sumber unik → 0.75
+        # 3 sumber unik → 0.5
+        # 5+ sumber unik → 0.0
+        return max(0.0, 1.0 - (unique_count - 1) / 4.0)
+
     def _detect_patterns(self, top_norm: float, mean_top3_norm: float, gap: float) -> dict:
         return {
             "spurious_match": bool(top_norm > 0.85 and mean_top3_norm < 0.45),
             "unstable_retrieval": bool(gap < 0.05 and mean_top3_norm < 0.4),
         }
 
-    def _decision_for_score(self, confidence_score: float) -> str:
-        if confidence_score < self.reject_threshold:
+    def _decision_for_score(self, confidence_score: float, query_type: Optional[str] = None) -> str:
+        reject, partial = self.reject_threshold, self.partial_threshold
+        if query_type == "factual":
+            reject += 0.05
+            partial = min(1.0, partial + 0.05)
+        elif query_type == "reasoning":
+            reject = max(0.0, reject - 0.05)
+            partial = max(reject, partial - 0.05)
+        if confidence_score < reject:
             return "REJECT"
-        if confidence_score < self.partial_threshold:
+        if confidence_score < partial:
             return "PARTIAL_TRUST"
         return "GENERATE"
-    
-    def calculate_confidence(self, chunks: list[Any]) -> Dict[str, Any]:
+
+    def _context_overlap(self, answer: Optional[str], contexts: Optional[List[str]]) -> Optional[float]:
+        if not answer or not contexts:
+            return None
+        answer_words = set(re.sub(r"[^\w\s]", "", answer.lower()).split())
+        context_words = set(
+            re.sub(r"[^\w\s]", "", " ".join(contexts).lower()).split()
+        )
+        stopwords = {
+            "the", "a", "an", "is", "are", "was", "were", "in", "on", "at", "to",
+            "for", "of", "and", "or", "but", "it", "this", "that", "with", "as",
+            "by", "from", "be", "has", "have",
+        }
+        answer_words -= stopwords
+        if not answer_words:
+            return None
+        return round(len(answer_words & context_words) / len(answer_words), 4)
+
+    def calculate_confidence(
+        self,
+        chunks: list[Any],
+        answer: Optional[str] = None,
+        contexts: Optional[List[str]] = None,
+        query_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
         if not chunks:
             return {
                 "confidence_score": 0.0,
@@ -94,24 +139,23 @@ class ConfidenceEngine:
                 }
             }
 
+        # Fix 3: skip chunk invalid, jangan reject semua batch
+        # Sebelumnya: jika has_invalid_score → langsung return REJECT
+        # Sekarang: log warning, tapi tetap lanjut dengan chunk yang valid
         raw_scores = []
-        has_invalid_score = False
+        invalid_count = 0
         for chunk in chunks:
             score = self._get_chunk_score(chunk)
             if isinstance(score, (int, float)) and np.isfinite(score):
                 raw_scores.append(float(score))
             else:
-                has_invalid_score = True
+                invalid_count += 1
 
-        if has_invalid_score or not raw_scores:
-            return {
-                "confidence_score": 0.0,
-                "decision": "REJECT",
-                "signals": {"reason": "no_valid_scores" if not raw_scores else "invalid_scores"}
-            }
-        logger.info(
-            f"[RAW_SCORES] {raw_scores[:10]}"
-        )
+        if invalid_count > 0:
+            logger.warning(
+                f"[CONFIDENCE] {invalid_count} chunk(s) dengan score invalid di-skip, "
+                f"{len(raw_scores)} chunk valid tersisa."
+            )
 
         if not raw_scores:
             return {
@@ -119,6 +163,8 @@ class ConfidenceEngine:
                 "decision": "REJECT",
                 "signals": {"reason": "no_valid_scores"}
             }
+
+        logger.info(f"[RAW_SCORES] {raw_scores[:10]}")
 
         has_rerank = any(
             (c.get("rerank_score") if isinstance(c, dict) else getattr(c, "rerank_score", None)) is not None
@@ -147,17 +193,35 @@ class ConfidenceEngine:
             0.15 * min(gap * 2, 1.0)
         )
 
+        # Fix 1: turunkan penalty mean_top3_norm dari 0.40 → 0.15
+        # Penalty 0.40 terlalu agresif — cross-encoder sering output negatif
+        # sehingga setelah sigmoid normalisasi mean_top3_norm < 0.4 hampir selalu,
+        # menyebabkan query valid pun di-REJECT
         penalty = 0.0
         if mean_top3_norm < 0.4:
-            penalty += 0.4
+            penalty += 0.15  # was: 0.40
         if gap < 0.05:
             penalty += 0.08
         if entropy > 0.8:
-             penalty += 0.10
+            penalty += 0.10
         if agreement < 0.2:
-             penalty += 0.25
-        
+            penalty += 0.25
+
         confidence_score = max(0.0, base_confidence - penalty)
+
+        # --- Context overlap + conflicting signal detection (Goals 5.3 / 12.2) ---
+        context_overlap = self._context_overlap(answer, contexts)
+        conflicts = []
+        if context_overlap is not None:
+            confidence_score = 0.6 * confidence_score + 0.4 * context_overlap
+            if top_score_norm > 0.7 and context_overlap < 0.3:
+                confidence_score -= 0.15
+                conflicts.append("high_retrieval_low_overlap")
+            if top_score_norm < 0.4 and context_overlap > 0.8:
+                confidence_score -= 0.10
+                conflicts.append("low_retrieval_high_overlap")
+
+        confidence_score = max(0.0, min(1.0, confidence_score))
 
         logger.info(
             f"[CONFIDENCE_BREAKDOWN] top_score={top_score:.4f} | mean_top3={mean_top3:.4f} | "
@@ -172,11 +236,11 @@ class ConfidenceEngine:
         )
         patterns = self._detect_patterns(top_score_norm, mean_top3_norm, gap)
 
-        decision = self._decision_for_score(confidence_score)
-            
-        logger.info(f"[CONFIDENCE_RESULT] confidence_score={confidence_score:.4f} | decision={decision}")
+        decision = self._decision_for_score(confidence_score, query_type=query_type)
+
+        logger.info(f"[CONFIDENCE_RESULT] confidence_score={confidence_score:.4f} | decision={decision} | query_type={query_type} | conflicts={conflicts}")
         assert 0.0 <= confidence_score <= 1.0, f"Confidence out of range: {confidence_score}"
-        
+
         return {
             "confidence_score": round(float(confidence_score), 4),
             "decision": decision,
@@ -187,6 +251,9 @@ class ConfidenceEngine:
                 "score_level": round(score_level, 4),
                 "entropy": round(entropy, 4),
                 "agreement": round(agreement, 4),
+                "context_overlap": context_overlap,
+                "conflicts": conflicts,
+                "query_type": query_type,
                 "spurious_match": patterns["spurious_match"],
                 "unstable_retrieval": patterns["unstable_retrieval"],
             }
