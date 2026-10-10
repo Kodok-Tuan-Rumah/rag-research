@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.evaluation.retrieval_evaluator import aggregate_rows, evaluate_query
-from src.evaluation.gold_schema import dataset_records
+from src.evaluation.gold_schema import dataset_records, normalize_gold_chunk_ids
 from src.retrieval.qdrant_store import QdrantVectorStore
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
 
@@ -74,7 +74,7 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
             row = evaluate_query(
                 query_id=item["query_id"],
                 question=item["question"],
-                gold_chunk_ids=item["gold_chunk_ids"],
+                gold_chunk_ids=normalize_gold_chunk_ids(item),
                 gold_doc_id=item.get("gold_doc_id"),
                 retrieved_chunk_ids=ids,
                 retrieved_doc_ids=docs,
@@ -85,7 +85,7 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
         per_query.append({
             "query_id": item["query_id"],
             "question": item["question"],
-            "gold_chunk_ids": item["gold_chunk_ids"],
+            "gold_chunk_ids": normalize_gold_chunk_ids(item),
             "gold_doc_id": item.get("gold_doc_id"),
             "stages": {
                 stage: {
