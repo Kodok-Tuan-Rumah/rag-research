@@ -453,3 +453,126 @@ def test_api_converts_pipeline_exception_to_safe_abstain(monkeypatch):
     assert response.retry_triggered is False
     assert events[0]["answer_status"] == "abstained"
     assert events[0]["failure_type"] == "pipeline_error"
+
+
+# --- abstain_reason surfacing (PROJECT_GOALS.md §4) -------------------------
+
+
+def _single_chunk():
+    return [{
+        "chunk_id": "c1",
+        "doc_id": "d1",
+        "text": "complete grounded context.",
+        "retrieval_score": 0.2,
+        "metadata": {},
+    }]
+
+
+def test_api_surfaces_generator_abstain_reason(monkeypatch):
+    """The reason must reach the caller, not just the log.
+
+    RAGResponse.reason was added but the API never forwarded it, so an HTTP
+    client still could not distinguish a provider rejection from a model
+    refusal or a sanity-check rejection.
+    """
+    reason = ("provider rejected model output: response_format=json_object "
+              "validation failed")
+
+    class RejectingGenerator(FakeGenerator):
+        def generate(self, query, chunks, **kwargs):
+            return type("Response", (), {
+                "answer": "INSUFFICIENT_CONTEXT",
+                "retrieval_method": "abstained",
+                "model": "test-model",
+                "status": "INSUFFICIENT_CONTEXT",
+                "confidence_score": 0.0,
+                "reason": reason,
+                "retrieved_chunks": chunks,
+                "context_chunk_ids": [],
+            })()
+
+    monkeypatch.setattr(main, "retriever", FakeRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", RejectingGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.generator_status == "INSUFFICIENT_CONTEXT"
+    assert response.failure_type == "insufficient_context"
+    assert response.abstain_reason == reason
+
+
+def test_api_abstain_reason_is_none_when_answered(monkeypatch):
+    """A successful answer must not carry a stale abstain reason."""
+    monkeypatch.setattr(main, "retriever", FakeRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.generator_status == "ANSWERED"
+    assert response.failure_type == "none"
+    assert response.abstain_reason is None
+
+
+def test_api_records_reason_for_retrieval_miss(monkeypatch):
+    # The endpoint retries once when the decision is REJECT, so the retriever
+    # stub must serve both attempts.
+    monkeypatch.setattr(main, "retriever", FakeRetriever([[], []]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.0, "decision": "REJECT", "signals": {}},
+            {"confidence_score": 0.0, "decision": "REJECT", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.failure_type == "retrieval_miss"
+    assert response.abstain_reason
+    assert "no usable chunks" in response.abstain_reason
+
+
+def test_api_records_reason_for_pipeline_error(monkeypatch):
+    monkeypatch.setattr(main, "retriever", FakeRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+
+    async def _boom(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(main, "run_in_threadpool", _boom)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.failure_type == "pipeline_error"
+    assert response.abstain_reason
+    assert "boom" in response.abstain_reason

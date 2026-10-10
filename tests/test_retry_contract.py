@@ -165,3 +165,52 @@ def test_agent_reject_abstains_after_bounded_retry():
     assert tools.generate_calls == 0
     assert result.status == AgentStatus.ABSTAINED
     assert result.state.retry_attempted is True
+
+# --- the retry must match §3.4 exactly, and must not re-enable §9 features ---
+
+
+def test_retry_does_not_enable_multi_query():
+    """§9 lists multi-query expansion as a non-goal: "Do not re-enable".
+
+    The retry path used to force use_multi_query=True, which contradicted the
+    non-goal and added an LLM call to every retry. §3.4 specifies three retry
+    adjustments and query expansion is not among them.
+    """
+    tools = RecordingTools(unstable=True, decision="GENERATE", confidence=0.8)
+    agent = build_agent(tools, max_steps=8)
+
+    asyncio.run(agent.run("test query"))
+
+    assert len(tools.search_params) >= 2
+    first, second = tools.search_params[0], tools.search_params[1]
+    assert first["use_multi_query"] is False
+    assert second["use_multi_query"] is False, (
+        "retry must not enable multi-query expansion; §9 forbids re-enabling it "
+        "and §3.4 does not list it as a retry adjustment"
+    )
+    assert second["use_hyde"] is False, "§9 also forbids HyDE"
+
+
+def test_retry_adjustments_match_the_section_3_4_contract():
+    """§3.4 lists exactly three retry adjustments. No more, no fewer."""
+    tools = RecordingTools(unstable=True, decision="GENERATE", confidence=0.8)
+    agent = build_agent(tools, max_steps=8)
+
+    asyncio.run(agent.run("test query"))
+
+    base, retry = tools.search_params[0], tools.search_params[1]
+
+    # 1. widen the candidate pool
+    assert retry["k"] > base["k"]
+    # 2. shift weight toward BM25 by 0.2
+    assert retry["bm25_weight"] - base["bm25_weight"] == pytest.approx(0.2)
+    assert retry["dense_weight"] - base["dense_weight"] == pytest.approx(-0.2)
+    # 3. relax the score floor 0.0 -> -0.1
+    assert base["min_score_threshold"] == pytest.approx(0.0)
+    assert retry["min_score_threshold"] == pytest.approx(-0.1)
+
+    # nothing else changed
+    changed = {k for k in base if base[k] != retry[k]}
+    assert changed == {"k", "dense_weight", "bm25_weight", "min_score_threshold"}, (
+        f"retry changed unexpected fields: {changed - {'k','dense_weight','bm25_weight','min_score_threshold'}}"
+    )

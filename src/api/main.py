@@ -103,7 +103,14 @@ class GenerateResponse(BaseModel):
     post_generation_confidence: float | None = None
     post_generation_decision: str | None = None
     retry_triggered: bool = False
+    # Category of the failure, e.g. retrieval_miss / low_confidence /
+    # insufficient_context / pipeline_error.
     failure_type: str = "none"
+    # Specific cause behind failure_type, taken from RAGResponse.reason.
+    # PROJECT_GOALS.md §4 requires structured failure observability; without this
+    # a caller cannot distinguish a provider rejection from a model refusal or a
+    # sanity-check rejection.
+    abstain_reason: str | None = None
     generator_status: str = "UNKNOWN"
     generator_confidence: float | None = None
     llm_confidence: float | None = None
@@ -150,6 +157,7 @@ def _abstain_response(
     confidence: float,
     retry_triggered: bool,
     failure_type: str,
+    abstain_reason: str | None = None,
 ) -> GenerateResponse:
     return GenerateResponse(
         query=query,
@@ -165,6 +173,7 @@ def _abstain_response(
         retrieval_confidence=confidence,
         retry_triggered=retry_triggered,
         failure_type=failure_type,
+        abstain_reason=abstain_reason,
         generator_status="INSUFFICIENT_CONTEXT",
     )
 
@@ -243,8 +252,9 @@ async def generate_answer(req: GenerateRequest):
                 latency_total_ms=round((time.time() - t_api_start) * 1000, 2),
                 confidence=0.0, retry_triggered=retry_triggered,
                 failure_type="retrieval_miss",
+                abstain_reason="retrieval returned no usable chunks",
             )
-            _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": 0.0, "total": result.latency_total_ms})
+            _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, abstain_reason=result.abstain_reason, retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": 0.0, "total": result.latency_total_ms})
             return result
 
         # REJECT
@@ -259,8 +269,9 @@ async def generate_answer(req: GenerateRequest):
                 latency_total_ms=round((time.time() - t_api_start) * 1000, 2),
                 confidence=confidence, retry_triggered=retry_triggered,
                 failure_type="low_confidence",
+                abstain_reason=f"confidence {confidence:.3f} below reject threshold",
             )
-            _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": 0.0, "total": result.latency_total_ms})
+            _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, abstain_reason=result.abstain_reason, retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": 0.0, "total": result.latency_total_ms})
             return result
         
         if decision == "PARTIAL_TRUST":
@@ -309,12 +320,23 @@ async def generate_answer(req: GenerateRequest):
                 llm_confidence=getattr(response, "llm_confidence_score", None),
                 generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
                 context_chunk_ids=getattr(response, "context_chunk_ids", []),
+                failure_type=(
+                    "insufficient_context"
+                    if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
+                    else "none"
+                ),
+                abstain_reason=(
+                    getattr(response, "reason", None)
+                    if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
+                    else None
+                ),
             )
             generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
             _log_query_event(
                 query_id=rid, query=req.query,
                 answer_status="abstained" if generation_abstained else "answered",
                 failure_type="insufficient_context" if generation_abstained else "none",
+                abstain_reason=getattr(response, "reason", None) if generation_abstained else None,
                 generator_status=result.generator_status,
                 generator_confidence=result.generator_confidence,
                 llm_confidence=result.llm_confidence,
@@ -372,12 +394,26 @@ async def generate_answer(req: GenerateRequest):
             llm_confidence=getattr(response, "llm_confidence_score", None),
             generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
             context_chunk_ids=getattr(response, "context_chunk_ids", []),
+            # Retrieval succeeded but the generator declined to answer. Without
+            # this the response reported failure_type="none" for a query that
+            # produced no answer, which PROJECT_GOALS.md §4 forbids.
+            failure_type=(
+                "insufficient_context"
+                if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
+                else "none"
+            ),
+            abstain_reason=(
+                getattr(response, "reason", None)
+                if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
+                else None
+            ),
         )
         generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
         _log_query_event(
             query_id=rid, query=req.query,
             answer_status="abstained" if generation_abstained else "answered",
             failure_type="insufficient_context" if generation_abstained else "none",
+            abstain_reason=getattr(response, "reason", None) if generation_abstained else None,
             generator_status=result.generator_status,
             generator_confidence=result.generator_confidence,
             llm_confidence=result.llm_confidence,
@@ -396,8 +432,9 @@ async def generate_answer(req: GenerateRequest):
             latency_total_ms=round((time.time() - t_api_start) * 1000, 2),
             confidence=0.0, retry_triggered=retry_triggered,
             failure_type="pipeline_error",
+            abstain_reason=f"{type(e).__name__}: {e}"[:300],
         )
-        _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, retry_triggered=retry_triggered, latency_ms={"retrieval": 0.0, "generation": 0.0, "total": result.latency_total_ms})
+        _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, abstain_reason=result.abstain_reason, retry_triggered=retry_triggered, latency_ms={"retrieval": 0.0, "generation": 0.0, "total": result.latency_total_ms})
         return result
 
 

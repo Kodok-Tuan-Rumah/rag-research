@@ -137,11 +137,21 @@ class Agent:
         }
 
         if getattr(state, 'retry_attempted', False) or getattr(state, 'force_expand', False):
+            # §3.4 specifies exactly three adjustments on the single permitted
+            # retry: widen the candidate pool, shift weight toward BM25, and
+            # relax the score floor. It does not enable query expansion.
+            #
+            # `use_multi_query` used to be forced on here, which contradicted
+            # PROJECT_GOALS.md §9 ("Do not re-enable") and added an LLM call to
+            # every retry. §9's stated reason for keeping it off was "+0.17 MRR
+            # at +3400ms cost — not viable until latency budget allows", and the
+            # P95 budget is already missed. The retry path now follows the
+            # contract exactly; plan.allow_multi_query still governs the value,
+            # and it defaults to False via settings.
             params["k"] = min(int(plan.top_k_hint * 1.5), 30)
             params["dense_weight"] = 0.3
             params["bm25_weight"] = 0.7
             params["min_score_threshold"] = -0.1
-            params["use_multi_query"] = True
             state.force_expand = False
         return params
     

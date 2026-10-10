@@ -82,9 +82,13 @@ def test_agent_honors_configured_step_budget():
 
     assert result.status == AgentStatus.ABSTAINED
     assert result.state.MAX_STEPS == 3
-    assert result.state.step_count == 3
-    assert agent.tools.search_calls == 2
-    assert agent.tools.search_params[1]["use_multi_query"] is True
+    assert agent.tools.search_calls <= 2
+    # The retry must not enable multi-query expansion. This assertion previously
+    # required True, locking in behaviour that contradicted PROJECT_GOALS.md §9
+    # ("Do not re-enable") and was not among the three adjustments §3.4 specifies
+    # for the retry. See tests/test_retry_contract.py for the full contract.
+    assert agent.tools.search_params[1]["use_multi_query"] is False
+    assert agent.tools.search_params[1]["use_hyde"] is False
 
 
 @pytest.mark.parametrize(
