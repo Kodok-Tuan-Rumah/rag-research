@@ -1,8 +1,10 @@
 # RAG SYSTEM — ENGINEERING GOALS & PRODUCTION SPEC
-> **Version:** 2.0  
+> **Version:** 2.1
 > **Repo:** `rag-research`  
-> **Status:** Phase 1 Active  
-> **Last Updated:** 2026-04-27
+> **Status:** Phase 1 Active — runtime decision-path alignment is implemented; Phase 1 exit criteria are not all verified
+> **Last Updated:** 2026-10-08
+
+> **Current evidence note:** The K7.10–K7.13 retrieval audits use the 13-query `data/evaluation/retrieval_eval_dataset_v2.json`. This is distinct from the older 14-query `data/evaluation/retrieval_eval_dataset.json` summarized in the historical README baseline. The 13-query K7 set does not satisfy the Phase 2 target of at least 200 labeled samples, and its results do not establish production readiness or confidence calibration.
 
 ---
 
@@ -72,7 +74,7 @@ normalize(text):
 | Recall@10 | ≥ 90% | % of queries where gold chunk appears in top-10 retrieved. k=10 is fixed. | `WIP` |
 | MRR@10 | ≥ 0.70 | Mean Reciprocal Rank at k=10 over eval set | `WIP` |
 | Retrieval Miss Rate | ≤ 10% | 1 - Recall@10 | `WIP` |
-| Ranking Error Rate | ≤ 15% | % of queries where gold chunk rank > 3 despite being retrieved. Baseline: hybrid_rrf, top_k=10, candidate_k=50 | `WIP` |
+| Ranking Error Rate | ≤ 15% | % of queries where gold chunk rank > 3 despite being retrieved. Historical measurement protocol: hybrid_rrf, top_k=10, candidate_k setting=50 | `WIP` |
 | Chunk Diversity (intra-list) | ≥ 0.30 | Average pairwise cosine distance between top-5 retrieved chunks. Detects duplicate-dominated results. | `TODO` |
 
 ### 2.3 Reliability
@@ -89,10 +91,10 @@ normalize(text):
 
 | Metric | Target | Notes |
 |---|---|---|
-| End-to-end latency (P95) | ≤ 3.5s | Revised from 2s. See [Section 6](#6-latency-budget) for justification and component breakdown. |
+| End-to-end latency (P95) | ≤ 3.5s | No-retry path target; revised from the superseded `<2s` aspiration. See [Section 6](#6-latency-budget). Not yet verified end-to-end against the current runtime model. |
 | Retrieval latency (P95) | ≤ 600ms | Qdrant hybrid search + BM25 |
-| Reranker latency (P95) | ≤ 700ms | Cross-encoder, candidate_k=50 |
-| LLM generation latency (P95) | ≤ 1.8s | Groq llama-3.1-8b-instant |
+| Reranker latency (P95) | ≤ 700ms | Target only; current code reranks at most 20 candidates and reranker is opt-in. K7.11 CPU stage P95 was 1,003.52ms at @5 and 3,498.03ms at @20, so this target was not met in that run. |
+| LLM generation latency (P95) | ≤ 1.8s | Target only; current configured model is `openai/gpt-oss-20b`. Re-measure on deployment hardware/provider. |
 | Retry overhead (max) | ≤ 2.0s | Max 1 retry cycle. See retry contract in Section 3.4. |
 
 ### 2.5 Cost Efficiency
@@ -100,7 +102,7 @@ normalize(text):
 | Lever | Target | Implementation |
 |---|---|---|
 | Token budget per query | ≤ 2,000 input tokens | Context budgeting in `generator.py` |
-| Chunk filtering | Drop chunks < MIN_CHUNK_LENGTH (80 chars) and score < 0.0 | Already implemented |
+| Chunk filtering | Layered score, content-quality, strict/fallback, and generation-time score gates | Implemented; see Section 3.3 for stage-specific rules |
 | Retry cap | Max 1 retry per query | Hard limit — no infinite loops |
 | Multi-query expansion | Disabled by default | Only enable when EM < 60% and MRR < 0.60 on eval |
 
@@ -108,25 +110,29 @@ normalize(text):
 
 ## 3. Architecture & Component Contracts
 
-### 3.1 Baseline Configuration (Committed)
+### 3.1 Current Runtime Baseline (Source-Verified 2026-10-08)
 
 ```yaml
 retrieval_strategy: hybrid_rrf
-top_k: 10
-candidate_k: 50
-min_chunk_length: 80
-hyde: disabled          # confirmed domain drift — do not re-enable without ablation
-multi_query: disabled   # +0.17 MRR at +3400ms cost — not worth it at this stage
-reranker: enabled       # cross-encoder, BGE
+api_top_k_policy_defaults: factual=5, general=8, reasoning=10
+api_top_k_request_override: 1..20
+candidate_k_setting: 50   # typical computed pool is 40 when top_k=10
+rrf_k: 60
+embedding_model: sentence-transformers/all-MiniLM-L6-v2
+reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+reranker_default_enabled: false
+reranker_input_cap: 20
+hyde: disabled
+multi_query: disabled
 ```
 
-> **Ablation results (Sprint 2):** BM25-only collapses on paraphrase queries (MRR=0.08). `hybrid_rrf` achieves P@5=1.0 on paraphrase at top_k=10. MQ+HyDE+Reranker adds ~3400ms latency for only +0.17 MRR gain — **disabled until latency budget allows**.
+The cross-encoder is available as an explicit opt-in; it is not the production ranking default. The configured `candidate_k` setting is an upper bound used by `_choose_candidate_k`; with `top_k=10`, the current code typically retrieves/fuses 40 candidates, and reranking is capped at 20. Older ablation claims below are historical evidence, not this runtime configuration.
 
 ### 3.2 Query-Type Classifier
 
 **Purpose:** Route query to correct retrieval config.  
 **Classes:** `factual` | `reasoning` | `general`  
-**Implementation:** Lightweight heuristic (keyword + length signal) or small classifier.
+**Implementation:** Current runtime uses `PolicyEngine` keyword heuristics for factual/reasoning/general routing; classifier accuracy has not been established by the K7 retrieval audits.
 
 | Class | Retrieval Config | Rationale |
 |---|---|---|
@@ -136,10 +142,12 @@ reranker: enabled       # cross-encoder, BGE
 
 **Contract:**
 - Classifier accuracy target: ≥ 85% on eval set (measured separately)
-- Fallback: if classifier confidence < 0.6, use `general` config
+- Current routing is a deterministic keyword heuristic and does not produce a classifier-confidence score; a `<0.6` confidence fallback is not implemented. Unmatched queries route directly to `general`.
 - Misclassification impact must be tracked as a failure subtype: `classification_error`
 
 ### 3.3 Retrieval Pipeline
+
+Current runtime flow (reranking is opt-in):
 
 ```
 Query
@@ -147,22 +155,34 @@ Query
   ├── Dense retrieval (embedding, Qdrant)  ──┐
   └── BM25 retrieval                       ──┤
                                              ▼
-                                    RRF Fusion (true RRF, not stub)
+                                    Weighted RRF (k=60)
                                              │
-                                    Cross-encoder reranker
-                                    (candidate_k=50 → top_k=10)
+                                    Score/noise prefilter
                                              │
-                                    Chunk quality filter
-                                    (score < 0.0 dropped, len < 80 dropped)
+                           Optional cross-encoder (max 20 inputs)
                                              │
-                                    Context assembly
-                                    (reference ratio control, length budget)
+                         Strict filter → minimum-filter fallback
                                              │
-                                    Generator
+                         Context diversity/character limit
+                                             │
+                             Confidence decision → LLM
 ```
 
-**Invariant (must hold at all times):** `candidate_k ≥ rerank_n ≥ top_k`  
-Current: `50 ≥ 10 ≥ 10` ✓
+The configured candidate pool setting is 50; for `top_k=10`, `_choose_candidate_k` typically yields 40. Filtering can reduce the returned result count, so `top_k` is an upper bound rather than a guarantee. Reranking is disabled by default and receives at most 20 candidates when requested.
+
+#### Stage-specific filtering gates
+
+The runtime does not use one global minimum chunk length of 80 characters. Filtering is layered, and a chunk rejected at a stage is not available to later stages:
+
+| Stage | Source rule | Effect |
+|---|---|---|
+| Post-RRF score gate | Keep `retrieval_score >= settings.min_score_threshold` (default `0.0`; configurable) | Removes low-scoring fused candidates before content checks. |
+| Pre-reranker noise gate | `is_low_quality_chunk`: reject fewer than 10 words, text ending in `:`, or more than 10 commas with fewer than 15 words | Candidate removed before optional reranking and strict filtering. |
+| Strict retrieval filter | Require at least 12 words, acceptable start/completeness, and not a fragment/title/author; reference chunks also require the query policy to allow references | Primary final-result path. The completeness heuristic accepts terminal punctuation or a sufficiently substantive clause. |
+| Minimum-filter fallback | Used only when the strict path yields no final chunks; rejects empty text, disallowed references, title/author lines, and fragments, while relaxing the informative/length requirements | Can return lower-quality, shorter chunks; if this pool is also empty, retrieval abstains. |
+| Generator score gate | Separately rejects when top score is `<= -3.0`; then stops adding ordered candidates when a score is `< -3.0` or the adjacent score gap exceeds `settings.score_gap_threshold` (default `15.0`) | Further limits the chunks used to build the generation context; this is not the retrieval `0.0` threshold. |
+
+The retrieval score threshold is configured in `src/api/config.py`; the content predicates and strict/minimum rules are in `src/retrieval/chunk_filters.py`, and their ordering/fallback is in `src/retrieval/hybrid_retriever.py`. The generation-time score gate is implemented separately in `src/generation/generator.py`. Thresholds and predicates above describe current defaults and source behavior, not calibrated relevance guarantees.
 
 ### 3.4 Self-Reflection & Retry Contract
 
@@ -293,12 +313,14 @@ Original spec: retrieval (500ms) + generation (1500ms) = 2000ms. This left **0ms
 | Dense retrieval (Qdrant) | 80ms | 200ms | Hybrid search |
 | BM25 retrieval | 40ms | 100ms | |
 | RRF fusion | 10ms | 20ms | CPU |
-| Cross-encoder reranking | 300ms | 700ms | candidate_k=50 |
+| Cross-encoder reranking | 300ms | 700ms | Historical planning budget; current reranker cap is 20 and K7.11 exceeded this P95 target on CPU. |
 | Chunk filtering + assembly | 20ms | 60ms | |
-| LLM generation (Groq) | 600ms | 1,800ms | llama-3.1-8b-instant |
+| LLM generation (Groq) | 600ms | 1,800ms | Planning target; current configured model is `openai/gpt-oss-20b`; remeasure with current provider/model. |
 | Logging | 10ms | 30ms | async |
 | **Total (no retry)** | **~1,080ms** | **~2,960ms** | |
 | **Total (with 1 retry)** | **~2,160ms** | **~4,960ms** | |
+
+These component values are budget estimates from the earlier architecture, not measurements of the current runtime. K7.11 measured only retrieval stages on CPU (not API-to-answer latency or Groq generation): median retrieval totals were 53.31ms (RRF-only), 574.72ms (reranker@5), and 3,095.61ms (reranker@20). Its P95 retrieval totals were 113.33ms, 1,095.07ms, and 3,549.29ms, respectively. Use those results only for the measured 13-query workload and machine.
 
 **P95 target: ≤ 3.5s (no retry path)**  
 **P95 target with retry: ≤ 5.5s (acceptable — retry is exceptional path)**
@@ -341,7 +363,7 @@ This must be implemented as a circuit breaker, not a manual toggle.
 **Goal:** Automated evaluation loop that gives a reliable signal on system quality.
 
 **Exit Criteria (all must pass):**
-- [ ] `ground_truth_qa.json` contains ≥ 200 labeled samples across all 4 query categories (lexical, paraphrase, multihop, adversarial)
+- [ ] Versioned retrieval evaluation dataset(s) contain ≥ 200 labeled samples across all 4 query categories (lexical, paraphrase, multihop, adversarial)
 - [ ] Each sample has: `query`, `gold_answer`, `gold_chunk_id`, `should_abstain` label
 - [ ] `run_eval.py` runs end-to-end without manual intervention
 - [ ] `run_eval.py` outputs: EM, Recall@10, MRR@10, abstain accuracy, false abstain rate, failure type distribution
@@ -734,28 +756,31 @@ System does NOT:
 
 
 
-## Appendix A — Committed Baseline (Do Not Change Without Ablation)
+## Appendix A — Current Runtime Snapshot (Source-Verified 2026-10-08)
 
 ```json
 {
   "retrieval_strategy": "hybrid_rrf",
-  "top_k": 10,
-  "candidate_k": 50,
-  "min_chunk_length": 80,
+  "api_top_k_policy_defaults": {"factual": 5, "general": 8, "reasoning": 10},
+  "api_top_k_request_override": "optional, 1..20",
+  "candidate_k_setting": 50,
+  "typical_computed_candidate_k_at_top_k_10": 40,
+  "rrf_k": 60,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "reranker_enabled_by_default": false,
+  "reranker_input_cap": 20,
   "hyde_enabled": false,
   "multi_query_enabled": false,
-  "reranker_enabled": true,
-  "llm_model": "llama-3.1-8b-instant",
-  "confidence_threshold": 0.65,
-  "max_retry_iterations": 2,
-  "context_token_budget": 1800
+  "llm_model": "openai/gpt-oss-20b",
+  "confidence_reject_threshold": 0.35,
+  "confidence_partial_threshold": 0.65,
+  "api_retrieval_attempts": "one initial attempt plus at most one BM25-heavy retry",
+  "context_max_chars": 3000
 }
 ```
 
-Any change to this baseline requires:
-1. Full eval run before change
-2. Full eval run after change
-3. Delta documented in `CHANGELOG.md`
+This snapshot describes defaults and code behavior, not a calibrated quality baseline. Runtime and evaluation changes should be measured against the same versioned dataset and recorded with their experiment evidence.
 
 ---
 

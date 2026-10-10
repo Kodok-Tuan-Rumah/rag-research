@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Optional
+import logging
 
 from src.controller.agent_state import AgentState, AgentStatus
 from src.controller.policy_engine import PolicyEngine, PlanHints
@@ -10,6 +11,8 @@ from src.generation.generator import GroqGenerator
 from src.retrieval.qdrant_store import QdrantVectorStore
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
 from src.retrieval.tools import RetrievalTools
+
+logger = logging.getLogger("rag.agent")
 
 @dataclass
 class AgentResponse:
@@ -43,39 +46,62 @@ class Agent:
         result = await self.tools.call_tool("search_hybrid", params)
         state.add_observation("search_hybrid", result)
 
-        if "chunks" in result and result["chunks"]:
-            state.extend_chunks(result["chunks"])
-            state.retrieved_chunks = sorted(
-                state.retrieved_chunks,
-                key=lambda x: x.get("retrieval_score", 0),
-                reverse=True
-            )[:20]
-            seen = set()
-            deduped = []
-            for c in state.retrieved_chunks:
-                cid = c.get("chunk_id")
-                if cid not in seen:
-                    seen.add(cid)
-                    deduped.append(c)
-            state.retrieved_chunks = deduped
+        candidates = result.get("chunks", [])
+        ranked = sorted(
+            candidates,
+            key=lambda chunk: (
+                chunk.get("retrieval_score", 0.0)
+                if isinstance(chunk, dict)
+                else getattr(chunk, "retrieval_score", 0.0)
+            ),
+            reverse=True,
+        )[:20]
+        seen = set()
+        state.retrieved_chunks = []
+        for chunk in ranked:
+            chunk_id = (
+                chunk.get("chunk_id")
+                if isinstance(chunk, dict)
+                else getattr(chunk, "chunk_id", None)
+            )
+            if chunk_id not in seen:
+                seen.add(chunk_id)
+                state.retrieved_chunks.append(chunk)
 
-    async def _execute_generation(self, state: AgentState, plan: PlanHints) -> Optional[AgentResponse]:
+    async def _execute_generation(
+        self,
+        state: AgentState,
+        plan: PlanHints,
+        retrieval_decision: str | None = None,
+        retrieval_confidence: float | None = None,
+    ) -> Optional[AgentResponse]:
+        generation_chunks = (
+            state.retrieved_chunks[:3]
+            if retrieval_decision == "PARTIAL_TRUST"
+            else state.retrieved_chunks
+        )
         result = await self.tools.call_tool("generate_answer", {
             "query": state.query,
-            "chunks": state.retrieved_chunks,
+            "chunks": generation_chunks,
             "max_tokens": plan.generation_hint["max_tokens"],
             "temperature": plan.generation_hint["temperature"],
             "source_chunk_id": state.source_chunk_id,
             "min_top1_score": 0.0,
+            "query_type": plan.query_type,
+            "retrieval_decision": retrieval_decision,
+            "retrieval_confidence": retrieval_confidence,
         })
 
         state.add_observation("generate_answer", result)
         response = result.get("response")
+        answer = response.answer if response else None
+        if retrieval_decision == "PARTIAL_TRUST" and answer:
+            answer = f"[Low confidence — verify independently] {answer}"
 
         if response and response.status == "ANSWERED":
             state.status = AgentStatus.ANSWERED
             return AgentResponse(
-                answer=response.answer,
+                answer=answer,
                 status=state.status,
                 state=state,
                 response=response,
@@ -88,7 +114,7 @@ class Agent:
         
         state.status = AgentStatus.ABSTAINED     
         return AgentResponse(
-            answer=response.answer if response else None,
+            answer=answer,
             status=state.status,
             state=state,
             response=response,
@@ -105,24 +131,30 @@ class Agent:
             "k": plan.top_k_hint,
             "use_multi_query": plan.allow_multi_query,
             "use_hyde": plan.allow_hyde,
+            "dense_weight": 0.5,
+            "bm25_weight": 0.5,
+            "min_score_threshold": settings.min_score_threshold,
         }
 
-        if getattr(state, 'force_expand', False) or (state.step_count > 0 and state.confidence_score < 0.4):
-            params["k"] = min(plan.top_k_hint * 2, 50)
+        if getattr(state, 'retry_attempted', False) or getattr(state, 'force_expand', False):
+            params["k"] = min(int(plan.top_k_hint * 1.5), 30)
+            params["dense_weight"] = 0.3
+            params["bm25_weight"] = 0.7
+            params["min_score_threshold"] = -0.1
             params["use_multi_query"] = True
             state.force_expand = False
         return params
     
-    def _decide_next_action(self, signals: dict, score: float) ->  str:
+    def _decide_next_action(self, signals: dict, decision: str) -> str:
+        if decision not in {"REJECT", "PARTIAL_TRUST", "GENERATE"}:
+            raise ValueError(f"Unknown confidence decision: {decision}")
+        if decision == "REJECT":
+            return "REJECT"
         if signals.get("unstable_retrieval"):
             return "RETRIEVE_AGAIN"
         if signals.get("spurious_match"):
             return "PARTIAL_TRUST"
-        if score < self.confidence_engine.reject_threshold:
-            return "REJECT"
-        if score < self.confidence_engine.partial_threshold:
-            return "PARTIAL_TRUST"
-        return "GENERATE"
+        return decision
     
     # MAIN LOOP
     async def run(self, query: str, source_chunk_id: str | None = None) -> AgentResponse:
@@ -143,20 +175,28 @@ class Agent:
             if state.is_budget_exhausted():
                 state.status = AgentStatus.ABSTAINED
                 break
-            print(f"[DEBUG] chunks going to confidence: {len(state.retrieved_chunks)}")
+            logger.debug(
+                "[DEBUG] chunks going to confidence: %d", len(state.retrieved_chunks)
+            )
             for c in state.retrieved_chunks[:3]:
-                print(f"  chunk_id={c.get('chunk_id')} retrieval_score={c.get('retrieval_score')}")
+                logger.debug(
+                    "  chunk_id=%s retrieval_score=%s",
+                    c.get("chunk_id"), c.get("retrieval_score"),
+                )
 
 
             # Confidence
             quality = await self.tools.assess_retrieval_quality(
-                state.retrieved_chunks, state.query
+                state.retrieved_chunks,
+                state.query,
+                query_type=plan.query_type,
             )
             state.add_observation("assess_retrieval_quality", quality)
 
             confidence = quality["confidence"]
             state.confidence_score = confidence["confidence_score"]
             signals = confidence["signals"]
+            decision = confidence["decision"]
 
             current_top_score = state.retrieved_chunks[0].get("retrieval_score", 0.0) if state.retrieved_chunks else 0.0
             if abs(current_top_score - state.prev_top_score) < 0.1:
@@ -169,10 +209,17 @@ class Agent:
                 state.status = AgentStatus.ABSTAINED
                 break
 
-            action = self._decide_next_action(signals, state.confidence_score)
+            action = self._decide_next_action(signals, decision)
             if action == "REJECT":
-                state.status = AgentStatus.ABSTAINED
-                break
+                if not state.retry_attempted:
+                    logger.info("[RETRY_CONTRACT] Attempt 1 rejected (confidence=%.3f). Triggering Attempt 2 retry per Section 3.4.", state.confidence_score)
+                    state.retry_attempted = True
+                    state.force_expand = True
+                    continue
+                else:
+                    logger.warning("[RETRY_CONTRACT] Attempt 2 still rejected. Abstaining.")
+                    state.status = AgentStatus.ABSTAINED
+                    break
             if action == "RETRIEVE_AGAIN":
                 if state.is_budget_exhausted():
                     state.status = AgentStatus.ABSTAINED
@@ -184,7 +231,12 @@ class Agent:
                 if state.is_budget_exhausted():
                     state.status = AgentStatus.ABSTAINED
                     break
-                response = await self._execute_generation(state, plan)
+                response = await self._execute_generation(
+                    state,
+                    plan,
+                    retrieval_decision=action,
+                    retrieval_confidence=state.confidence_score,
+                )
                 if response:
                     response.latency_ms = {"total": round((time.time() - t_start) * 1000, 1)}
                     return response

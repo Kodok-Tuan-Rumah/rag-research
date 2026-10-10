@@ -1,0 +1,739 @@
+{
+  "audit": "K7.10 canonical retrieval evaluation coverage",
+  "generated_at_utc": "2026-10-08T06:35:46.964973+00:00",
+  "sources": {
+    "dataset": "data/evaluation/retrieval_eval_dataset_v2.json",
+    "k79_artifact": "results/metrics/rrf_vs_reranker5_decision_20261005T141527Z.json",
+    "k78_artifact": "results/metrics/reranker_candidate_count_ablation_20261005T140325Z.json",
+    "dataset_file_sha256": "bc96e95372eeb2abebe917c15cb1dbb289c2bb3fe63cbcb1ab4f68c64008c42e",
+    "dataset_declared_content_sha256": "b5ca69615aa2b50b02f65e80d9f6b98b6966f6001e9fbfa5e0871ecb29167f88",
+    "declared_content_hash_matches_file_sha256": false,
+    "corpus_sha256": {
+      "documents": "9048aca17d69289a7174edc3d938ea2d79f03896d3900deba76f9fb6c7f0dc8a",
+      "chunks": "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6"
+    },
+    "k79_run_id": "K7.9-20261005T141527Z",
+    "k79_git_head": "baf3f4c76bc0b21318825a64cdbd686c08e8d139",
+    "k79_working_tree": "dirty",
+    "k79_configuration": {
+      "dataset": "data/evaluation/retrieval_eval_dataset_v2.json",
+      "query_count": 13,
+      "query_ids": [
+        "q01",
+        "q02",
+        "q03",
+        "q04",
+        "q06",
+        "q09",
+        "q10",
+        "q11",
+        "q13",
+        "q14",
+        "q16",
+        "q19",
+        "q20"
+      ],
+      "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+      "max_length": 326,
+      "effective_candidate_pool": 40,
+      "candidate_k_setting": 50,
+      "top_k": 10,
+      "rrf_k": 60,
+      "dense_weight": 0.5,
+      "bm25_weight": 0.5,
+      "device": "cpu",
+      "batch_size": 32,
+      "generation": false,
+      "ragas": false
+    }
+  },
+  "validation": {
+    "status": "passed",
+    "query_count": 13,
+    "query_ids_match_dataset": true,
+    "gold_ids_match_dataset": true,
+    "questions_match_dataset": true,
+    "stored_ranks_match_candidate_order": true,
+    "hit_at_10_matches_final_ids": true,
+    "k78_k79_rrf_ranks_match": true
+  },
+  "coverage_summary": {
+    "rrf_gold_rank_1_count": 12,
+    "rrf_gold_rank_1_fraction": 0.9231,
+    "rrf_gold_rank_greater_than_1_count": 1,
+    "rrf_gold_rank_buckets": {
+      "rank_1": 12,
+      "rank_2_to_5": 0,
+      "rank_6_to_10": 0,
+      "rank_11_to_20": 0,
+      "rank_over_20": 1,
+      "not_found_in_rrf_candidates": 0
+    },
+    "gold_in_reranker5_input_count": 12,
+    "gold_rank_gt1_and_in_reranker5_input_count": 0,
+    "reranker5_improved_gold_rank_count": 0,
+    "reranker5_regressed_gold_rank_count": 2,
+    "reranker5_unchanged_rank_count": 10,
+    "difficulty_label_counts": {
+      "UNKNOWN": 13
+    },
+    "answer_type_label_counts": {
+      "UNKNOWN": 13
+    },
+    "q06": {
+      "rrf_gold_rank": 24,
+      "reranker5_input_count": 5,
+      "gold_in_reranker5_input": false,
+      "hit_at_10_rrf_only": false,
+      "hit_at_10_reranker5": false
+    },
+    "metric_delta_reranker5_minus_rrf_only": {
+      "recall@10": 0.0,
+      "mrr@10": -0.0769,
+      "hit@10": 0.0
+    }
+  },
+  "modes": {
+    "rrf_only": {
+      "metrics": {
+        "query_count": 13,
+        "recall@10": 0.9231,
+        "mrr@10": 0.9231,
+        "hit@10": 0.9231
+      },
+      "queries": [
+        {
+          "query_id": "q01",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0086"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q02",
+          "gold_chunk_ids": [
+            "tier1_advanced_rag_survey_rs_0002"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q03",
+          "gold_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0023"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q04",
+          "gold_chunk_ids": [
+            "tier2_large_language_models_rs_0006"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q06",
+          "gold_chunk_ids": [
+            "tier1_advanced_rag_survey_rs_0028"
+          ],
+          "rrf_gold_rank": 24,
+          "rrf_gold_in_top5": false,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": null,
+          "hit_at_10": false
+        },
+        {
+          "query_id": "q09",
+          "gold_chunk_ids": [
+            "tier2_self_instruct_rs_0062"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q10",
+          "gold_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0027"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q11",
+          "gold_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0026"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q13",
+          "gold_chunk_ids": [
+            "tier3_attention_all_you_need_rs_0008"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q14",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0043"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q16",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0007"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q19",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0098"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q20",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0152"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 0,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        }
+      ]
+    },
+    "reranker5": {
+      "metrics": {
+        "query_count": 13,
+        "recall@10": 0.9231,
+        "mrr@10": 0.8462,
+        "hit@10": 0.9231
+      },
+      "queries": [
+        {
+          "query_id": "q01",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0086"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q02",
+          "gold_chunk_ids": [
+            "tier1_advanced_rag_survey_rs_0002"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q03",
+          "gold_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0023"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q04",
+          "gold_chunk_ids": [
+            "tier2_large_language_models_rs_0006"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q06",
+          "gold_chunk_ids": [
+            "tier1_advanced_rag_survey_rs_0028"
+          ],
+          "rrf_gold_rank": 24,
+          "rrf_gold_in_top5": false,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": false,
+          "final_gold_rank": null,
+          "hit_at_10": false
+        },
+        {
+          "query_id": "q09",
+          "gold_chunk_ids": [
+            "tier2_self_instruct_rs_0062"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q10",
+          "gold_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0027"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q11",
+          "gold_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0026"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 2,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q13",
+          "gold_chunk_ids": [
+            "tier3_attention_all_you_need_rs_0008"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q14",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0043"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q16",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0007"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q19",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0098"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 1,
+          "hit_at_10": true
+        },
+        {
+          "query_id": "q20",
+          "gold_chunk_ids": [
+            "tier3_llama2_rs_0152"
+          ],
+          "rrf_gold_rank": 1,
+          "rrf_gold_in_top5": true,
+          "reranker_input_count": 5,
+          "gold_in_reranker_input": true,
+          "final_gold_rank": 2,
+          "hit_at_10": true
+        }
+      ]
+    }
+  },
+  "per_query": [
+    {
+      "query_id": "q01",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0086"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q02",
+      "gold_chunk_ids": [
+        "tier1_advanced_rag_survey_rs_0002"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q03",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0023"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q04",
+      "gold_chunk_ids": [
+        "tier2_large_language_models_rs_0006"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "How are high-confidence predictions filtered in the method described?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q06",
+      "gold_chunk_ids": [
+        "tier1_advanced_rag_survey_rs_0028"
+      ],
+      "rrf_gold_rank": 24,
+      "rrf_gold_in_top5": false,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": false,
+      "final_gold_rank": null,
+      "hit_at_10": false,
+      "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": null,
+      "rrf_only_hit_at_10": false,
+      "candidate_count_final_ranks": {
+        "5": null,
+        "10": null,
+        "15": null,
+        "20": null
+      }
+    },
+    {
+      "query_id": "q09",
+      "gold_chunk_ids": [
+        "tier2_self_instruct_rs_0062"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q10",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0027"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q11",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0026"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 2,
+      "hit_at_10": true,
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 2,
+        "10": 2,
+        "15": 2,
+        "20": 2
+      }
+    },
+    {
+      "query_id": "q13",
+      "gold_chunk_ids": [
+        "tier3_attention_all_you_need_rs_0008"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q14",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0043"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q16",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0007"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q19",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0098"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 1,
+      "hit_at_10": true,
+      "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 1,
+        "10": 1,
+        "15": 1,
+        "20": 1
+      }
+    },
+    {
+      "query_id": "q20",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0152"
+      ],
+      "rrf_gold_rank": 1,
+      "rrf_gold_in_top5": true,
+      "reranker_input_count": 5,
+      "gold_in_reranker_input": true,
+      "final_gold_rank": 2,
+      "hit_at_10": true,
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "difficulty_label": "UNKNOWN",
+      "answer_type_label": "UNKNOWN",
+      "rrf_only_final_gold_rank": 1,
+      "rrf_only_hit_at_10": true,
+      "candidate_count_final_ranks": {
+        "5": 2,
+        "10": 2,
+        "15": 2,
+        "20": 2
+      }
+    }
+  ],
+  "interpretation": [
+    "12/13 gold chunks are already ranked first by RRF; these cases provide no headroom for reranking to improve the gold rank.",
+    "The only gold ranked below first place is q06 at RRF rank 24; it is outside the reranker@5 input, so this set has zero rank>1 gold cases that reranker@5 can improve.",
+    "Among gold chunks actually exposed to reranker@5, 0 improve and 2 regress in final rank; see per-query rows.",
+    "All difficulty and answer_type labels are UNKNOWN, so the current canonical set cannot be stratified by those dimensions.",
+    "This 13-query audit describes this fixed set only; it does not establish general reranker performance on a broader query distribution."
+  ]
+}

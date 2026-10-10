@@ -276,6 +276,8 @@ class ConfidenceEngine:
         return {
             "confidence_score": round(float(confidence_score), 4),
             "decision": decision,
+            "is_calibrated": False,
+            "calibration_method": "heuristic_uncalibrated",
             "signals": {
                 "top_score": round(top_score, 4),
                 "gap": round(gap, 4),

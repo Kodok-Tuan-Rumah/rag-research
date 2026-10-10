@@ -23,6 +23,7 @@ class AgentState:
     prev_top_score: float = 0.0
     stagnation_count: int = 0
     force_expand: bool = False
+    retry_attempted: bool = False
     status: AgentStatus = AgentStatus.RUNNING
     source_chunk_id: str | None = None
     last_tool: str | None = None

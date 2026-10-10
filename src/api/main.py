@@ -10,11 +10,13 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from src.api.config import settings
+from src.controller.policy_engine import PolicyEngine
 from typing import Optional
 
 load_dotenv()
 
 DEFAULT_USE_RERANKER = False
+policy_engine = PolicyEngine()
 
 # Setup logging
 logging.basicConfig(
@@ -84,7 +86,7 @@ class ChunkResult(BaseModel):
 
 class GenerateRequest(BaseModel):
     query: str = Field(..., min_length=3, max_length=1000)
-    top_k: int = Field(default=settings.default_top_k, ge=1, le=20)
+    top_k: int | None = Field(default=None, ge=1, le=20)
     use_reranker: bool = Field(default=DEFAULT_USE_RERANKER)
 class GenerateResponse(BaseModel):
     query: str
@@ -97,6 +99,9 @@ class GenerateResponse(BaseModel):
     model: str
     confidence: float
     decision: str
+    retrieval_confidence: float | None = None
+    post_generation_confidence: float | None = None
+    post_generation_decision: str | None = None
     retry_triggered: bool = False
     failure_type: str = "none"
     generator_status: str = "UNKNOWN"
@@ -157,6 +162,7 @@ def _abstain_response(
         model="none",
         confidence=confidence,
         decision="REJECT",
+        retrieval_confidence=confidence,
         retry_triggered=retry_triggered,
         failure_type=failure_type,
         generator_status="INSUFFICIENT_CONTEXT",
@@ -187,6 +193,9 @@ async def generate_answer(req: GenerateRequest):
     rid = str(uuid.uuid4())[:8]
     t_api_start = time.time()
     retry_triggered = False
+    plan = policy_engine.initial_plan(req.query)
+    query_type = plan.query_type
+    top_k = req.top_k if req.top_k is not None else plan.top_k_hint
 
     try:
         # Retrieval is deliberately bounded: initial attempt plus one BM25-heavy retry.
@@ -196,15 +205,22 @@ async def generate_answer(req: GenerateRequest):
         for attempt in range(2):
             search_kwargs = {
                 "query": req.query,
-                "top_k": req.top_k,
+                "top_k": top_k,
                 "rerank": req.use_reranker,
+                "allow_references": plan.allow_references,
+                "max_ref_ratio": plan.max_ref_ratio,
+                "use_multi_query": plan.allow_multi_query,
+                "use_hyde": plan.allow_hyde,
             }
             if attempt == 1:
                 retry_triggered = True
                 search_kwargs.update({"dense_weight": 0.3, "bm25_weight": 0.7})
 
             chunks = await run_in_threadpool(retriever.search, **search_kwargs)
-            conf_eval = confidence_engine.calculate_confidence(chunks)
+            conf_eval = confidence_engine.calculate_confidence(
+                chunks,
+                query_type=query_type,
+            )
             if chunks and conf_eval["decision"] != "REJECT":
                 break
 
@@ -257,6 +273,11 @@ async def generate_answer(req: GenerateRequest):
                 generator.generate,
                 req.query,
                 chunks[:3],  
+                query_type=query_type,
+                max_tokens=int(plan.generation_hint["max_tokens"]),
+                temperature=plan.generation_hint["temperature"],
+                retrieval_decision=decision,
+                retrieval_confidence=confidence,
             )
             latency_generation_ms = round((time.time() - t_gen_start) * 1000, 2)
 
@@ -271,9 +292,20 @@ async def generate_answer(req: GenerateRequest):
                 model=response.model,
                 confidence=confidence,
                 decision=decision,
+                retrieval_confidence=confidence,
+                post_generation_confidence=getattr(
+                    response,
+                    "post_generation_confidence_score",
+                    getattr(response, "confidence_score", None),
+                ),
+                post_generation_decision=getattr(response, "post_generation_decision", None),
                 retry_triggered=retry_triggered,
                 generator_status=getattr(response, "status", "UNKNOWN"),
-                generator_confidence=getattr(response, "confidence_score", None),
+                generator_confidence=getattr(
+                    response,
+                    "post_generation_confidence_score",
+                    getattr(response, "confidence_score", None),
+                ),
                 llm_confidence=getattr(response, "llm_confidence_score", None),
                 generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
                 context_chunk_ids=getattr(response, "context_chunk_ids", []),
@@ -295,7 +327,16 @@ async def generate_answer(req: GenerateRequest):
 
         # GENERATE 
         t_gen_start = time.time()
-        response = await run_in_threadpool(generator.generate, req.query, chunks)
+        response = await run_in_threadpool(
+            generator.generate,
+            req.query,
+            chunks,
+            query_type=query_type,
+            max_tokens=int(plan.generation_hint["max_tokens"]),
+            temperature=plan.generation_hint["temperature"],
+            retrieval_decision=decision,
+            retrieval_confidence=confidence,
+        )
         latency_generation_ms = round((time.time() - t_gen_start) * 1000, 2)
         latency_total_ms = round((time.time() - t_api_start) * 1000, 2)
         logger.info(
@@ -314,9 +355,20 @@ async def generate_answer(req: GenerateRequest):
             model=response.model,
             confidence=confidence,
             decision=decision,
+            retrieval_confidence=confidence,
+            post_generation_confidence=getattr(
+                response,
+                "post_generation_confidence_score",
+                getattr(response, "confidence_score", None),
+            ),
+            post_generation_decision=getattr(response, "post_generation_decision", None),
             retry_triggered=retry_triggered,
             generator_status=getattr(response, "status", "UNKNOWN"),
-            generator_confidence=getattr(response, "confidence_score", None),
+            generator_confidence=getattr(
+                response,
+                "post_generation_confidence_score",
+                getattr(response, "confidence_score", None),
+            ),
             llm_confidence=getattr(response, "llm_confidence_score", None),
             generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
             context_chunk_ids=getattr(response, "context_chunk_ids", []),

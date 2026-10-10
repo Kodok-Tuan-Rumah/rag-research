@@ -11,6 +11,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from src.controller.confidence_engine import ConfidenceEngine
+from src.controller.policy_engine import PolicyEngine
 from groq import Groq, AuthenticationError, GroqError
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -55,6 +56,10 @@ class RAGResponse:
     llm_confidence_score:      Optional[float] = None
     supporting_sources:       list  = None
     context_chunk_ids:        list  = None
+    retrieval_confidence_score: Optional[float] = None
+    retrieval_decision:        Optional[str] = None
+    post_generation_confidence_score: Optional[float] = None
+    post_generation_decision: Optional[str] = None
 
     def __post_init__(self):
         if self.supporting_sources is None:
@@ -152,17 +157,23 @@ def build_context(chunks: list, max_chars: int = DEFAULT_MAX_CHARS) -> str:
     context, _included_ids = build_context_with_ids(chunks, max_chars=max_chars)
     return context
 
-def filter_chunks_by_score(chunks: list, min_score: float = 0.0) -> list:
+def filter_chunks_by_score(chunks: list, min_score: Optional[float] = None) -> list:
     if not chunks:
         return chunks
+    has_rerank = any(
+        (c.get("rerank_score") if isinstance(c, dict) else getattr(c, "rerank_score", None)) is not None
+        for c in chunks
+    )
+    effective_min_score = -3.0 if has_rerank else (min_score if min_score is not None else settings.min_score_threshold)
+
     scores = [_get_score(c) for c in chunks]
-    if scores[0] <= -3.0:
+    if scores[0] < effective_min_score:
         return []
     GAP_THRESHOLD = settings.score_gap_threshold
     selected = [chunks[0]]
     for i in range(1, len(chunks)):
         gap = scores[i - 1] - scores[i]
-        if scores[i] < -3.0 or gap > GAP_THRESHOLD:
+        if scores[i] < effective_min_score or gap > GAP_THRESHOLD:
             break
         selected.append(chunks[i])
     return selected
@@ -223,6 +234,10 @@ def _make_abstain_response(
     context_used: str = "",
     context_chunk_ids: Optional[list[str]] = None,
     llm_confidence_score: Optional[float] = None,
+    retrieval_confidence_score: Optional[float] = None,
+    retrieval_decision: Optional[str] = None,
+    post_generation_confidence_score: Optional[float] = None,
+    post_generation_decision: Optional[str] = None,
 ) -> RAGResponse:
     logger.warning(f"[ABSTAIN] {reason} | query='{query[:60]}'")
     return RAGResponse(
@@ -241,6 +256,10 @@ def _make_abstain_response(
         llm_confidence_score=llm_confidence_score,
         supporting_sources=[],
         context_chunk_ids=context_chunk_ids or [],
+        retrieval_confidence_score=retrieval_confidence_score,
+        retrieval_decision=retrieval_decision,
+        post_generation_confidence_score=post_generation_confidence_score,
+        post_generation_decision=post_generation_decision,
     )
 
 def check_retrieval_confidence(
@@ -290,10 +309,29 @@ class GroqGenerator:
         temperature:     Optional[float] = None,
         source_chunk_id: Optional[str] = None,
         min_top1_score:  float         = -3.0,
+        query_type:      Optional[str]  = None,
+        retrieval_decision: Optional[str] = None,
+        retrieval_confidence: Optional[float] = None,
     ) -> RAGResponse:
         t0_total = time.time()
+        query_type = query_type or PolicyEngine().decide_query_type(query)
         temperature = settings.generation_temperature if temperature is None else temperature
         num_chunks_retrieved = len(chunks)
+
+        if retrieval_decision not in (None, "REJECT", "PARTIAL_TRUST", "GENERATE"):
+            raise ValueError(f"Unknown retrieval decision: {retrieval_decision}")
+        if retrieval_decision == "REJECT":
+            return _make_abstain_response(
+                query=query,
+                chunks=chunks,
+                model=self.model,
+                reason="retrieval decision REJECT",
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
+            )
+        if retrieval_decision == "PARTIAL_TRUST":
+            chunks = chunks[:3]
+
         top_k_scores = [_get_score(c) for c in chunks[:5]]
 
         should_proceed, reason = check_retrieval_confidence(
@@ -309,12 +347,16 @@ class GroqGenerator:
                 chunks=chunks,
                 model=self.model,
                 reason=reason,
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
             )
 
         if not chunks:
             return _make_abstain_response(
                 query=query, chunks=[], model=self.model,
                 reason="chunks kosong setelah guard (defensive)",
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
             )
         score_filtered = filter_chunks_by_score(chunks)
         filtered_chunks = filter_chunks_by_diversity(score_filtered, max_per_doc=2)
@@ -367,6 +409,8 @@ class GroqGenerator:
                 reason="model returned empty output",
                 context_used=context,
                 context_chunk_ids=context_chunk_ids,
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
             )
 
         raw_answer = raw_content.strip()
@@ -381,6 +425,8 @@ class GroqGenerator:
                 query=query, chunks=chunks, model=self.model, reason=sanity_reason,
                 context_used=context, context_chunk_ids=context_chunk_ids,
                 llm_confidence_score=confidence,
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
             )
         if status == "INSUFFICIENT_CONTEXT":
             answer = "I'm sorry, I couldn't find the answer in the provided context."
@@ -402,6 +448,7 @@ class GroqGenerator:
             filtered_chunks,
             answer=answer,
             contexts=[(_get_attr(c, "text", "") or "") for c in filtered_chunks],
+            query_type=query_type,
         )
         final_confidence = float(confidence_result.get("confidence_score", 0.0))
         final_confidence = max(0.0, min(1.0, final_confidence))
@@ -420,6 +467,10 @@ class GroqGenerator:
                 context_used=context,
                 context_chunk_ids=context_chunk_ids,
                 llm_confidence_score=confidence,
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
+                post_generation_confidence_score=final_confidence,
+                post_generation_decision=confidence_result.get("decision"),
             )
         
         logger.info(
@@ -443,6 +494,10 @@ class GroqGenerator:
             llm_confidence_score=confidence,
             supporting_sources=sources,
             context_chunk_ids=context_chunk_ids,
+            retrieval_confidence_score=retrieval_confidence,
+            retrieval_decision=retrieval_decision,
+            post_generation_confidence_score=final_confidence,
+            post_generation_decision=confidence_result.get("decision"),
         )
 
 

@@ -10,6 +10,7 @@ from src.controller.policy_engine import PolicyEngine
 from scripts import run_single_query as runner
 from scripts.run_single_query import should_skip_reranker
 from src.generation.generator import (
+    GroqGenerator,
     _make_abstain_response,
     sanity_check_answer,
     should_abort_before_generation,
@@ -63,6 +64,10 @@ def test_confidence_decision_uses_configured_thresholds():
     assert engine._decision_for_score(0.35) == "PARTIAL_TRUST"
     assert engine._decision_for_score(0.5555) == "PARTIAL_TRUST"
     assert engine._decision_for_score(0.65) == "GENERATE"
+    assert engine._decision_for_score(0.39, query_type="factual") == "REJECT"
+    assert engine._decision_for_score(0.4, query_type="factual") == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.3, query_type="reasoning") == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.6, query_type="reasoning") == "GENERATE"
 
 
 def test_make_abstain_response_is_structured_and_safe():
@@ -82,8 +87,102 @@ def test_make_abstain_response_is_structured_and_safe():
 def test_should_abort_before_generation_only_for_truly_empty_or_very_low_confidence_context():
     assert should_abort_before_generation(confidence_score=0.2, decision="REJECT", has_chunks=True) is False
     assert should_abort_before_generation(confidence_score=0.05, decision="REJECT", has_chunks=True) is True
+    assert should_abort_before_generation(confidence_score=0.2, decision="PARTIAL_TRUST", has_chunks=True) is False
     assert should_abort_before_generation(confidence_score=0.0, decision="GENERATE", has_chunks=True) is False
     assert should_abort_before_generation(confidence_score=0.0, decision="REJECT", has_chunks=False) is True
+
+
+def test_generator_honors_retrieval_reject_before_llm_call():
+    class Client:
+        def __init__(self):
+            self.calls = 0
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(create=self.create)
+            )
+
+        def create(self, **kwargs):
+            self.calls += 1
+            raise AssertionError("LLM must not be called for retrieval REJECT")
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = ConfidenceEngine()
+
+    result = generator.generate(
+        "What is this?",
+        [{"chunk_id": "c1", "text": "retrieved text", "retrieval_score": 0.2}],
+        retrieval_decision="REJECT",
+        retrieval_confidence=0.2,
+    )
+
+    assert generator.client.calls == 0
+    assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.retrieval_decision == "REJECT"
+    assert result.retrieval_confidence_score == 0.2
+    assert result.post_generation_confidence_score is None
+
+
+def test_generator_limits_partial_trust_to_three_chunks_and_separates_confidence():
+    chunks = [
+        {
+            "chunk_id": f"c{i}",
+            "doc_id": f"d{i}",
+            "text": f"Grounding evidence for source {i} supports this answer clearly.",
+            "retrieval_score": 0.8 - i * 0.01,
+            "metadata": {},
+        }
+        for i in range(1, 5)
+    ]
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(create=self.create)
+            )
+
+        def create(self, **kwargs):
+            self.calls.append(kwargs)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(
+                    message=SimpleNamespace(content='{"answer":"Evidence supports this answer.","status":"ANSWERED","confidence_score":0.91,"supporting_sources":["[Source 1]"]}')
+                )]
+            )
+
+    class PostGenerationConfidence:
+        def __init__(self):
+            self.chunks = None
+
+        def calculate_confidence(self, chunks, **kwargs):
+            self.chunks = chunks
+            return {
+                "confidence_score": 0.58,
+                "decision": "PARTIAL_TRUST",
+                "signals": {},
+            }
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = PostGenerationConfidence()
+
+    result = generator.generate(
+        "What is this?",
+        chunks,
+        retrieval_decision="PARTIAL_TRUST",
+        retrieval_confidence=0.52,
+    )
+
+    assert len(generator.client.calls) == 1
+    assert "[Source 4 |" not in generator.client.calls[0]["messages"][1]["content"]
+    assert len(generator._confidence.chunks) == 3
+    assert len(result.retrieved_chunks) == 3
+    assert result.retrieval_confidence_score == 0.52
+    assert result.retrieval_decision == "PARTIAL_TRUST"
+    assert result.post_generation_confidence_score == 0.58
+    assert result.post_generation_decision == "PARTIAL_TRUST"
+    assert result.confidence_score == 0.58
 
 
 def test_should_skip_reranker_for_small_or_weak_candidates():

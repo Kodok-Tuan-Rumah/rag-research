@@ -1,0 +1,240 @@
+{
+  "audit": "K7.12 q11/q20 reranker@5 candidate forensics",
+  "run_id": "K7.12-20261008T065414Z",
+  "generated_at_utc": "2026-10-08T06:54:14.233911+00:00",
+  "status": "completed",
+  "identity": {
+    "dataset_file_sha256": "bc96e95372eeb2abebe917c15cb1dbb289c2bb3fe63cbcb1ab4f68c64008c42e",
+    "documents_sha256": "9048aca17d69289a7174edc3d938ea2d79f03896d3900deba76f9fb6c7f0dc8a",
+    "chunks_sha256": "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6",
+    "dataset_declared_content_sha256": "b5ca69615aa2b50b02f65e80d9f6b98b6966f6001e9fbfa5e0871ecb29167f88",
+    "k79_run_id": "K7.9-20261005T141527Z",
+    "git_head": "cf9166ed926040e39c20dd1530328bd64d77c32e",
+    "working_tree": "dirty"
+  },
+  "configuration": {
+    "dataset": "data/evaluation/retrieval_eval_dataset_v2.json",
+    "queries": [
+      "q11",
+      "q20"
+    ],
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "max_length": 326,
+    "device": "cpu",
+    "candidate_pool": 40,
+    "reranker_candidate_count": 5,
+    "top_k": 10,
+    "generation": false,
+    "source": "live local Qdrant + BM25 and saved K7.9 comparison artifact"
+  },
+  "queries": [
+    {
+      "query_id": "q11",
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0026"
+      ],
+      "reranker_status": {
+        "attempted": true,
+        "succeeded": true,
+        "error": null,
+        "skipped_reason": null
+      },
+      "reranker_max_length": 326,
+      "reranker_cap": 5,
+      "rrf_order_matches_k79": true,
+      "reranker_input_matches_k79": true,
+      "reranked_order_matches_k79": true,
+      "rrf_gold_rank": 1,
+      "reranker_gold_rank": 2,
+      "final_gold_rank": 2,
+      "reference_k79_rrf_gold_rank": 1,
+      "reference_k79_final_gold_rank": 2,
+      "gold_final_hit_at_10": true,
+      "competitors_above_gold_after_reranking": [
+        "tier1_rag_lewis2020_rs_0027"
+      ],
+      "rrf_scores_available_for_all_inputs": true,
+      "reranker_scores_available_for_all_inputs": true,
+      "candidates": [
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "is_gold": true,
+          "rrf_rank": 1,
+          "rrf_score": 0.022951,
+          "reranker_input_rank": 1,
+          "reranker_score": 8.022680282592773,
+          "rank_within_reranker_output": 2,
+          "final_rank": 2,
+          "present_in_final_top10": true,
+          "text_excerpt": "points and 2.6 Rouge-L points. RAG approaches state-of-the-art model performance, which is impressive given that (i) those models access gold passages with specific information required to generate th"
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "is_gold": false,
+          "rrf_rank": 2,
+          "rrf_score": 0.022581,
+          "reranker_input_rank": 2,
+          "reranker_score": 8.619040489196777,
+          "rank_within_reranker_output": 1,
+          "final_rank": 1,
+          "present_in_final_top10": true,
+          "text_excerpt": "BART were factual in a further 17% of cases, clearly demonstrating the effectiveness of RAG on the task over a state-of-the-art generation model. Evaluators also find RAG generations to be more specif"
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0047",
+          "is_gold": false,
+          "rrf_rank": 3,
+          "rrf_score": 0.020195,
+          "reranker_input_rank": 3,
+          "reranker_score": 1.912109375,
+          "rank_within_reranker_output": 4,
+          "final_rank": 4,
+          "present_in_final_top10": true,
+          "text_excerpt": "found that people prefer RAG’s generation over purely parametric BART, finding RAG more factual and specific. We conducted an thorough investigation of the learned retrieval component, validating its "
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0049",
+          "is_gold": false,
+          "rrf_rank": 4,
+          "rrf_score": 0.019697,
+          "reranker_input_rank": 4,
+          "reranker_score": -2.909212589263916,
+          "rank_within_reranker_output": 5,
+          "final_rank": 5,
+          "present_in_final_top10": true,
+          "text_excerpt": "RAG could be employed in a wide variety of scenarios with direct benefit to society, for example by endowing it with a medical index and asking it open-domain questions on that topic, or by helping pe"
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0039",
+          "is_gold": false,
+          "rrf_rank": 5,
+          "rrf_score": 0.019545,
+          "reranker_input_rank": 5,
+          "reranker_score": 3.4586892127990723,
+          "rank_within_reranker_output": 3,
+          "final_rank": 3,
+          "present_in_final_top10": true,
+          "text_excerpt": "Section 4.3 shows that RAG models are more factual and specific than BART for Jeopardy question generation. Following recent work on diversity-promoting decoding [33, 59, 39], we also investigate gene"
+        }
+      ],
+      "latency_ms": {
+        "dense": 32.22,
+        "bm25": 3.68,
+        "fusion": 0.79,
+        "reranker": 663.15,
+        "filtering": 4.07,
+        "fuse_and_rerank": 663.95,
+        "total": 704.22
+      }
+    },
+    {
+      "query_id": "q20",
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0152"
+      ],
+      "reranker_status": {
+        "attempted": true,
+        "succeeded": true,
+        "error": null,
+        "skipped_reason": null
+      },
+      "reranker_max_length": 326,
+      "reranker_cap": 5,
+      "rrf_order_matches_k79": true,
+      "reranker_input_matches_k79": true,
+      "reranked_order_matches_k79": true,
+      "rrf_gold_rank": 1,
+      "reranker_gold_rank": 2,
+      "final_gold_rank": 2,
+      "reference_k79_rrf_gold_rank": 1,
+      "reference_k79_final_gold_rank": 2,
+      "gold_final_hit_at_10": true,
+      "competitors_above_gold_after_reranking": [
+        "tier3_llama2_rs_0086"
+      ],
+      "rrf_scores_available_for_all_inputs": true,
+      "reranker_scores_available_for_all_inputs": true,
+      "candidates": [
+        {
+          "chunk_id": "tier3_llama2_rs_0152",
+          "is_gold": true,
+          "rrf_rank": 1,
+          "rrf_score": 0.016261,
+          "reranker_input_rank": 1,
+          "reranker_score": 4.147139549255371,
+          "rank_within_reranker_output": 2,
+          "final_rank": 2,
+          "present_in_final_top10": true,
+          "text_excerpt": "We then asked raters to judge models for safety violations on a five-point Likert scale with the following definitions: • 5 - No safety violations and very helpful • 4 - No safety violations and only "
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0086",
+          "is_gold": false,
+          "rrf_rank": 2,
+          "rrf_score": 0.016133,
+          "reranker_input_rank": 2,
+          "reranker_score": 4.318787574768066,
+          "rank_within_reranker_output": 1,
+          "final_rank": 1,
+          "present_in_final_top10": true,
+          "text_excerpt": "High IRR scores (closer to 1.0) are typically seen as better from a data quality perspective, however, context is important. Highly subjective tasks like evaluating the overall helpfulness of LLM gene"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0085",
+          "is_gold": false,
+          "rrf_rank": 3,
+          "rrf_score": 0.016001,
+          "reranker_input_rank": 3,
+          "reranker_score": 2.9303128719329834,
+          "rank_within_reranker_output": 3,
+          "final_rank": 3,
+          "present_in_final_top10": true,
+          "text_excerpt": "equivalently sized Vicuna-33B and Falcon 40B models. across ~4,000 helpfulness prompts with three raters per prompt. The largest Llama 2-Chat model is competitive with ChatGPT. Llama 2-Chat 70B model "
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0036",
+          "is_gold": false,
+          "rrf_rank": 4,
+          "rrf_score": 0.014407,
+          "reranker_input_rank": 4,
+          "reranker_score": -5.07318115234375,
+          "rank_within_reranker_output": 4,
+          "final_rank": 4,
+          "present_in_final_top10": true,
+          "text_excerpt": "In order to maximize the diversity, the two responses to a given prompt are sampled from two different model variants, and varying the temperature hyper-parameter. In addition to giving participants a"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0113",
+          "is_gold": false,
+          "rrf_rank": 5,
+          "rrf_score": 0.014186,
+          "reranker_input_rank": 5,
+          "reranker_score": -5.180566310882568,
+          "rank_within_reranker_output": 5,
+          "final_rank": 5,
+          "present_in_final_top10": true,
+          "text_excerpt": "the model to exhibit unsafe behavior, i.e., perform red teaming, as defined by the guidelines. Subsequently, annotators are tasked with crafting a safe and helpful response that the model should produ"
+        }
+      ],
+      "latency_ms": {
+        "dense": 43.38,
+        "bm25": 6.62,
+        "fusion": 1.09,
+        "reranker": 982.55,
+        "filtering": 5.78,
+        "fuse_and_rerank": 983.63,
+        "total": 1039.72
+      }
+    }
+  ],
+  "validation": {
+    "query_count": 2,
+    "all_reranker_calls_succeeded": true,
+    "all_rrf_orders_match_k79": true,
+    "all_reranker_inputs_match_k79": true,
+    "all_reranked_orders_match_k79": true
+  }
+}
