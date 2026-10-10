@@ -28,6 +28,9 @@ class AgentState:
     source_chunk_id: str | None = None
     last_tool: str | None = None
     last_result: Any = None
+    # Machine-readable cause when the loop ends in a non-answer outcome, so
+    # PROJECT_GOALS.md §4 failure classification is available to callers.
+    failure_reason: str | None = None
 
     def add_observation(self, tool: str, result: Any):
         self.scratchpad.append({

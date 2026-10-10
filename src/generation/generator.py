@@ -12,7 +12,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from src.controller.confidence_engine import ConfidenceEngine
 from src.controller.policy_engine import PolicyEngine
-from groq import Groq, AuthenticationError, GroqError
+from groq import Groq, AuthenticationError, BadRequestError, GroqError
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
@@ -60,6 +60,10 @@ class RAGResponse:
     retrieval_decision:        Optional[str] = None
     post_generation_confidence_score: Optional[float] = None
     post_generation_decision: Optional[str] = None
+    # Why the pipeline abstained. PROJECT_GOALS.md §4 requires structured
+    # failure classification; without this on the response, callers cannot tell a
+    # provider failure from a model refusal without parsing logs.
+    reason: Optional[str] = None
 
     def __post_init__(self):
         if self.supporting_sources is None:
@@ -260,7 +264,27 @@ def _make_abstain_response(
         retrieval_decision=retrieval_decision,
         post_generation_confidence_score=post_generation_confidence_score,
         post_generation_decision=post_generation_decision,
+        reason=reason,
     )
+
+
+# Groq reports this as HTTP 400 with code `json_validate_failed` when the model
+# emits output that does not satisfy response_format={"type": "json_object"}.
+# openai/gpt-oss-20b is a reasoning model, and at production context size it does
+# this often enough to be visible (measured 6/10 with a production-sized context,
+# 0/10 with a short one). It is a provider-side output-format rejection, not a
+# decision the confidence engine made, so it must degrade to a structured
+# abstain rather than propagate as an operational error.
+_JSON_VALIDATION_MARKERS = ("json_validate_failed", "validate json", "generate json")
+
+
+def _is_json_validation_failure(exc: BadRequestError) -> bool:
+    code = ""
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        code = str((body.get("error") or {}).get("code") or "")
+    haystack = f"{code} {exc}".lower()
+    return any(marker in haystack for marker in _JSON_VALIDATION_MARKERS)
 
 def check_retrieval_confidence(
     chunks: list,
@@ -389,6 +413,30 @@ class GroqGenerator:
             raise ValueError(
                 "Invalid GROQ_API_KEY atau token tidak valid. "
                 "Set environment variable GROQ_API_KEY dengan API key yang benar."
+            ) from exc
+        except BadRequestError as exc:
+            if _is_json_validation_failure(exc):
+                logger.warning(
+                    "[GENERATION_JSON_REJECTED] provider rejected model output as invalid "
+                    "JSON (code=json_validate_failed); treating as abstain | model=%s",
+                    self.model,
+                )
+                return _make_abstain_response(
+                    query=query,
+                    chunks=chunks,
+                    model=self.model,
+                    reason=(
+                        "provider rejected model output: response_format=json_object "
+                        "validation failed"
+                    ),
+                    context_used=context,
+                    context_chunk_ids=context_chunk_ids,
+                    retrieval_confidence_score=retrieval_confidence,
+                    retrieval_decision=retrieval_decision,
+                )
+            raise RuntimeError(
+                f"Groq generation failed: {exc}. "
+                "Periksa koneksi API dan kunci Anda."
             ) from exc
         except GroqError as exc:
             raise RuntimeError(

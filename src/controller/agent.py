@@ -248,12 +248,28 @@ class Agent:
                 if state.is_budget_exhausted():
                     state.status = AgentStatus.ABSTAINED
                     break
-                response = await self._execute_generation(
-                    state,
-                    plan,
-                    retrieval_decision=action,
-                    retrieval_confidence=state.confidence_score,
-                )
+                # Generation can raise for provider-side reasons (network, quota,
+                # output-format rejection). scripts/run_single_query.py and
+                # src/api/main.py both already convert such errors into a
+                # structured abstain; without the same guard here the orchestrator
+                # was the one place an operational error escaped to the caller.
+                # PROJECT_GOALS.md §4: no silent failures, and §2.3 treats
+                # abstention as a valid terminal outcome.
+                try:
+                    response = await self._execute_generation(
+                        state,
+                        plan,
+                        retrieval_decision=action,
+                        retrieval_confidence=state.confidence_score,
+                    )
+                except Exception as exc:  # noqa: BLE001 - boundary, must not leak
+                    logger.error(
+                        "[GENERATION_ERROR] %s: %s — degrading to abstain",
+                        type(exc).__name__, exc, exc_info=True,
+                    )
+                    state.status = AgentStatus.ABSTAINED
+                    state.failure_reason = f"generation_exception: {type(exc).__name__}: {exc}"
+                    break
                 if response:
                     response.latency_ms = {"total": round((time.time() - t_start) * 1000, 1)}
                     return response
