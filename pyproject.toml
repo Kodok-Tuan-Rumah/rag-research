@@ -1,19 +1,43 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "rag-research"
 version = "0.1.0"
-description = "Hybrid Python-Rust RAG Research System"
-dependencies = [
-    "langchain",
-    "qdrant-client",
-    "ragas",
-    "pymupdf",
-    "sentence-transformers",
-]
+description = "Hybrid Python-Rust failure-aware RAG QA system (research-domain)"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Single source of truth = requirements.txt (fully pinned, audit-verified).
+# Previously this list was hardcoded here with 5 unpinned entries and no `groq`,
+# which made `pip install -e .` produce an environment that could not import the
+# canonical pipeline.
+#
+# Do NOT duplicate the dependency list here. Edit requirements.txt instead.
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.optional-dependencies]
+# Granular extras mirror requirements/*.txt
+api = ["fastapi>=0.142", "uvicorn[standard]>=0.54", "httpx>=0.28", "python-multipart>=0.0.32"]
+dev = ["pytest>=9.1", "pytest-asyncio>=1.4"]
+research = ["matplotlib>=3.11", "joblib>=1.6"]
+eval = ["ragas>=0.2.15", "datasets>=3.6", "scikit-learn>=1.7"]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

@@ -1,13 +1,49 @@
-ollama
-openai
-tiktoken
+# requirements/llm.txt — LLM provider layer
+# Verified against live runtime (Python 3.14.4). All versions pinned.
 
-langchain
-langchain-core
-langchain-community
-langchain-text-splitters
+# ── CANONICAL PROVIDER (WAJIB) ────────────────────────────────────────────────
+# groq : src/generation/generator.py + src/retrieval/hybrid_retriever.py
+# Requires GROQ_API_KEY in .env
+groq==0.37.1
 
-langgraph
-langsmith
+# ── config layer (WAJIB) ──────────────────────────────────────────────────────
+# pydantic-settings : src/api/config.py line 3 — hard import, and config.py is
+#                     imported by nearly every module. Without this the entire
+#                     package fails to import.
+python-dotenv==1.0.1
+pydantic==2.13.5
+pydantic-settings==2.15.0
 
-instructor
+# ── langchain subpackages (only used by src/evaluation/ragas_evaluator.py) ───
+langchain-core==1.6.6
+langchain-groq==1.1.3
+langchain-huggingface==1.2.2
+
+# ── ORCHESTRATION (declared, NOT wired) ──────────────────────────────────────
+# ⚠️ 0 imports in src/. Declared for isolated evaluation only.
+# ⚠️ CONFLICTS WITH PROJECT_GOALS.md §9 Non-Goals ("generic LLM wrapper",
+#    "single-turn QA", "global mutable state").
+# The project already has a hand-rolled orchestrator in src/controller/.
+# Wiring LangGraph in = architecture redesign = outside Phase A–J scope.
+langgraph==1.2.12
+
+# REMOVED (verified 0 imports across 87 .py files):
+#   langchain (bare)          — never imported; only subpackages above
+#   ollama                    — src/evaluation/evaluator.py hard-imports it but
+#                               that file is imported by NOTHING
+#   openai                    — project uses Groq, not OpenAI directly
+#   tiktoken                  — unused
+#   langsmith                 — unused
+#   instructor                — unused
+#   langchain-community       — unused
+#   langchain-text-splitters  — unused
+#   langgraph-checkpoint/sdk/prebuilt, xxhash — transitive, pulled by langgraph
+#
+# AVAILABLE ON THIS GROQ KEY (verified 2026-10-05) — pick deliberately:
+#   openai/gpt-oss-20b         <- project default; REASONING model, burns
+#                                 max_tokens on `reasoning`. Needs >=768.
+#   openai/gpt-oss-120b
+#   qwen/qwen3.8-27b
+#   allam-2-7b
+#   NOTE: llama-3.3-70b-versatile and llama-3.1-8b-instant return 404 on this
+#         key despite being documented Groq models. Do not reference them.

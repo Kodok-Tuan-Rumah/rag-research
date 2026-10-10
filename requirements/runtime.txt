@@ -1,14 +1,40 @@
-fastapi
-uvicorn[standard]
-pydantic
-pydantic-settings
-python-multipart
-python-dotenv
-httpx
-groq
-numpy
-qdrant-client
-rank-bm25
-sentence-transformers
-transformers
-scikit-learn
+# requirements/runtime.txt — minimal production install
+# Verified against live runtime (Python 3.14.4). All versions pinned.
+#
+# This is the ONLY file needed to run the canonical pipeline:
+#   MasterHybridRetriever -> GroqGenerator -> Agent
+#
+# Compose with api.txt if you need the HTTP server.
+# Compose with research.txt if you need the Phase 3 reliability diagram.
+#
+# Install:
+#   pip install -r requirements/runtime.txt
+
+# ── LLM ──────────────────────────────────────────────────────────────────────
+groq==0.37.1
+python-dotenv==1.0.1
+pydantic==2.13.5
+pydantic-settings==2.15.0
+
+# ── retrieval ────────────────────────────────────────────────────────────────
+qdrant-client==1.19.1
+rank-bm25==0.2.2
+sentence-transformers==6.1.0
+transformers==5.18.0
+numpy==2.5.3
+
+# ── observability ────────────────────────────────────────────────────────────
+structlog==26.1.0
+prometheus-client==0.26.0
+
+# ── HTTP (optional) ──────────────────────────────────────────────────────────
+# Uncomment for the API server:
+#   fastapi==0.142.2
+#   uvicorn==0.54.0
+#   httpx==0.28.1
+#   python-multipart==0.0.32
+
+# ── NOT included: langgraph ──────────────────────────────────────────────────
+# Declared in requirements.txt / llm.txt only. 0 imports in src/, and it
+# conflicts with PROJECT_GOALS.md §9 Non-Goals. Do not add it to runtime
+# without an explicit decision record.

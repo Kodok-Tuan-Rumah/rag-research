@@ -1,46 +1,31 @@
-numpy
-scipy
-pandas
+# requirements/base.txt — core data + retrieval stack
+# Verified against live runtime (Python 3.14.4). All versions pinned.
+#
+# Canonical retrieval path. Installing ONLY this file is NOT enough:
+# groq and pydantic-settings are required by the canonical pipeline and live
+# in llm.txt / api.txt. Always compose, never install base.txt alone.
 
-transformers
-sentence-transformers
+# ── numerics ─────────────────────────────────────────────────────────────────
+numpy==2.5.3
 
-faiss-cpu
-rank-bm25
+# ── retrieval ────────────────────────────────────────────────────────────────
+qdrant-client==1.19.1
+rank-bm25==0.2.2
+sentence-transformers==6.1.0
+transformers==5.18.0
 
-tqdm
-rich
-pyyaml
-# ─── RAG Research Upgrade — Requirements ───────────────────────────────────────
-# Install: pip install -r requirements_upgrade.txt
+# ── ingestion ────────────────────────────────────────────────────────────────
+pymupdf==1.28.2
 
-# Core (sama seperti sebelumnya)
-sentence-transformers>=2.7.0
-numpy>=1.26.0
-scikit-learn>=1.4.0
+# ── sklearn utilities ────────────────────────────────────────────────────────
+scikit-learn==1.7.2
 
-# Qdrant (ganti FAISS)
-qdrant-client>=1.9.0
+# ── eval data (only if running ragas_evaluator.py) ───────────────────────────
+datasets==3.6.0
 
-# BM25 (tetap dipakai untuk hybrid)
-rank-bm25>=0.2.2
-
-# RAGAS evaluation framework
-ragas>=0.1.9
-datasets>=2.19.0
-
-# LangChain (dibutuhkan RAGAS)
-langchain>=0.2.0
-langchain-groq>=0.1.3
-langchain-community>=0.2.0
-
-# LLM
-groq>=0.9.0
-
-# PDF parsing (tetap sama)
-pymupdf>=1.24.0
-pypdf>=4.2.0
-
-# Utils
-python-dotenv>=1.0.0
-tqdm>=4.66.0
+# REMOVED (verified 0 imports across 87 .py files):
+#   scipy     — unused
+#   pandas    — only reached via ragas `to_pandas()`
+#   faiss-cpu — src/retrieval/embedder.py hard-imports it but is dead code
+#   pypdf     — pymupdf is used instead
+#   tqdm, rich, pyyaml — unused

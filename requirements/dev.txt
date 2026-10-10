@@ -1,6 +1,28 @@
-pytest
-pytest-asyncio
-black
-ruff
-mypy
-pre-commit
+# requirements/dev.txt — test + lint tooling
+# Verified against live runtime (Python 3.14.4).
+
+# ── test (installed) ──────────────────────────────────────────────────────────
+pytest==9.1.1
+pytest-asyncio==1.4.0
+
+# ── lint / format (optional, NOT installed) ──────────────────────────────────
+# black
+# ruff
+# mypy
+# pre-commit
+
+# ── run the suite ─────────────────────────────────────────────────────────────
+#   python3 -m pytest tests/ -q
+#
+# KNOWN PRE-EXISTING FAILURES (not caused by these deps):
+#   numpy 2.5.3 on Python 3.14 raises
+#     ImportError: cannot load module more than once per process
+#   when tests/test_qdrant_store.py and tests/test_semantic_chunker.py both
+#   load numpy.fft in one pytest process. Same class of bug as the protobuf
+#   upb issue handled by src/_compat.py.
+#
+#   Workaround: run each in its own process
+#     python3 -m pytest tests/test_qdrant_store.py -q
+#     python3 -m pytest tests/test_semantic_chunker.py -q
+#
+#   Baseline: 87 passed, 3 failed.

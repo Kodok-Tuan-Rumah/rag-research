@@ -1,9 +1,14 @@
-fastapi
-uvicorn[standard]
-pydantic
-pydantic-settings
-python-multipart
-sentence-transformers
-groq>=0.9.0  
-python-dotenv
-httpx
+# requirements/api.txt — HTTP layer
+# Verified against live runtime (Python 3.14.4). All versions pinned.
+
+fastapi==0.142.2
+uvicorn==0.54.0
+httpx==0.28.1
+python-multipart==0.0.32
+pydantic==2.13.5
+
+# NOTE: pydantic-settings and python-dotenv are required by src/api/config.py
+# and are declared in llm.txt. Keep them installed when running the API.
+
+# Serve:
+#   uvicorn src.api.main:app --host 0.0.0.0 --port 8003
