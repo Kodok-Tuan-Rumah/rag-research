@@ -7,10 +7,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import importlib
 
+# Pre-warm numpy.fft BEFORE the mock.patch.dict(sys.modules, ...) block below.
+# mock.patch.dict snapshots sys.modules and restores it wholesale on exit, so any
+# module first imported *inside* the block gets evicted. numpy.fft's
+# _pocketfft_umath is a C extension, and CPython forbids re-initialising the same
+# extension twice in one process -> "ImportError: cannot load module more than once
+# per process". Loading it up-front puts it in the snapshot, so it survives.
+import numpy.fft  # noqa: F401
+
 # Dummy registry + embedder for safe module import
 class DummyEmbedder:
     def encode(self, texts, batch_size=None, show_progress_bar=False):
-        return [[0.1] * 768 for _ in texts]
+        return [[0.1] * 384 for _ in texts]
 
 class DummyModelRegistry:
     @staticmethod
@@ -80,7 +88,10 @@ def test_qdrant_store_env_overrides():
 
     store = qdrant_store.QdrantVectorStore()
     assert store.collection_name == 'test_collection'
-    assert store.vector_dim == 768
+    # Assert against the module constant rather than a literal. The embedder changed
+    # from BAAI/bge-base-en-v1.5 (768-dim) to all-MiniLM-L6-v2 (384-dim) and this
+    # assertion silently went stale. qdrant_store is the single source of truth.
+    assert store.vector_dim == qdrant_store.VECTOR_DIM
     store.close()
 
 

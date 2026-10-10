@@ -5,6 +5,13 @@ from unittest import mock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
+# Pre-warm numpy.fft BEFORE any mock.patch.dict(sys.modules, ...) block below.
+# mock.patch.dict snapshots sys.modules and restores it wholesale on exit, so any
+# module first imported *inside* the block gets evicted. numpy.fft's
+# _pocketfft_umath is a C extension, and CPython forbids re-initialising the same
+# extension twice in one process -> "ImportError: cannot load module more than once
+# per process". Loading it up-front puts it in the snapshot, so it survives.
+import numpy.fft  # noqa: F401
 
 class DummySentenceTransformer:
     def __init__(self, *args, **kwargs):
