@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 import numpy as np
 from dataclasses import dataclass, asdict
@@ -22,7 +23,21 @@ EMBED_MODEL      = "sentence-transformers/all-MiniLM-L6-v2"
 BREAKPOINT_PCT   = 85         
 MAX_CHUNK_TOKENS = 512        
 MIN_CHUNK_TOKENS = 50         
-OVERLAP_SENTENCES = 1         
+OVERLAP_SENTENCES = 1
+
+
+# ---------------------------------------------------------------------------
+# Noise filter — dipakai di chunking (ingestion) layer
+# ---------------------------------------------------------------------------
+
+def _is_noise_chunk(text: str) -> bool:
+    """
+    Return True jika chunk tidak layak di-index.
+    Aturan noise di-sentralisasi di src/retrieval/chunk_filters.py
+    (sebelumnya diduplikasi di sini & qdrant_store.py).
+    """
+    from src.retrieval.chunk_filters import is_noise_chunk_text
+    return is_noise_chunk_text(text) 
 
 # Dataclass 
 @dataclass
@@ -91,7 +106,12 @@ class SemanticChunker:
             # Jika cuma 1 kalimat, langsung buat chunk
             if len(sentences) < 2:
                 meta = {**doc.get("metadata", {}), "section": sec_name}
-                final_chunks.append(self._make_chunk(doc_id, sentences, 0, 0, chunk_idx, meta))
+                chunk = self._make_chunk(doc_id, sentences, 0, 0, chunk_idx, meta)
+                # Filter noise — single-sentence chunk sangat rentan jadi judul/author
+                if _is_noise_chunk(chunk.text):
+                    print(f"  [NOISE_SKIP] single-sentence: '{chunk.text[:80]}'")
+                    continue
+                final_chunks.append(chunk)
                 chunk_idx += 1
                 continue
 
@@ -114,6 +134,10 @@ class SemanticChunker:
                     chunk = self._make_chunk(doc_id, sub_sentences, 0, 0, chunk_idx, meta)
                     
                     if chunk.token_count >= self.min_chunk_tokens:
+                        # Filter noise sebelum masuk ke final_chunks
+                        if _is_noise_chunk(chunk.text):
+                            print(f"  [NOISE_SKIP] '{chunk.text[:80]}'")
+                            continue
                         final_chunks.append(chunk)
                         chunk_idx += 1
                         
@@ -156,9 +180,13 @@ class SemanticChunker:
     def chunk_all_documents(self, documents: List[dict]) -> List[SemanticChunk]:
         all_chunks = []
         t0 = time.time()
+        total_noise_skipped = 0
+
         for doc in documents:
+            before = 0  # chunk_idx sebelum dokumen ini
             chunks = self.chunk_document(doc)
             all_chunks.extend(chunks)
+
         elapsed = time.time() - t0
         print(f"\n[SemanticChunker] Total: {len(all_chunks)} chunks dari {len(documents)} dokumen ({elapsed:.2f}s)")
         return all_chunks
@@ -173,7 +201,7 @@ def save_chunks(chunks: List[SemanticChunk], output_path: str) -> None:
 
 # CLI 
 if __name__ == "__main__":
-    import sys
+    import sys, shutil
     docs_path = Path("data/processed/documents.json")
     if not docs_path.exists():
         print(f"[ERROR] {docs_path} tidak ditemukan.")
@@ -184,4 +212,12 @@ if __name__ == "__main__":
 
     chunker = SemanticChunker()
     chunks = chunker.chunk_all_documents(documents)
-    save_chunks(chunks, "data/processed/chunks_semantic.json")
+
+    output_path = "data/processed/chunks_semantic.json"
+    save_chunks(chunks, output_path)
+
+    # Buat alias chunks_semantic_v2.json yang dibutuhkan BM25 di MasterHybridRetriever
+    # (config.py: bm25_chunks_path = "data/processed/chunks_semantic_v2.json")
+    v2_path = "data/processed/chunks_semantic_v2.json"
+    shutil.copy(output_path, v2_path)
+    print(f"[Alias] {v2_path} diperbarui ({len(chunks)} chunks) — BM25 siap digunakan")

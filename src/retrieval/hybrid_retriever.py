@@ -9,6 +9,14 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from src.retrieval.qdrant_store import QdrantVectorStore, RetrievalResult
+from src.retrieval.chunk_filters import (
+    is_reference_chunk as _cf_is_reference_chunk,
+    is_title_or_author_chunk as _cf_is_title_or_author_chunk,
+    is_low_quality_chunk as _cf_is_low_quality_chunk,
+    passes_strict_filter as _cf_passes_strict_filter,
+    passes_minimum_filter as _cf_passes_minimum_filter,
+    filter_breakdown as _cf_filter_breakdown,
+)
 from src.controller.policy_engine import PolicyEngine
 from rank_bm25 import BM25Okapi
 from concurrent.futures import ThreadPoolExecutor
@@ -116,25 +124,12 @@ class MasterHybridRetriever:
         section = str(metadata.get("section", "")).lower()
         return section not in ["references", "bibliography"]
     def _is_reference_chunk(self, chunk) -> bool:
-        if isinstance(chunk, dict):
-            meta = chunk.get("metadata", {})
-            text = chunk.get("text", "")
-        else:
-            meta = getattr(chunk, "metadata", {})
-            text = getattr(chunk, "text", "")
+        return _cf_is_reference_chunk(chunk)
 
-        section = str(meta.get("section", "")).lower()
+    def _is_title_or_author_chunk(self, chunk) -> bool:
+        """Deteksi chunk yang isinya judul paper atau baris author/afiliasi."""
+        return _cf_is_title_or_author_chunk(chunk)
 
-        if any(ref in section for ref in ["reference", "bibliography"]):
-            return True
-
-        if re.search(r"\[\d+\]", text):
-            return True
-
-        if text.count(",") > 10:
-            return True
-        return False
-    
     @staticmethod
     def _section_boost(metadata: dict) -> float:
         section = str(metadata.get("section", "")).lower()
@@ -234,7 +229,7 @@ class MasterHybridRetriever:
             pairs.append([query, text])
 
         try:
-            scores = self.reranker.predict(pairs, batch_size=32, max_length=64)
+            scores = self.reranker.predict(pairs, batch_size=32, max_length=256)
             for chunk, score in zip(candidates, scores):
                 rerank_score = float(score)
                 if isinstance(chunk, dict):
@@ -335,29 +330,17 @@ class MasterHybridRetriever:
         t_fuse_start = time.time()
         fused_results = self._rrf_fuse(all_dense_hits, all_bm25_hits, candidate_k, dense_weight, bm25_weight)
 
-        def is_low_quality(chunk):
-            text = chunk["text"].strip() if isinstance(chunk, dict) else getattr(chunk, "text", "").strip()
-            if len(text.split()) < 10:
-                return True
-
-            if text.strip().endswith(":"):
-                return True
-
-            if text.count(",") > 10 and len(text.split()) < 15:
-                return True
-            return False
-        
         fused_results = [
             c for c in fused_results
             if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "score", 0.0)) >= 0.0
         ]
-        
+
         logger.info(
             "[RETRIEVAL_STAGE] after_score_filter=%d",
             len(fused_results),
         )
 
-        candidates = [c for c in fused_results if not is_low_quality(c)]
+        candidates = [c for c in fused_results if not _cf_is_low_quality_chunk(c)]
         rerank_candidates = sorted(
             candidates,
             key=lambda x: x.get("retrieval_score", 0.0) if isinstance(x, dict) else getattr(x, "retrieval_score", 0.0),
@@ -365,41 +348,55 @@ class MasterHybridRetriever:
         )[:20]
         reranked = self._rerank(query, rerank_candidates)
 
-        # Filter 2: text informativeness 
-        def is_informative(chunk):
-            text = chunk.get("text") if isinstance(chunk, dict) else getattr(chunk, "text", "")
-            word_count = len(text.strip().split())
-            starts_complete = not text.strip().lower().startswith(("and ", "or ", "but "))
-            ends_complete = text.strip().endswith((".", "?", ";", ")"))
-            return word_count > 20 and starts_complete and ends_complete
-    
-        filtered_chunks = [
-            c for c in reranked
-            if is_informative(c) and not self._is_reference_chunk(c)
-        ]
+        filtered_chunks = [c for c in reranked if _cf_passes_strict_filter(c)]
 
+        # Breakdown terstruktur: alasan tiap chunk ditolak
+        bd = _cf_filter_breakdown(reranked)
         logger.info(
             "[RETRIEVAL_STAGE] fused=%d | candidates=%d | "
-            "rerank_candidates=%d | reranked=%d | filtered=%d",
+            "rerank_candidates=%d | reranked=%d | filtered=%d | "
+            "blocked_ref=%d | blocked_title_author=%d | blocked_fragment=%d | "
+            "blocked_low_quality=%d | blocked_not_informative=%d",
             len(fused_results),
             len(candidates),
             len(rerank_candidates),
             len(reranked),
             len(filtered_chunks),
+            bd["reference"],
+            bd["title_author"],
+            bd["fragment"],
+            bd["low_quality"],
+            bd["not_informative"],
         )
 
         if filtered_chunks:
             final_chunks = filtered_chunks[:top_k]
             should_abstain = False
+            filter_stage = "strict"
         else:
-            fallback_chunks = reranked[:top_k]
-            final_chunks = fallback_chunks
-            should_abstain = not bool(fallback_chunks)
+            # Fallback TIDAK lagi menyuntikkan kandidat mentah:
+            # tetap terapkan minimum filter (buang fragment/title/author/reference),
+            # panjang & kelengkapan kalimat boleh dilonggarkan.
+            fallback_pool = [c for c in reranked if _cf_passes_minimum_filter(c)]
+            final_chunks = fallback_pool[:top_k]
+            should_abstain = not bool(final_chunks)
+            filter_stage = "fallback" if final_chunks else "none"
 
+            blocked = _cf_filter_breakdown(reranked)
             logger.warning(
-                "[RETRIEVAL_FALLBACK] strict filter returned no chunks; "
-                "using %d reranked candidates",
+                "[RETRIEVAL_FALLBACK] strict filter returned no chunks | "
+                "fallback_pool=%d | passed_minimum=%d | "
+                "blocked_ref=%d | blocked_title_author=%d | blocked_fragment=%d | "
+                "blocked_low_quality=%d | blocked_not_informative=%d | "
+                "abstain=%s",
+                len(reranked),
                 len(final_chunks),
+                blocked["reference"],
+                blocked["title_author"],
+                blocked["fragment"],
+                blocked["low_quality"],
+                blocked["not_informative"],
+                should_abstain,
             )
 
         for c in final_chunks:
@@ -409,9 +406,10 @@ class MasterHybridRetriever:
             text_len = len(text.split())
             starts_ok = not text.strip().lower().startswith(("and ", "or ", "but "))
             ends_ok = text.strip().endswith((".", ":", ";", "?", ")"))
-            print(f"  {cid}: score={rerank_score:.2f}, words={text_len}, complete=({starts_ok}&{ends_ok})")
+            score_str = f"{rerank_score:.2f}" if isinstance(rerank_score, (int, float)) else "n/a"
+            print(f"  {cid}: score={score_str}, words={text_len}, complete=({starts_ok}&{ends_ok})")
 
-        formatted = self._format_output(final_chunks, "hybrid_rrf_rerank", should_abstain)
+        formatted = self._format_output(final_chunks, "hybrid_rrf_rerank", should_abstain, filter_stage=filter_stage)
 
         t_fuse = time.time() - t_fuse_start
         t_search_total = time.time() - t_search_start
@@ -427,7 +425,7 @@ class MasterHybridRetriever:
         )
         return formatted
 
-    def _format_output(self, results: list, method: str, should_abstain: bool):
+    def _format_output(self, results: list, method: str, should_abstain: bool, filter_stage: str = "strict"):
         formatted = []
         for i, r in enumerate(results):
             if isinstance(r, dict):
@@ -455,6 +453,7 @@ class MasterHybridRetriever:
                 "retrieval_method": method,
                 "metadata":         meta,
                 "should_abstain":   should_abstain,
+                "filter_stage":     filter_stage,
             })
         return formatted
 

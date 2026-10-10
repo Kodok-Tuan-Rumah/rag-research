@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from dataclasses import dataclass
 from typing import List, Optional
@@ -11,6 +12,7 @@ from qdrant_client.models import (
     Distance, VectorParams, PointStruct,
     Filter, FieldCondition, MatchValue,
 )
+from src.retrieval.chunk_filters import is_noise_chunk_text as _is_noise_chunk_text
 
 CHUNK_ID_NAMESPACE = uuid.UUID('12345678-1234-5678-1234-567812345678')
 
@@ -18,6 +20,17 @@ COLLECTION_NAME = "rag_research"
 QDRANT_PATH     = "./data/qdrant_storage"
 VECTOR_DIM      = 768
 BATCH_SIZE      = 128
+
+
+# ---------------------------------------------------------------------------
+# Noise filter — safety net sebelum chunk masuk Qdrant
+# Aturan noise di-sentralisasi di src/retrieval/chunk_filters.py
+# supaya tidak berbeda-beda antar modul (ingestion/retrieval).
+# ---------------------------------------------------------------------------
+
+def _is_noise_chunk(text: str) -> bool:
+    """Return True jika chunk tidak layak di-index ke Qdrant."""
+    return _is_noise_chunk_text(text)
 
 
 @dataclass
@@ -76,6 +89,13 @@ class QdrantVectorStore:
         if reset:
             self.client.delete_collection(self.collection_name)
             self._ensure_collection()
+
+        # Filter noise sebelum embedding — hemat resource, jaga kualitas index
+        original_count = len(chunks)
+        chunks = [c for c in chunks if not _is_noise_chunk(c.get("text", ""))]
+        noise_removed = original_count - len(chunks)
+        if noise_removed > 0:
+            print(f"[QdrantStore] Noise filter: {noise_removed} chunks dibuang dari {original_count} total")
 
         print(f"[QdrantStore] Indexing {len(chunks)} chunks...")
         texts = [c["text"] for c in chunks]
@@ -145,3 +165,25 @@ class QdrantVectorStore:
                 print("[QdrantStore] Connection closed gracefully.")
             except Exception:
                 pass
+
+
+if __name__ == "__main__":
+    import json, sys
+
+    chunks_path = Path("data/processed/chunks_semantic.json")
+    if not chunks_path.exists():
+        print(f"[ERROR] {chunks_path} tidak ditemukan. Jalankan semantic_chunker.py dulu.")
+        sys.exit(1)
+
+    with open(chunks_path, "r", encoding="utf-8") as f:
+        chunks = json.load(f)
+
+    print(f"[CLI] Loaded {len(chunks)} chunks dari {chunks_path}")
+
+    store = QdrantVectorStore()
+    store.index_chunks(chunks, reset=True)
+
+    # Verifikasi
+    count = store.client.count(store.collection_name).count
+    print(f"[CLI] Verifikasi: {count} vectors tersimpan di collection '{store.collection_name}'")
+    store.close()
