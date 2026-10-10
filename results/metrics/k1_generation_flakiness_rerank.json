@@ -1,0 +1,131 @@
+{
+  "measurement": "K1 Task 11a — generation flakiness (observation only)",
+  "config": {
+    "query": "What is Hybrid Search in RAG?",
+    "top_k": 5,
+    "rerank": true,
+    "query_type": "general",
+    "generation_max_tokens": 512,
+    "generation_temperature": 0.2,
+    "model": "openai/gpt-oss-20b",
+    "chunks_retrieved": 5
+  },
+  "summary": {
+    "iterations": 10,
+    "answered": 10,
+    "failed": 0,
+    "answer_rate": 1.0,
+    "flaky_or_fail_rate": 0.0,
+    "outcome_counts": {
+      "ANSWERED": 10
+    },
+    "latency_ms": {
+      "median": 719.1,
+      "p95": 1673.6,
+      "min": 611.0,
+      "max": 2737.0
+    }
+  },
+  "iterations_detail": [
+    {
+      "iteration": 0,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 2737.0,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to a retrieval strategy that "
+    },
+    {
+      "iteration": 1,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 716.3,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to the combination of dense v"
+    },
+    {
+      "iteration": 2,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 611.0,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in RAG refers to a retrieval strategy that combines dense vector search with"
+    },
+    {
+      "iteration": 3,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 701.2,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in RAG refers to a retrieval strategy that combines dense vector search with"
+    },
+    {
+      "iteration": 4,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 959.3,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to a retrieval strategy that "
+    },
+    {
+      "iteration": 5,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 1673.6,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to a retrieval strategy that "
+    },
+    {
+      "iteration": 6,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 694.6,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in RAG refers to the combination of dense vector search with sparse keyword‑"
+    },
+    {
+      "iteration": 7,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 681.9,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to a retrieval strategy that "
+    },
+    {
+      "iteration": 8,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 722.0,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to a retrieval strategy that "
+    },
+    {
+      "iteration": 9,
+      "outcome": "ANSWERED",
+      "status": "ANSWERED",
+      "detail": "",
+      "latency_ms": 1042.8,
+      "llm_confidence_score": 0.95,
+      "num_chunks_used": 5,
+      "answer_head": "Hybrid Search in Retrieval-Augmented Generation (RAG) refers to a retrieval strategy that "
+    }
+  ]
+}
