@@ -1,5 +1,4 @@
 from enum import Enum
-from pathlib import Path
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
@@ -52,6 +51,14 @@ class Settings(BaseSettings):
     )
     score_gap_threshold: float = 15.0
     min_score_threshold: float = 0.0
+    # Generation-time abstention gate. `generate()` defaulted to -3.0, which is
+    # far more permissive than the 0.0 used by every other caller: with the
+    # cross-encoder enabled a chunk scoring -0.195 is correctly rejected by the
+    # CLI and Agent but was accepted by the API, which never passes the
+    # argument. Measured: "How does hybrid search work?" returns top1 = -0.195
+    # under rerank, so the API answered a question the other two paths abstained
+    # on. 0.0 is the value check_retrieval_confidence() itself defaults to.
+    retrieval_min_top1_score: float = 0.0
     groq_model: str = "openai/gpt-oss-20b"
     groq_model_fast: str = "openai/gpt-oss-20b"
     generation_max_tokens: int = 768

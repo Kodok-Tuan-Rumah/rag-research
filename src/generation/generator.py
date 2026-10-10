@@ -332,7 +332,7 @@ class GroqGenerator:
         max_tokens:      Optional[int] = None,
         temperature:     Optional[float] = None,
         source_chunk_id: Optional[str] = None,
-        min_top1_score:  float         = -3.0,
+        min_top1_score:  Optional[float] = None,
         query_type:      Optional[str]  = None,
         retrieval_decision: Optional[str] = None,
         retrieval_confidence: Optional[float] = None,
@@ -340,6 +340,14 @@ class GroqGenerator:
         t0_total = time.time()
         query_type = query_type or PolicyEngine().decide_query_type(query)
         temperature = settings.generation_temperature if temperature is None else temperature
+        # This defaulted to -3.0 while check_retrieval_confidence() defaults to
+        # 0.0 and every explicit caller passes 0.0. The API never passes the
+        # argument, so it alone ran the permissive gate and generated answers from
+        # chunks the CLI and Agent rejected. Now sourced from settings so all
+        # paths agree by default.
+        min_top1_score = (
+            settings.retrieval_min_top1_score if min_top1_score is None else min_top1_score
+        )
         num_chunks_retrieved = len(chunks)
 
         if retrieval_decision not in (None, "REJECT", "PARTIAL_TRUST", "GENERATE"):

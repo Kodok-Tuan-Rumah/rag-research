@@ -183,3 +183,100 @@ def test_agent_run_does_not_propagate_generation_exception():
 
     assert result.status == AgentStatus.ABSTAINED
     assert result.answer is None or "insufficient" in str(result.answer).lower()
+
+# --- the generation gate must be identical on every path ---------------------
+
+
+def test_generate_defaults_to_the_shared_gate_threshold():
+    """API, Agent and CLI must not disagree on when to abstain.
+
+    generate() defaulted to -3.0 while check_retrieval_confidence() defaults to
+    0.0 and every explicit caller passes 0.0. The API never passes the argument,
+    so it alone used the permissive gate. Measured effect: with the cross-encoder
+    enabled, "How does hybrid search work?" scores -0.195, which the CLI and
+    Agent reject and the API answered.
+    """
+    import inspect
+
+    from src.api.config import settings
+    from src.generation.generator import check_retrieval_confidence
+
+    sig = inspect.signature(GroqGenerator.generate)
+    assert sig.parameters["min_top1_score"].default is None, (
+        "generate() must not carry its own literal threshold; None delegates to "
+        "settings.retrieval_min_top1_score"
+    )
+
+    inner = inspect.signature(check_retrieval_confidence)
+    assert inner.parameters["min_top1_score"].default == settings.retrieval_min_top1_score, (
+        f"check_retrieval_confidence defaults to "
+        f"{inner.parameters['min_top1_score'].default} but settings says "
+        f"{settings.retrieval_min_top1_score}"
+    )
+
+
+def test_gate_rejects_a_negative_top_score():
+    """A negative cross-encoder score must abstain, not generate."""
+    from src.api.config import settings
+
+    gen = GroqGenerator.__new__(GroqGenerator)
+    gen.model = "test-model"
+
+    captured = {}
+
+    def _create(**kwargs):
+        raise AssertionError("LLM must not be called when the gate rejects")
+
+    gen.client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=_create))
+    )
+    gen._confidence = SimpleNamespace()
+
+    negative = [{
+        "chunk_id": "c1",
+        "doc_id": "d1",
+        "text": "weakly relevant context.",
+        "retrieval_score": -0.195,
+        "metadata": {},
+    }]
+
+    result = gen.generate("query", negative)
+
+    assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.reason and "top1_score" in result.reason
+    assert settings.retrieval_min_top1_score == 0.0
+
+
+def test_gate_accepts_a_positive_top_score():
+    from src.generation.generator import _make_abstain_response  # noqa: F401
+
+    gen = GroqGenerator.__new__(GroqGenerator)
+    gen.model = "test-model"
+
+    def _create(**kwargs):
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(
+                content='{"answer":"grounded","status":"ANSWERED",'
+                        '"confidence_score":0.8,"supporting_sources":["[Source 1]"]}'
+            ))]
+        )
+
+    gen.client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=_create))
+    )
+    # Use the real engine: post-generation confidence is computed on the answer,
+    # so a stub would bypass part of the path under test.
+    from src.controller.confidence_engine import ConfidenceEngine
+
+    gen._confidence = ConfidenceEngine()
+
+    positive = [{
+        "chunk_id": "c1",
+        "doc_id": "d1",
+        "text": "Hybrid search combines dense retrieval with BM25 and fuses them.",
+        "retrieval_score": 4.358,
+        "metadata": {},
+    }]
+
+    result = gen.generate("query", positive)
+    assert result.status == "ANSWERED", f"unexpected abstain: {result.reason}"
