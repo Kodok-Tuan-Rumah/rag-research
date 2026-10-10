@@ -782,6 +782,56 @@ System does NOT:
 
 This snapshot describes defaults and code behavior, not a calibrated quality baseline. Runtime and evaluation changes should be measured against the same versioned dataset and recorded with their experiment evidence.
 
+### Where each value lives
+
+Every value above was re-verified against source on 2026-10-10. All are correct.
+However, they are **not** all in `src/api/config.py`, and the ones marked below
+are not overridable through environment or `.env`. A value listed here is not
+necessarily configurable.
+
+| Key | Source | Env-overridable |
+|---|---|---|
+| `retrieval_strategy` | hardcoded path in `hybrid_retriever.py` | no |
+| `api_top_k_policy_defaults` | `PolicyEngine.retrieval_strategy()` | no |
+| `api_top_k_request_override` | `GenerateRequest.top_k` (`ge=1, le=20`) | n/a — request field |
+| `candidate_k_setting` | `settings.candidate_k` | yes |
+| `typical_computed_candidate_k_at_top_k_10` | derived by `_choose_candidate_k` | no |
+| `rrf_k` | `settings.hybrid_rrf_k` | yes |
+| `embedding_model` | `settings.embed_model` | yes (`RAG_EMBED_MODEL` / `EMBED_MODEL`) |
+| `reranker_model` | `settings.reranker_model` | yes (`RAG_RERANK_MODEL` / `RERANKER_MODEL`) |
+| `reranker_enabled_by_default` | `DEFAULT_USE_RERANKER` in `api/main.py` | no |
+| `reranker_input_cap` | literal `candidates[:20]` in `hybrid_retriever.py` | no |
+| `hyde_enabled` | `settings.use_hyde` | yes |
+| `multi_query_enabled` | `settings.use_multi_query` | yes |
+| `llm_model` | `settings.groq_model` | yes |
+| `confidence_reject_threshold` | `ConfidenceEngine.__init__` | **no** |
+| `confidence_partial_threshold` | `ConfidenceEngine.__init__` | **no** |
+| `api_retrieval_attempts` | `for attempt in range(2)` in `api/main.py` | no |
+| `context_max_chars` | `settings.generation_max_chars` | yes |
+
+> The two confidence thresholds are hardcoded in `src/controller/confidence_engine.py`
+> and cannot be changed without editing source. Phase 3 calibration will need
+> them configurable, or it will rewrite the constructor.
+
+### Correction — §3.5 context control
+
+§3.5 lists `reference_ratio` (default 0.3) and `context_length_budget` (default
+1800 tokens). Neither exists in `src/api/config.py`.
+
+- `max_ref_ratio` is produced per query by `PolicyEngine`, not read from config.
+- The context budget is `settings.generation_max_chars = 3000` — a **character**
+  limit, not a token limit. `generator.py` enforces it in `build_context_with_ids`.
+
+Treat §3.5's figures as superseded by the table above.
+
+### Correction — retry bound
+
+§3.4 specifies a maximum of 2 iterations. That was not enforced on the
+`RETRIEVE_AGAIN` path: the branch consulted only the step budget, so an unstable
+retrieval signal produced 3 attempts at the default `max_steps=8` and scaled
+linearly with `max_steps` when stagnation detection could not fire. Corrected in
+`src/controller/agent.py`; see `tests/test_retry_contract.py`.
+
 ---
 
 ## Appendix B — Known Issues (Active Blockers)
