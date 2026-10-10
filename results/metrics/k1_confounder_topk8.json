@@ -1,0 +1,73 @@
+{
+  "measurement": "K1 Task 11a/11c — generation stability (observation only)",
+  "mode": "single",
+  "model": "openai/gpt-oss-20b",
+  "calls": 4,
+  "calls_answered": 2,
+  "overall_answer_rate": 0.5,
+  "results": [
+    {
+      "query": "What is Hybrid Search in RAG?",
+      "rerank": false,
+      "query_type": "general",
+      "top_k": 8,
+      "max_tokens": 512,
+      "temperature": 0.2,
+      "chunks_retrieved": 8,
+      "iterations": 4,
+      "answered": 2,
+      "answer_rate": 0.5,
+      "outcome_counts": {
+        "ANSWERED": 2,
+        "ERROR_JSON_VALIDATE_FAILED": 1,
+        "ABSTAIN_LLM_STATUS": 1
+      },
+      "latency_ms": {
+        "median": 1081.4,
+        "max": 1481.2
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 1481.2,
+          "llm_confidence_score": 0.8,
+          "num_chunks_used": 4,
+          "answer_head": "Hybrid Search in RAG refers to a retrieval strategy that combines multiple query strategies—such as expanding the user q"
+        },
+        {
+          "iteration": 1,
+          "outcome": "ERROR_JSON_VALIDATE_FAILED",
+          "status": null,
+          "detail": "RuntimeError: Groq generation failed: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before g",
+          "latency_ms": 1119.6,
+          "llm_confidence_score": null,
+          "num_chunks_used": null,
+          "answer_head": ""
+        },
+        {
+          "iteration": 2,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 1043.2,
+          "llm_confidence_score": 0.8,
+          "num_chunks_used": 4,
+          "answer_head": "Hybrid Search in RAG refers to a retrieval strategy that combines multiple query expansions and parallel vector searches"
+        },
+        {
+          "iteration": 3,
+          "outcome": "ABSTAIN_LLM_STATUS",
+          "status": "INSUFFICIENT_CONTEXT",
+          "detail": "status=INSUFFICIENT_CONTEXT (no [ABSTAIN] log captured)",
+          "latency_ms": 938.2,
+          "llm_confidence_score": 0.0,
+          "num_chunks_used": 4,
+          "answer_head": "I'm sorry, I couldn't find the answer in the provided context."
+        }
+      ]
+    }
+  ]
+}

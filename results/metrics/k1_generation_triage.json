@@ -1,0 +1,196 @@
+{
+  "measurement": "K1 Task 11a/11c — generation stability (observation only)",
+  "mode": "sweep",
+  "model": "openai/gpt-oss-20b",
+  "calls": 6,
+  "calls_answered": 5,
+  "overall_answer_rate": 0.8333,
+  "results": [
+    {
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "rerank": false,
+      "query_type": "general",
+      "top_k": 8,
+      "max_tokens": 512,
+      "temperature": 0.2,
+      "chunks_retrieved": 8,
+      "iterations": 1,
+      "answered": 1,
+      "answer_rate": 1.0,
+      "outcome_counts": {
+        "ANSWERED": 1
+      },
+      "latency_ms": {
+        "median": 1145.0,
+        "max": 1145.0
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 1145.0,
+          "llm_confidence_score": 0.99,
+          "num_chunks_used": 4,
+          "answer_head": "The inter‑rater reliability was measured using Gwet’s AC1/2 statistic (specifically the AC2 variant). On the 7‑point Lik"
+        }
+      ]
+    },
+    {
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "rerank": true,
+      "query_type": "general",
+      "top_k": 8,
+      "max_tokens": 512,
+      "temperature": 0.2,
+      "chunks_retrieved": 8,
+      "iterations": 1,
+      "answered": 1,
+      "answer_rate": 1.0,
+      "outcome_counts": {
+        "ANSWERED": 1
+      },
+      "latency_ms": {
+        "median": 1244.9,
+        "max": 1244.9
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 1244.9,
+          "llm_confidence_score": 0.95,
+          "num_chunks_used": 2,
+          "answer_head": "The inter‑rater reliability was measured using Gwet’s AC1/2 statistic (specifically AC2). On the 7‑point Likert‑scale he"
+        }
+      ]
+    },
+    {
+      "query": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "rerank": false,
+      "query_type": "reasoning",
+      "top_k": 10,
+      "max_tokens": 768,
+      "temperature": 0.3,
+      "chunks_retrieved": 10,
+      "iterations": 1,
+      "answered": 1,
+      "answer_rate": 1.0,
+      "outcome_counts": {
+        "ANSWERED": 1
+      },
+      "latency_ms": {
+        "median": 729.9,
+        "max": 729.9
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 729.9,
+          "llm_confidence_score": 0.95,
+          "num_chunks_used": 5,
+          "answer_head": "In the RAG training setup, the FEVER class labels—\"supports\", \"refutes\", and \"not enough info\"—are mapped to single outp"
+        }
+      ]
+    },
+    {
+      "query": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "rerank": true,
+      "query_type": "reasoning",
+      "top_k": 10,
+      "max_tokens": 768,
+      "temperature": 0.3,
+      "chunks_retrieved": 10,
+      "iterations": 1,
+      "answered": 1,
+      "answer_rate": 1.0,
+      "outcome_counts": {
+        "ANSWERED": 1
+      },
+      "latency_ms": {
+        "median": 918.6,
+        "max": 918.6
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 918.6,
+          "llm_confidence_score": 0.95,
+          "num_chunks_used": 4,
+          "answer_head": "In the RAG training pipeline, the FEVER labels—supports, refutes, and not‑enough‑info—are mapped to distinct single‑toke"
+        }
+      ]
+    },
+    {
+      "query": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+      "rerank": false,
+      "query_type": "general",
+      "top_k": 8,
+      "max_tokens": 512,
+      "temperature": 0.2,
+      "chunks_retrieved": 8,
+      "iterations": 1,
+      "answered": 1,
+      "answer_rate": 1.0,
+      "outcome_counts": {
+        "ANSWERED": 1
+      },
+      "latency_ms": {
+        "median": 1085.6,
+        "max": 1085.6
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ANSWERED",
+          "status": "ANSWERED",
+          "detail": "",
+          "latency_ms": 1085.6,
+          "llm_confidence_score": 0.92,
+          "num_chunks_used": 4,
+          "answer_head": "RAG’s key characteristic is that it learns a retrieval component jointly with the generator and can update or swap the r"
+        }
+      ]
+    },
+    {
+      "query": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+      "rerank": true,
+      "query_type": "general",
+      "top_k": 8,
+      "max_tokens": 512,
+      "temperature": 0.2,
+      "chunks_retrieved": 8,
+      "iterations": 1,
+      "answered": 0,
+      "answer_rate": 0.0,
+      "outcome_counts": {
+        "ERROR_JSON_VALIDATE_FAILED": 1
+      },
+      "latency_ms": {
+        "median": 1370.2,
+        "max": 1370.2
+      },
+      "iterations_detail": [
+        {
+          "iteration": 0,
+          "outcome": "ERROR_JSON_VALIDATE_FAILED",
+          "status": null,
+          "detail": "RuntimeError: Groq generation failed: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}. Periksa koneksi API dan kunci And",
+          "latency_ms": 1370.2,
+          "llm_confidence_score": null,
+          "num_chunks_used": null,
+          "answer_head": ""
+        }
+      ]
+    }
+  ]
+}
