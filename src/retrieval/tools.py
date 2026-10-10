@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import Any, Optional
 
 from src.retrieval.qdrant_store import QdrantVectorStore, RetrievalResult
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
@@ -36,6 +36,9 @@ class RetrievalTools:
         use_multi_query: bool = False,
         use_hyde: bool = False,
         rerank: bool = False,
+        dense_weight: float = 0.5,
+        bm25_weight: float = 0.5,
+        min_score_threshold: Optional[float] = None,
     ) -> dict[str, Any]:
 
         chunks = await asyncio.to_thread(
@@ -45,6 +48,9 @@ class RetrievalTools:
             rerank=rerank,
             use_multi_query=use_multi_query,
             use_hyde=use_hyde,
+            dense_weight=dense_weight,
+            bm25_weight=bm25_weight,
+            min_score_threshold=min_score_threshold,
         )
 
         return {
@@ -60,8 +66,16 @@ class RetrievalTools:
         ranked = self.retriever.rerank(query, list(candidates))
         return {"tool": "rerank_candidates", "query": query, "chunks": ranked[:top_n]}
 
-    async def assess_retrieval_quality(self, chunks: list, query: str) -> dict[str, Any]:
-        confidence = self.confidence_engine.calculate_confidence(chunks)
+    async def assess_retrieval_quality(
+        self,
+        chunks: list,
+        query: str,
+        query_type: str | None = None,
+    ) -> dict[str, Any]:
+        confidence = self.confidence_engine.calculate_confidence(
+            chunks,
+            query_type=query_type,
+        )
         return {"tool": "assess_retrieval_quality", "query": query, "confidence": confidence}
 
     async def generate_answer(
@@ -72,6 +86,9 @@ class RetrievalTools:
         temperature: float = 0.0,
         source_chunk_id: str | None = None,
         min_top1_score: float = 0.0,
+        query_type: str | None = None,
+        retrieval_decision: str | None = None,
+        retrieval_confidence: float | None = None,
     ) -> dict[str, Any]:
         response = self.generator.generate(
             query=query,
@@ -80,6 +97,9 @@ class RetrievalTools:
             temperature=temperature,
             source_chunk_id=source_chunk_id,
             min_top1_score=min_top1_score,
+            query_type=query_type,
+            retrieval_decision=retrieval_decision,
+            retrieval_confidence=retrieval_confidence,
         )
         return {
             "tool": "generate_answer",

@@ -401,12 +401,14 @@ class MasterHybridRetriever:
         max_ref_ratio: Optional[float] = None,
         use_multi_query: Optional[bool] = None,
         use_hyde: Optional[bool] = None,
+        min_score_threshold: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         formatted, _trace = self._run_search(
             query, top_k=top_k, dense_weight=dense_weight,
             bm25_weight=bm25_weight, rerank=rerank,
             allow_references=allow_references, max_ref_ratio=max_ref_ratio,
             use_multi_query=use_multi_query, use_hyde=use_hyde,
+            min_score_threshold=min_score_threshold,
         )
         return formatted
 
@@ -421,6 +423,7 @@ class MasterHybridRetriever:
         max_ref_ratio: Optional[float] = None,
         use_multi_query: Optional[bool] = None,
         use_hyde: Optional[bool] = None,
+        min_score_threshold: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Jalankan pipeline canonical dan kembalikan hasil + trace per stage."""
         formatted, trace = self._run_search(
@@ -428,6 +431,7 @@ class MasterHybridRetriever:
             bm25_weight=bm25_weight, rerank=rerank,
             allow_references=allow_references, max_ref_ratio=max_ref_ratio,
             use_multi_query=use_multi_query, use_hyde=use_hyde,
+            min_score_threshold=min_score_threshold,
         )
         return {"results": formatted, "trace": trace}
 
@@ -442,6 +446,7 @@ class MasterHybridRetriever:
         max_ref_ratio: Optional[float] = None,
         use_multi_query: Optional[bool] = None,
         use_hyde: Optional[bool] = None,
+        min_score_threshold: Optional[float] = None,
     ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
         t_search_start = time.time()
         top_k = self._resolve_top_k(query, top_k)
@@ -481,9 +486,10 @@ class MasterHybridRetriever:
         t_fuse_start = time.time()
         fused_results = self._rrf_fuse(all_dense_hits, all_bm25_hits, candidate_k, dense_weight, bm25_weight)
 
+        effective_min_score = settings.min_score_threshold if min_score_threshold is None else min_score_threshold
         fused_results = [
             c for c in fused_results
-            if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "retrieval_score", 0.0)) >= settings.min_score_threshold
+            if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "retrieval_score", 0.0)) >= effective_min_score
         ]
 
         logger.info(
@@ -580,6 +586,11 @@ class MasterHybridRetriever:
             )
         t_filter = time.time() - t_filter_start
 
+        # Per-final-chunk detail for debugging. This runs for EVERY query, so it must
+        # not go to stdout — PROJECT_GOALS.md §4 requires structured, queryable
+        # observability, and bare print() bypasses the logging pipeline entirely.
+        # The same data is already available in trace["final_rows"] and
+        # trace["filter_breakdown"].
         for c in final_chunks:
             cid = c["chunk_id"] if isinstance(c, dict) else getattr(c, "chunk_id", None)
             rerank_score = c.get("rerank_score") if isinstance(c, dict) else getattr(c, "rerank_score", None)
@@ -588,7 +599,10 @@ class MasterHybridRetriever:
             starts_ok = not text.strip().lower().startswith(("and ", "or ", "but "))
             ends_ok = text.strip().endswith((".", ":", ";", "?", ")"))
             score_str = f"{rerank_score:.2f}" if isinstance(rerank_score, (int, float)) else "n/a"
-            print(f"  {cid}: score={score_str}, words={text_len}, complete=({starts_ok}&{ends_ok})")
+            logger.debug(
+                "  %s: score=%s, words=%d, complete=(%s&%s)",
+                cid, score_str, text_len, starts_ok, ends_ok,
+            )
 
         reranker_executed = reranker_status["succeeded"]
         retrieval_method = "hybrid_rrf_rerank" if reranker_executed else "hybrid_rrf"
