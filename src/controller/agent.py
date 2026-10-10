@@ -224,8 +224,25 @@ class Agent:
                 if state.is_budget_exhausted():
                     state.status = AgentStatus.ABSTAINED
                     break
-                state.force_expand = True
-                continue
+                # §3.4 permits one retry in total, regardless of which signal
+                # triggered it. Previously this branch only consulted the step
+                # budget, so a persistently unstable signal kept looping until
+                # the budget ran out — 3 attempts at the default max_steps=8,
+                # and scaling linearly with max_steps when scores moved enough to
+                # defeat stagnation detection.
+                if not state.retry_attempted:
+                    logger.info(
+                        "[RETRY_CONTRACT] Retrieval unstable on attempt 1. "
+                        "Triggering the single retry permitted by Section 3.4."
+                    )
+                    state.retry_attempted = True
+                    state.force_expand = True
+                    continue
+                logger.warning(
+                    "[RETRY_CONTRACT] Retrieval still unstable after the retry. Abstaining."
+                )
+                state.status = AgentStatus.ABSTAINED
+                break
 
             if action in ("PARTIAL_TRUST", "GENERATE"):
                 if state.is_budget_exhausted():
