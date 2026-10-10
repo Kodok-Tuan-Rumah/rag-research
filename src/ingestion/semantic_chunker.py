@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List
 
 from src.ingestion.document_loader import extract_sections
+from src.api.config import settings
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -18,11 +19,15 @@ try:
 except ImportError:
     raise ImportError("Library 'semantic_chunker_rust' tidak ditemukan. Jalankan 'maturin develop' di folder rust dulu!")
 
-# Config 
-EMBED_MODEL      = "sentence-transformers/all-MiniLM-L6-v2"   
-BREAKPOINT_PCT   = 85         
-MAX_CHUNK_TOKENS = 512        
-MIN_CHUNK_TOKENS = 50         
+# Config
+# Single source of truth: src/api/config.py. This constant previously duplicated
+# the model name as a literal, so switching embedders required three edits and
+# a missed one would index the corpus at a different dimension than the query
+# path reads — the same failure class as the stale vector_dim == 768 assertion.
+EMBED_MODEL      = settings.embed_model
+BREAKPOINT_PCT   = 85
+MAX_CHUNK_TOKENS = 512
+MIN_CHUNK_TOKENS = 50
 OVERLAP_SENTENCES = 1
 
 

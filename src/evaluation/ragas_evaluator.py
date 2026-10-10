@@ -32,9 +32,10 @@ except ImportError:
 from langchain_huggingface import HuggingFaceEmbeddings
 from src.api.config import settings
 
-# Config 
+# Config
 DEFAULT_LLM_MODEL   = settings.groq_model_fast
-DEFAULT_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+# Single source of truth: src/api/config.py. This was a duplicated literal.
+DEFAULT_EMBED_MODEL = settings.embed_model
 
 @dataclass
 class RAGSample:
