@@ -23,6 +23,17 @@
 # groq        : src/generation/generator.py, src/retrieval/hybrid_retriever.py
 # pydantic-settings : src/api/config.py (hard import, imported nearly everywhere)
 # NOTE: `langchain` bare is NOT imported anywhere. Only the subpackages below are.
+#
+# langchain-community is a TRANSITIVE dependency of ragas, so it has no import
+# anywhere in this repo — but it must still be pinned. ragas 0.2.15 does
+# `from langchain_community.chat_models.vertexai import ChatVertexAI`
+# (ragas/llms/base.py:8), and that module was deleted in langchain-community
+# 0.4.2. Without this pin a clean install resolves the newest release and
+# src/evaluation/ragas_evaluator.py becomes unimportable.
+#
+# This was previously listed as "unused" based on a 0-import scan. That check is
+# wrong for transitive dependencies.
+langchain-community==0.4.1
 groq==0.37.1
 langchain-core==1.6.6
 langchain-groq==1.1.3

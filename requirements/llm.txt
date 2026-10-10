@@ -15,6 +15,12 @@ pydantic==2.13.5
 pydantic-settings==2.15.0
 
 # ── langchain subpackages (only used by src/evaluation/ragas_evaluator.py) ───
+# langchain-community has no import anywhere in this repo, but it MUST be pinned.
+# ragas 0.2.15 imports langchain_community.chat_models.vertexai (ragas/llms/base.py:8)
+# and that module was removed in 0.4.2. An earlier revision of this file listed it
+# as "unused" on the basis of a 0-import scan; that reasoning does not hold for
+# transitive dependencies, and it left RAGAS unimportable.
+langchain-community==0.4.1
 langchain-core==1.6.6
 langchain-groq==1.1.3
 langchain-huggingface==1.2.2
@@ -35,8 +41,9 @@ langgraph==1.2.12
 #   tiktoken                  — unused
 #   langsmith                 — unused
 #   instructor                — unused
-#   langchain-community       — unused
 #   langchain-text-splitters  — unused
+#   NOTE: langchain-community is NOT listed here. It is pinned above because it is
+#         a transitive ragas dependency, not an unused package.
 #   langgraph-checkpoint/sdk/prebuilt, xxhash — transitive, pulled by langgraph
 #
 # AVAILABLE ON THIS GROQ KEY (verified 2026-10-05) — pick deliberately:
