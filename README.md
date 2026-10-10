@@ -28,17 +28,30 @@ The canonical evaluation is **retrieval-only, no LLM judge**. The RAGAS generati
 > ⚠️ `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` return **HTTP 404** on the current API key. Use `openai/gpt-oss-20b`.
 > Full drift audit: [`results/metrics/j6_documentation_drift.md`](results/metrics/j6_documentation_drift.md)
 
-### Historical 14-Query Retrieval Baseline
+### 14-Query Retrieval Baseline — CURRENT (v1)
 
-The following saved baseline uses the 14-query dataset and is not the K7 v2 result. Keep the dataset version attached when comparing metrics.
+Measured on `data/evaluation/retrieval_eval_dataset.json`, top_k=10, rerank=True.
+Confirmed by two independent scripts and stable across repeated runs.
 
 | Stage | Recall@10 | MRR@10 |
 |---|---|---|
-| Dense | 0.7857 | 0.7551 |
+| Dense | 0.7857 | 0.7500 |
 | BM25 | **1.0000** | **0.8833** |
 | RRF (weighted + section-boosted) | 0.8571 | 0.8571 |
-| RRF + Reranker | 0.8571 | 0.7627 |
-| Final (filtered) | 0.8571 | 0.7589 |
+| RRF + Reranker | **0.9286** | 0.8452 |
+| Final (filtered) | **0.9286** | 0.8452 |
+
+Full record: [`k1_baseline_freeze.md`](results/metrics/k1_baseline_freeze.md).
+This is the reference for every §14 before/after comparison.
+
+> ⚠️ An earlier revision of this table showed `0.8571` for the reranked and final
+> stages. That value is **stale** — it predates commit `50796bf`, which fixed
+> rerank candidate selection. Reconciled in
+> [`k1_q15_reconciliation.md`](results/metrics/k1_q15_reconciliation.md); the gap
+> traced entirely to one query (q15), promoted from RRF rank 11 to reranked
+> rank 1. The 13-query v2 result remains separate — do not merge the two sets.
+
+> **Historical retrieval-only latency:** the 14-query reranker ablation measured P95 4,065.16 ms with reranking enabled versus 62.96 ms without it. The measured interval covers dense + BM25 + RRF + filtering (and reranking when enabled); it excludes LLM generation, so it is **not end-to-end latency** and cannot establish whether the 3,500 ms end-to-end target was met or missed. See [`fase_f_reranker_ablation.md`](results/metrics/fase_f_reranker_ablation.md). A separate post-fix retrieval profile reports P95 total 4,158.28 ms and reranker-stage P95 4,101.08 ms; see [`latency_budget_analysis.md`](results/metrics/latency_budget_analysis.md). These are historical measurements, not K7.11.
 
 > **Historical retrieval-only latency:** the 14-query reranker ablation measured P95 4,065.16 ms with reranking enabled versus 62.96 ms without it. The measured interval covers dense + BM25 + RRF + filtering (and reranking when enabled); it excludes LLM generation, so it is **not end-to-end latency** and cannot establish whether the 3,500 ms end-to-end target was met or missed. See [`fase_f_reranker_ablation.md`](results/metrics/fase_f_reranker_ablation.md). A separate post-fix retrieval profile reports P95 total 4,158.28 ms and reranker-stage P95 4,101.08 ms; see [`latency_budget_analysis.md`](results/metrics/latency_budget_analysis.md). These are historical measurements, not K7.11.
 

@@ -180,3 +180,16 @@ The following are NOT tuning instructions:
 6. **Is q20 likely reranker error?** AMBIGUOUS — gold is strongly relevant but rs_0086 is also directly about IRR.
 7. **Remaining candidate-ordering inconsistency?** NO — D7 fix ensures reranker input order = RRF order.
 8. **Dominant current failure mechanism?** RERANKER_DEMOTION (q11, q20) + BEYOND_RERANK_DEPTH (q06).
+
+---
+
+> **SUPERSEDED 2026-10-10.** This ablation was measured on code that predates
+> commit `50796bf` (rerank candidate-selection fix). On the same 14-query v1 set,
+> current code gives `config_B` Recall@10 = **0.9286**, not 0.8571. q15 is
+> promoted from RRF rank 11 to reranked rank 1. Determinism confirmed across
+> three runs, and a fresh run of the same script reproduces 0.9286/0.8452.
+>
+> Do not use this file as a baseline. See
+> [`k1_q15_reconciliation.md`](k1_q15_reconciliation.md) and
+> [`fase_f_reranker_ablation_replica_20261010.json`](fase_f_reranker_ablation_replica_20261010.json).
+> The JSON artifact itself is retained unmodified as the historical record.

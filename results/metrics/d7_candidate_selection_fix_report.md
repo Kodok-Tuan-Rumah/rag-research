@@ -116,3 +116,12 @@ No parameter changes. The metric movement is a direct consequence of the correct
 
 - Whether the reranker's demotion of q15 (RRF 11 → rerank 19) and q20 (RRF 1 → rerank 8) reflects true cross-encoder judgment requires manual review of the q15/q20 competitor texts.
 - The q15 manual judgment (D4) labeled the gold as only weakly relevant (0.25), which is consistent with the reranker demoting it, but this is not a formal proof of correctness.
+
+
+> **PARTIALLY SUPERSEDED 2026-10-10.** The q06 conclusion still holds and was
+> re-confirmed: its RRF rank of 24 exceeds the rerank depth of 20, so it is
+> correctly excluded from the reranker input. The *after* column does not
+> reproduce on current code — `rrf_reranked` and `final_filtered` measure
+> 0.9286, not 0.8571, and q15 lands at reranked rank 1 rather than 19. The
+> state that produced those numbers cannot be reconstructed from git.
+> See [`k1_q15_reconciliation.md`](k1_q15_reconciliation.md).
