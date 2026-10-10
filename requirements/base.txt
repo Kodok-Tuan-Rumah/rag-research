@@ -23,7 +23,7 @@ scikit-learn==1.7.2
 # ── eval data (only if running ragas_evaluator.py) ───────────────────────────
 datasets==3.6.0
 
-# REMOVED (verified 0 imports across 87 .py files):
+# REMOVED (verified 0 imports across 92 .py files):
 #   scipy     — unused
 #   pandas    — only reached via ragas `to_pandas()`
 #   faiss-cpu — src/retrieval/embedder.py hard-imports it but is dead code

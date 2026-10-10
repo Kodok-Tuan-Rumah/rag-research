@@ -15,7 +15,7 @@ joblib==1.6.0
 # `transformers` can compute it directly; bert-score is the packaged version.
 #   bert-score==0.3.13
 
-# REMOVED (verified 0 imports across 87 .py files):
+# REMOVED (verified 0 imports across 92 .py files):
 #   seaborn   — unused
 #   mlflow    — unused
 #   jupyter   — unused

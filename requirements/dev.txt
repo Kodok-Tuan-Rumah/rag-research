@@ -14,15 +14,26 @@ pytest-asyncio==1.4.0
 # ── run the suite ─────────────────────────────────────────────────────────────
 #   python3 -m pytest tests/ -q
 #
-# KNOWN PRE-EXISTING FAILURES (not caused by these deps):
-#   numpy 2.5.3 on Python 3.14 raises
-#     ImportError: cannot load module more than once per process
-#   when tests/test_qdrant_store.py and tests/test_semantic_chunker.py both
-#   load numpy.fft in one pytest process. Same class of bug as the protobuf
-#   upb issue handled by src/_compat.py.
+#   Baseline: 166 passed, 0 failed. No --ignore flags required.
 #
-#   Workaround: run each in its own process
-#     python3 -m pytest tests/test_qdrant_store.py -q
-#     python3 -m pytest tests/test_semantic_chunker.py -q
+# RESOLVED — an earlier version of this file listed 3 pre-existing failures and
+# attributed them to "numpy 2.5.3 on Python 3.14 raises ImportError: cannot load
+# module more than once per process". That diagnosis was wrong, and the numpy
+# error message points at the wrong library.
 #
-#   Baseline: 87 passed, 3 failed.
+# Real cause, reproduced in isolation:
+#   unittest.mock.patch.dict(sys.modules, ...) snapshots sys.modules and
+#   restores it wholesale on exit, evicting any module first imported *inside*
+#   the block. numpy.fft._pocketfft_umath is a C extension and CPython forbids
+#   initialising the same extension twice in one process. sklearn and transformers
+#   both pull numpy.fft in through the patched import, which is why a test that
+#   passed alone failed inside the full suite.
+#
+#   Fix: pre-import numpy.fft above the patch.dict block. Applied in
+#   tests/test_qdrant_store.py and tests/test_semantic_chunker.py.
+#
+#   This was a test-harness defect, not a numpy or Python 3.14 defect, and it is
+#   unrelated to src/_compat.py (which handles a separate protobuf upb problem).
+#
+# Environment health check (5 checks + suite):
+#   bash scripts/bootstrap_env.sh --verify

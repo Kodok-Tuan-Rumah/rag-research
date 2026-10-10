@@ -27,7 +27,7 @@ langchain-huggingface==1.2.2
 # Wiring LangGraph in = architecture redesign = outside Phase A–J scope.
 langgraph==1.2.12
 
-# REMOVED (verified 0 imports across 87 .py files):
+# REMOVED (verified 0 imports across 92 .py files):
 #   langchain (bare)          — never imported; only subpackages above
 #   ollama                    — src/evaluation/evaluator.py hard-imports it but
 #                               that file is imported by NOTHING

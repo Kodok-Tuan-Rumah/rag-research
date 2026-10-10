@@ -114,21 +114,37 @@ matplotlib==3.11.2
 # =============================================================================
 # REMOVED — verified unused
 # =============================================================================
-# scipy==1.18.1        : 0 imports across 87 .py files
+# scipy==1.18.1        : 0 imports across 92 .py files
 # langchain (bare)     : 0 imports; only langchain-core / -groq / -huggingface
 # pandas               : not imported directly; only ragas `to_pandas()`
-# faiss-cpu            : src/retrieval/embedder.py:3 hard-imports it, but that
-#                        file is imported by NOTHING (retrieval_backend=QDRANT)
-# ollama               : src/evaluation/evaluator.py:7 hard-imports it, but that
-#                        file is imported by NOTHING
+# faiss-cpu            : hard-imported by the legacy embedder, which had 0
+#                        inbound imports (retrieval_backend=QDRANT). Archived
+#                        to archive/legacy_2026_10/retrieval/embedder.py
+# ollama               : hard-imported by the legacy evaluator, which had 0
+#                        inbound imports. Archived to
+#                        archive/legacy_2026_10/evaluation/evaluator.py
 # requests             : scripts/run_eval_ragas.py only
 # langchain-google-genai : guarded by try/except (GEMINI_AVAILABLE flag)
 #
-# ── KNOWN ISSUE (pre-existing, NOT caused by these deps) ─────────────────────
-# numpy 2.5.3 on Python 3.14: `numpy.fft` raises
-#   ImportError: cannot load module more than once per process
-# when 2+ test modules load it in one pytest process. Same class of bug as the
-# protobuf upb issue that src/_compat.py works around.
-# Affected: tests/test_qdrant_store.py, tests/test_semantic_chunker.py
-# Workaround: run those files in separate pytest processes.
+# ── RESOLVED — was previously misdiagnosed here ────────────────────────────────
+# An earlier version of this file attributed four test failures to a
+# "numpy 2.5.3 / Python 3.14 incompatibility". That was wrong, and the numpy
+# error message is misleading. Real cause, reproduced in isolation:
+#
+#   unittest.mock.patch.dict(sys.modules, ...) snapshots sys.modules and
+#   restores it wholesale on exit, so any module first imported *inside* the
+#   block is evicted. numpy.fft._pocketfft_umath is a C extension, and CPython
+#   forbids initialising the same extension twice in one process — hence
+#   "ImportError: cannot load module more than once per process". sklearn and
+#   transformers both pull numpy.fft in through the patched import, which is why
+#   a test that passed alone failed inside the full suite.
+#
+# Fix: pre-import numpy.fft above the patch.dict block so it lands in the
+# snapshot. Both affected files now do this.
+#
+# This is a test-harness defect, NOT a numpy or Python 3.14 defect, and is
+# unrelated to src/_compat.py (which handles a separate protobuf upb problem).
+#
+# Test baseline at this commit: 166 passed, 0 failed. No --ignore flags needed.
+# See tests/test_qdrant_store.py and tests/test_semantic_chunker.py.
 # =============================================================================
