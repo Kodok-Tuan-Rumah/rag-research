@@ -33,18 +33,18 @@ class PolicyEngine:
     def retrieval_strategy(self, query_type: QueryType) -> dict:
         _STRATEGIES: dict[QueryType, dict] = {
             "factual": {
-                "use_hyde":        False,
-                "use_multi_query": False,
+                "use_hyde":        settings.use_hyde,
+                "use_multi_query": settings.use_multi_query,
                 "top_k":           5,
             },
             "general": {
-                "use_hyde":        False,
-                "use_multi_query": False,
+                "use_hyde":        settings.use_hyde,
+                "use_multi_query": settings.use_multi_query,
                 "top_k":           8,
             },
             "reasoning": {
-                "use_hyde":        False,
-                "use_multi_query": False,
+                "use_hyde":        settings.use_hyde,
+                "use_multi_query": settings.use_multi_query,
                 "top_k":           10,
             },
         }

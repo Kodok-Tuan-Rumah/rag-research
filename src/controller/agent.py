@@ -126,22 +126,23 @@ class Agent:
     
     # MAIN LOOP
     async def run(self, query: str, source_chunk_id: str | None = None) -> AgentResponse:
-        state = AgentState(query=query, source_chunk_id=source_chunk_id)
+        state = AgentState(
+            query=query,
+            source_chunk_id=source_chunk_id,
+            MAX_STEPS=self.max_steps,
+        )
         plan = self.policy_engine.initial_plan(query)
-        MAX_ITERATIONS = 2
-        iteration_count = 0
         response = None
         import time
         t_start = time.time()
         while state.status == AgentStatus.RUNNING and not state.is_budget_exhausted():
-            if iteration_count >= MAX_ITERATIONS:
-                state.status = AgentStatus.ABSTAINED
-                break
-            iteration_count += 1
             params = self._build_retrieval_params(state, plan)
 
             # Retrieval
             await self._execute_retrieval(state, params)
+            if state.is_budget_exhausted():
+                state.status = AgentStatus.ABSTAINED
+                break
             print(f"[DEBUG] chunks going to confidence: {len(state.retrieved_chunks)}")
             for c in state.retrieved_chunks[:3]:
                 print(f"  chunk_id={c.get('chunk_id')} retrieval_score={c.get('retrieval_score')}")
@@ -151,6 +152,7 @@ class Agent:
             quality = await self.tools.assess_retrieval_quality(
                 state.retrieved_chunks, state.query
             )
+            state.add_observation("assess_retrieval_quality", quality)
 
             confidence = quality["confidence"]
             state.confidence_score = confidence["confidence_score"]
@@ -172,18 +174,24 @@ class Agent:
                 state.status = AgentStatus.ABSTAINED
                 break
             if action == "RETRIEVE_AGAIN":
+                if state.is_budget_exhausted():
+                    state.status = AgentStatus.ABSTAINED
+                    break
                 state.force_expand = True
-                params = self._build_retrieval_params(state, plan)
-                await self._execute_retrieval(state, params)
                 continue
 
             if action in ("PARTIAL_TRUST", "GENERATE"):
+                if state.is_budget_exhausted():
+                    state.status = AgentStatus.ABSTAINED
+                    break
                 response = await self._execute_generation(state, plan)
                 if response:
                     response.latency_ms = {"total": round((time.time() - t_start) * 1000, 1)}
                     return response
                 
         # fallback
+        if state.status == AgentStatus.RUNNING:
+            state.status = AgentStatus.ABSTAINED
         return AgentResponse(
             answer=response.answer if response else None,
             status=state.status,

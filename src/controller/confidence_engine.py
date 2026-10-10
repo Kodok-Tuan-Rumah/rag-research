@@ -38,22 +38,47 @@ class ConfidenceEngine:
         entropy = -np.sum(probs * np.log(probs + 1e-9))
         return float(entropy / np.log(len(probs)))
 
-    def _get_chunk_score(self, chunk: Any) -> float:
+    def _select_chunk_score(self, chunk: Any) -> tuple[Optional[float], str]:
+        """Eksplisit: pilih skor mana dari chunk dan jenis score-space-nya.
+
+        Precedence (canonical):
+          2. ``rerank_score``    → score-space cross-encoder (sigmoid-normalize)
+          3. ``retrieval_score`` → score-space RRF (min-max / max normalize)
+          4. ``score``           → legacy; diperlakukan sebagai RRF
+
+        ``final_score`` memang menyimpan nilai yang sama dengan rerank_score
+        (bila ada) atau retrieval_score — kami sengaja tidak membacanya langsung
+        agar semantic "score-space" tetap dari sumber asalnya.
+        """
         if isinstance(chunk, dict):
-            score = chunk.get("rerank_score")
-            if score is None:
-                score = chunk.get("retrieval_score")
-            if score is None:
-                score = chunk.get("score")
-            if score is None:
-                return None
+            get = chunk.get
         else:
-            score = getattr(chunk, "rerank_score", None)
-            if score is None:
-                score = getattr(chunk, "retrieval_score", None)
-            if score is None:
-                score = getattr(chunk, "score", None)
-        return float(score) if score is not None else None
+            def get(key, default=None):
+                return getattr(chunk, key, default)
+
+        rerank = get("rerank_score")
+        if rerank is not None:
+            try:
+                return float(rerank), "cross_encoder"
+            except (TypeError, ValueError):
+                return None, "cross_encoder"
+        retrieval = get("retrieval_score")
+        if retrieval is not None:
+            try:
+                return float(retrieval), "rrf"
+            except (TypeError, ValueError):
+                return None, "rrf"
+        legacy = get("score")
+        if legacy is not None:
+            try:
+                return float(legacy), "rrf"
+            except (TypeError, ValueError):
+                return None, "rrf"
+        return None, "unknown"
+
+    def _get_chunk_score(self, chunk: Any) -> float:
+        score, _kind = self._select_chunk_score(chunk)
+        return score
 
     def _source_agreement(self, chunks) -> float:
         """
@@ -67,7 +92,12 @@ class ConfidenceEngine:
         doc_ids = []
         for c in chunks[:5]:
             meta = c.get("metadata", {}) if isinstance(c, dict) else getattr(c, "metadata", {})
-            doc_id = meta.get("doc_id") or meta.get("source") or meta.get("file_name")
+            doc_id = (
+                (c.get("doc_id") if isinstance(c, dict) else getattr(c, "doc_id", None))
+                or meta.get("doc_id")
+                or meta.get("source")
+                or meta.get("file_name")
+            )
             if doc_id:
                 doc_ids.append(doc_id)
         if not doc_ids:
@@ -142,36 +172,38 @@ class ConfidenceEngine:
         # Fix 3: skip chunk invalid, jangan reject semua batch
         # Sebelumnya: jika has_invalid_score → langsung return REJECT
         # Sekarang: log warning, tapi tetap lanjut dengan chunk yang valid
-        raw_scores = []
+        scored_chunks = []
         invalid_count = 0
         for chunk in chunks:
             score = self._get_chunk_score(chunk)
             if isinstance(score, (int, float)) and np.isfinite(score):
-                raw_scores.append(float(score))
+                scored_chunks.append((chunk, float(score)))
             else:
                 invalid_count += 1
 
         if invalid_count > 0:
             logger.warning(
                 f"[CONFIDENCE] {invalid_count} chunk(s) dengan score invalid di-skip, "
-                f"{len(raw_scores)} chunk valid tersisa."
+                f"{len(scored_chunks)} chunk valid tersisa."
             )
 
-        if not raw_scores:
+        if not scored_chunks:
             return {
                 "confidence_score": 0.0,
                 "decision": "REJECT",
                 "signals": {"reason": "no_valid_scores"}
             }
 
+        valid_chunks = [chunk for chunk, _score in scored_chunks]
+        raw_scores = [score for _chunk, score in scored_chunks]
         logger.info(f"[RAW_SCORES] {raw_scores[:10]}")
 
-        has_rerank = any(
-            (c.get("rerank_score") if isinstance(c, dict) else getattr(c, "rerank_score", None)) is not None
-            for c in chunks
-        )
+        selected_kinds = [
+            self._select_chunk_score(chunk)[1]
+            for chunk in valid_chunks
+        ]
 
-        score_type = "cross_encoder" if has_rerank else "rrf"
+        score_type = "cross_encoder" if "cross_encoder" in selected_kinds else "rrf"
         normalized_scores = list(self._normalize_scores(raw_scores, score_type=score_type))
         top_score = raw_scores[0]
         mean_top3 = float(np.mean(raw_scores[:3])) if len(raw_scores) >= 3 else top_score
@@ -184,7 +216,7 @@ class ConfidenceEngine:
             gap = 0.0
         score_level = float(np.mean(normalized_scores[:3])) if len(normalized_scores) >= 3 else normalized_scores[0]
         entropy = self._calculate_entropy(normalized_scores)
-        agreement = self._source_agreement(chunks)
+        agreement = self._source_agreement(valid_chunks)
 
         base_confidence = (
             0.45 * top_score_norm +
@@ -256,5 +288,6 @@ class ConfidenceEngine:
                 "query_type": query_type,
                 "spurious_match": patterns["spurious_match"],
                 "unstable_retrieval": patterns["unstable_retrieval"],
+                "score_type": score_type,
             }
         }

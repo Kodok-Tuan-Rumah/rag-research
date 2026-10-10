@@ -19,8 +19,8 @@ logger = logging.getLogger("rag.generator")
 load_dotenv()
 
 DEFAULT_MODEL     = "openai/gpt-oss-20b"
-DEFAULT_MAX_CHARS = 3000
-DEFAULT_TEMP      = 0.1
+DEFAULT_MAX_CHARS = settings.generation_max_chars
+DEFAULT_TEMP      = settings.generation_temperature
 DEFAULT_TOP_K     = 10
 
 SYSTEM_PROMPT = (
@@ -52,11 +52,15 @@ class RAGResponse:
     num_chunks_used:          int
     status:                   str   = "UNKNOWN"
     confidence_score:         float = 0.0
+    llm_confidence_score:      Optional[float] = None
     supporting_sources:       list  = None
+    context_chunk_ids:        list  = None
 
     def __post_init__(self):
         if self.supporting_sources is None:
             self.supporting_sources = []
+        if self.context_chunk_ids is None:
+            self.context_chunk_ids = []
 
 # Helper: safe attribute access for RetrievalResult OR dict
 def _get_attr(chunk, key: str, default=None):
@@ -66,17 +70,22 @@ def _get_attr(chunk, key: str, default=None):
 
 def _get_score(chunk) -> float:
     if isinstance(chunk, dict):
-        return float(
-            chunk.get("rerank_score")
-            or chunk.get("retrieval_score")
-            or chunk.get("score", 0.0)
-        )
-    return float(
-        getattr(chunk, "rerank_score", None)
-        or getattr(chunk, "retrieval_score", None)
-        or getattr(chunk, "score", 0.0)
-        or 0.0
-    )
+        for key in ("rerank_score", "retrieval_score", "final_score", "score"):
+            value = chunk.get(key)
+            if value is not None:
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    continue
+        return 0.0
+    for key in ("rerank_score", "retrieval_score", "final_score", "score"):
+        value = getattr(chunk, key, None)
+        if value is not None:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                continue
+    return 0.0
 
 # Context helpers
 def filter_chunks_by_diversity(chunks: list, max_per_doc: int = 2) -> list:
@@ -108,8 +117,9 @@ def filter_chunks_by_diversity(chunks: list, max_per_doc: int = 2) -> list:
     )
     return filtered
 
-def build_context(chunks: list, max_chars: int = DEFAULT_MAX_CHARS) -> str:
+def build_context_with_ids(chunks: list, max_chars: int = DEFAULT_MAX_CHARS) -> tuple[str, list[str]]:
     context_parts = []
+    included_ids = []
     total_chars = 0
 
     for i, chunk in enumerate(chunks):
@@ -132,8 +142,15 @@ def build_context(chunks: list, max_chars: int = DEFAULT_MAX_CHARS) -> str:
             logger.info(f"[CONTEXT_LIMIT] Reached max_chars={max_chars} at chunk {i+1}")
             break
         context_parts.append(block)
+        if not isinstance(chunk, str):
+            included_ids.append(_get_attr(chunk, "chunk_id", f"c_{i}"))
         total_chars += len(block)
-    return "\n\n".join(context_parts)
+    return "\n\n".join(context_parts), included_ids
+
+
+def build_context(chunks: list, max_chars: int = DEFAULT_MAX_CHARS) -> str:
+    context, _included_ids = build_context_with_ids(chunks, max_chars=max_chars)
+    return context
 
 def filter_chunks_by_score(chunks: list, min_score: float = 0.0) -> list:
     if not chunks:
@@ -203,6 +220,9 @@ def _make_abstain_response(
     chunks: list,
     model: str,
     reason: str,
+    context_used: str = "",
+    context_chunk_ids: Optional[list[str]] = None,
+    llm_confidence_score: Optional[float] = None,
 ) -> RAGResponse:
     logger.warning(f"[ABSTAIN] {reason} | query='{query[:60]}'")
     return RAGResponse(
@@ -210,7 +230,7 @@ def _make_abstain_response(
         answer="INSUFFICIENT_CONTEXT",
         retrieved_chunks=chunks,
         retrieval_method="abstained",
-        context_used="",
+        context_used=context_used,
         latency_context_build_ms=0.0,
         latency_generation_ms=0.0,
         model=model,
@@ -218,7 +238,9 @@ def _make_abstain_response(
         num_chunks_used=0,
         status="INSUFFICIENT_CONTEXT",
         confidence_score=0.0,
+        llm_confidence_score=llm_confidence_score,
         supporting_sources=[],
+        context_chunk_ids=context_chunk_ids or [],
     )
 
 def check_retrieval_confidence(
@@ -265,11 +287,12 @@ class GroqGenerator:
         query:           str,
         chunks:          list,
         max_tokens:      Optional[int] = None,
-        temperature:     float = 0.0,
+        temperature:     Optional[float] = None,
         source_chunk_id: Optional[str] = None,
         min_top1_score:  float         = -3.0,
     ) -> RAGResponse:
         t0_total = time.time()
+        temperature = settings.generation_temperature if temperature is None else temperature
         num_chunks_retrieved = len(chunks)
         top_k_scores = [_get_score(c) for c in chunks[:5]]
 
@@ -302,7 +325,9 @@ class GroqGenerator:
             f"top_5_scores={[round(s, 4) for s in top_k_scores]}"
         )
 
-        context = build_context(filtered_chunks, max_chars=DEFAULT_MAX_CHARS)
+        context, context_chunk_ids = build_context_with_ids(
+            filtered_chunks, max_chars=DEFAULT_MAX_CHARS
+        )
         t1 = time.time()
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -340,6 +365,8 @@ class GroqGenerator:
                 chunks=chunks,
                 model=self.model,
                 reason="model returned empty output",
+                context_used=context,
+                context_chunk_ids=context_chunk_ids,
             )
 
         raw_answer = raw_content.strip()
@@ -350,7 +377,11 @@ class GroqGenerator:
         is_ok, sanity_reason = sanity_check_answer(answer, filtered_chunks)
         if not is_ok:
             logger.warning(f"[SANITY_CHECK] REJECTED | reason={sanity_reason}")
-            return _make_abstain_response(query=query, chunks=chunks, model=self.model, reason=sanity_reason)
+            return _make_abstain_response(
+                query=query, chunks=chunks, model=self.model, reason=sanity_reason,
+                context_used=context, context_chunk_ids=context_chunk_ids,
+                llm_confidence_score=confidence,
+            )
         if status == "INSUFFICIENT_CONTEXT":
             answer = "I'm sorry, I couldn't find the answer in the provided context."
 
@@ -386,6 +417,9 @@ class GroqGenerator:
                 chunks=chunks,
                 model=self.model,
                 reason=f"confidence_engine REJECT | score={final_confidence:.3f}",
+                context_used=context,
+                context_chunk_ids=context_chunk_ids,
+                llm_confidence_score=confidence,
             )
         
         logger.info(
@@ -406,7 +440,9 @@ class GroqGenerator:
             num_chunks_used=num_chunks_used,
             status=status,
             confidence_score=final_confidence,  
+            llm_confidence_score=confidence,
             supporting_sources=sources,
+            context_chunk_ids=context_chunk_ids,
         )
 
 

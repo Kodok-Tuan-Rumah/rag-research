@@ -18,6 +18,7 @@ from src.retrieval.chunk_filters import (
     filter_breakdown as _cf_filter_breakdown,
 )
 from src.controller.policy_engine import PolicyEngine
+from src.api.config import settings
 from rank_bm25 import BM25Okapi
 from concurrent.futures import ThreadPoolExecutor
 from groq import Groq
@@ -31,15 +32,21 @@ def rrf_fuse(
     k: int = 60,
     weights: Optional[List[float]] = None,
     section_boost_fn=None,
+    source_labels: Optional[List[str]] = None,
 ) -> List:
     if weights is not None and len(weights) != len(all_hits):
         raise ValueError(f"weights length ({len(weights)}) != all_hits length ({len(all_hits)})")
+    if source_labels is not None and len(source_labels) != len(all_hits):
+        raise ValueError("source_labels length must match all_hits length")
 
     fused_scores: dict[str, float] = {}
+    fused_sources: dict[str, dict[str, float]] = {}
+    source_scores: dict[str, dict[str, float]] = {}
     chunk_map: dict[str, Any] = {}
 
     for list_idx, hits in enumerate(all_hits):
         w = weights[list_idx] if weights is not None else 1.0
+        label = source_labels[list_idx] if source_labels is not None else f"source_{list_idx}"
         for rank, hit in enumerate(hits):
             cid = hit.get("chunk_id") if isinstance(hit, dict) else getattr(hit, "chunk_id", None)
             if not cid:
@@ -49,7 +56,16 @@ def rrf_fuse(
                 meta = (hit.get("metadata", {}) if isinstance(hit, dict)
                         else getattr(hit, "metadata", {})) or {}
                 boost = section_boost_fn(meta)
-            fused_scores[cid] = fused_scores.get(cid, 0.0) + w * boost / (k + rank + 1)
+            contribution = w * boost / (k + rank + 1)
+            fused_scores[cid] = fused_scores.get(cid, 0.0) + contribution
+            fused_sources.setdefault(cid, {})
+            fused_sources[cid][label] = fused_sources[cid].get(label, 0.0) + contribution
+            score = hit.get("score") if isinstance(hit, dict) else getattr(hit, "score", None)
+            if score is not None:
+                try:
+                    source_scores.setdefault(cid, {}).setdefault(label, float(score))
+                except (TypeError, ValueError):
+                    pass
             if cid not in chunk_map:
                 chunk_map[cid] = hit
 
@@ -57,10 +73,19 @@ def rrf_fuse(
     for cid, score in sorted(fused_scores.items(), key=lambda x: x[1], reverse=True):
         item = chunk_map[cid]
         rrf_score = round(score, 6)
+        per_source_scores = source_scores.get(cid, {})
         if isinstance(item, dict):
             item["retrieval_score"] = rrf_score
-        elif hasattr(item, "score"):
-            item.score = rrf_score
+            item["rrf_score"] = rrf_score
+            item["source_scores"] = per_source_scores
+            if source_labels is not None:
+                item["rrf_source_contributions"] = fused_sources.get(cid, {})
+        else:
+            item.retrieval_score = rrf_score
+            item.rrf_score = rrf_score
+            item.source_scores = per_source_scores
+            if source_labels is not None:
+                item.rrf_source_contributions = fused_sources.get(cid, {})
         result.append(item)
     return result
 
@@ -88,7 +113,7 @@ class MasterHybridRetriever:
         self,
         vector_store: QdrantVectorStore,
         bm25_chunks_path: str = "data/processed/chunks_semantic_v2.json",
-        reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        reranker_model: Optional[str] = None,
         rrf_k: int = 60,
         use_multi_query: bool = False,
         use_hyde: bool = False,
@@ -100,6 +125,11 @@ class MasterHybridRetriever:
         self._policy = PolicyEngine()
         self._chunks = []
         self._bm25 = None
+        if reranker_model is not None and reranker_model != settings.reranker_model:
+            raise ValueError(
+                "Set reranker_model through RAG_RERANK_MODEL / settings.reranker_model "
+                "before the shared ModelRegistry is initialized."
+            )
 
         if Path(bm25_chunks_path).exists():
             with open(bm25_chunks_path, "r") as f:
@@ -163,7 +193,7 @@ class MasterHybridRetriever:
         queries = [query]
         hyde_text = None
 
-        if not self.groq:
+        if not getattr(self, "groq", None):
             return queries, hyde_text
 
         futures = {}
@@ -217,40 +247,81 @@ class MasterHybridRetriever:
         return top_k
 
     def _choose_candidate_k(self, top_k: int) -> int:
-        return min(max(top_k * 4, 30), 50)
+        return min(max(top_k * 4, 30), max(top_k, settings.candidate_k))
 
-    def _rerank(self, query: str, candidates: list) -> list:
+    def score_pairs(self, pairs: list) -> list:
+        """Public cross-encoder scoring of (query, text) pairs."""
+        if not self.reranker:
+            return [0.0] * len(pairs)
+        return list(self.reranker.predict(
+            pairs,
+            batch_size=32,
+            max_length=self.reranker.max_seq_length,
+        ))
+
+    def _rerank(self, query: str, candidates: list, text_of=None) -> tuple[list, dict]:
         if not self.reranker or not candidates:
-            return candidates
+            return candidates, {
+                "attempted": False,
+                "succeeded": False,
+                "error": None,
+                "skipped_reason": "reranker unavailable" if not self.reranker else "no candidates",
+            }
 
-        pairs = []
-        for hit in candidates:
-            text = hit.get("text") if isinstance(hit, dict) else getattr(hit, "text", "")
-            pairs.append([query, text])
-
+        attempted = False
         try:
-            scores = self.reranker.predict(pairs, batch_size=32, max_length=256)
-            for chunk, score in zip(candidates, scores):
-                rerank_score = float(score)
+            pairs = []
+            for hit in candidates:
+                text = text_of(hit) if text_of is not None else (
+                    hit.get("text") if isinstance(hit, dict) else getattr(hit, "text", "")
+                )
+                pairs.append([query, text])
+
+            attempted = True
+            scores = [float(score) for score in self.score_pairs(pairs)]
+            if len(scores) != len(candidates):
+                raise ValueError(
+                    f"reranker returned {len(scores)} scores for {len(candidates)} candidates"
+                )
+            ranked = sorted(zip(candidates, scores), key=lambda item: item[1], reverse=True)
+            ranked_candidates = [chunk for chunk, _score in ranked]
+            for chunk, score in ranked:
                 if isinstance(chunk, dict):
-                    chunk["rerank_score"] = rerank_score
+                    chunk["rerank_score"] = score
                 else:
-                    chunk.rerank_score = rerank_score
+                    chunk.rerank_score = score
 
-            ranked = sorted(
-                candidates,
-                key=lambda x: (x["rerank_score"] if isinstance(x, dict) else getattr(x, "rerank_score", 0)),
-                reverse=True,
-            )
-            
-            return ranked
+            return ranked_candidates, {
+                "attempted": True,
+                "succeeded": True,
+                "error": None,
+                "skipped_reason": None,
+            }
         except Exception as exc:
-            logger.info(f"[Rerank] failed: {exc}")
-            return candidates
+            logger.warning("[Rerank] failed (%s): %s", type(exc).__name__, exc)
+            return candidates, {
+                "attempted": attempted,
+                "succeeded": False,
+                "error": f"{type(exc).__name__}: {exc}"[:200],
+                "skipped_reason": None,
+            }
 
-    # Core Retrieval 
+    def rerank(self, query: str, candidates: list, text_of=None) -> list:
+        """Public rerank entry point.
+
+        ``text_of`` opsional: callable (hit) -> string yang dijadikan pasangan
+        rerank untuk hit tersebut (mis. window terbaik). Default: teks chunk.
+        """
+        ranked, _status = self._rerank(query, candidates, text_of=text_of)
+        return ranked
+
+    # Core Retrieval
     def _dense_search(self, query: str, k: int) -> List[RetrievalResult]:
         return self.vector_store.search(query, k=k)
+
+    def dense_search(self, query: str, k: int) -> List[RetrievalResult]:
+        """Public dense-retrieval entry point (adapters must use this)."""
+        return self._dense_search(query, k)
 
     def _bm25_search(self, query: str, k: int) -> List[Dict]:
         if not self._bm25:
@@ -267,6 +338,15 @@ class MasterHybridRetriever:
             }
             for i in top_indices
         ]
+
+    def bm25_search(self, query: str, k: int) -> List[Dict]:
+        """Public BM25 entry point (adapters must use this)."""
+        return self._bm25_search(query, k)
+
+    @property
+    def chunks(self) -> list:
+        """Read-only view of the loaded BM25 corpus chunks."""
+        return self._chunks
     def _rrf_fuse(
         self,
         all_dense_hits: List[List],
@@ -283,6 +363,7 @@ class MasterHybridRetriever:
             k=self.rrf_k,
             weights=weights,
             section_boost_fn=self._section_boost,
+            source_labels=["dense"] * len(all_dense_hits) + ["bm25"] * len(all_bm25_hits),
         )[:candidate_k]
 
         ref_penalized = sum(
@@ -298,33 +379,103 @@ class MasterHybridRetriever:
         )
         return results
 
+    def rrf_fuse_search(
+        self,
+        all_dense_hits: List[List],
+        all_bm25_hits: List[List],
+        candidate_k: int,
+        dense_weight: float = 0.7,
+        bm25_weight: float = 0.3,
+    ) -> List:
+        """Public RRF fusion entry point (adapters must use this)."""
+        return self._rrf_fuse(all_dense_hits, all_bm25_hits, candidate_k, dense_weight, bm25_weight)
+
     def search(
         self,
         query: str,
         top_k: int = 10,
         dense_weight: float = 0.5,
         bm25_weight: float = 0.5,
+        rerank: bool = False,
+        allow_references: Optional[bool] = None,
+        max_ref_ratio: Optional[float] = None,
+        use_multi_query: Optional[bool] = None,
+        use_hyde: Optional[bool] = None,
     ) -> List[Dict[str, Any]]:
+        formatted, _trace = self._run_search(
+            query, top_k=top_k, dense_weight=dense_weight,
+            bm25_weight=bm25_weight, rerank=rerank,
+            allow_references=allow_references, max_ref_ratio=max_ref_ratio,
+            use_multi_query=use_multi_query, use_hyde=use_hyde,
+        )
+        return formatted
+
+    def search_with_trace(
+        self,
+        query: str,
+        top_k: int = 10,
+        dense_weight: float = 0.5,
+        bm25_weight: float = 0.5,
+        rerank: bool = False,
+        allow_references: Optional[bool] = None,
+        max_ref_ratio: Optional[float] = None,
+        use_multi_query: Optional[bool] = None,
+        use_hyde: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """Jalankan pipeline canonical dan kembalikan hasil + trace per stage."""
+        formatted, trace = self._run_search(
+            query, top_k=top_k, dense_weight=dense_weight,
+            bm25_weight=bm25_weight, rerank=rerank,
+            allow_references=allow_references, max_ref_ratio=max_ref_ratio,
+            use_multi_query=use_multi_query, use_hyde=use_hyde,
+        )
+        return {"results": formatted, "trace": trace}
+
+    def _run_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        dense_weight: float = 0.5,
+        bm25_weight: float = 0.5,
+        rerank: bool = False,
+        allow_references: Optional[bool] = None,
+        max_ref_ratio: Optional[float] = None,
+        use_multi_query: Optional[bool] = None,
+        use_hyde: Optional[bool] = None,
+    ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
         t_search_start = time.time()
         top_k = self._resolve_top_k(query, top_k)
         plan = self._policy.initial_plan(query)
-        self.use_multi_query = plan.allow_multi_query
-        self.use_hyde = plan.allow_hyde
+        allow_references = getattr(plan, "allow_references", False) if allow_references is None else allow_references
+        max_ref_ratio = getattr(plan, "max_ref_ratio", 0.0) if max_ref_ratio is None else max_ref_ratio
+        max_ref_ratio = min(max(float(max_ref_ratio), 0.0), 1.0)
+        self.use_multi_query = plan.allow_multi_query if use_multi_query is None else use_multi_query
+        self.use_hyde = plan.allow_hyde if use_hyde is None else use_hyde
         logger.info(
             f"[POLICY] query_type={plan.query_type} | "
             f"multi_query={self.use_multi_query} | hyde={self.use_hyde}"
         )
         candidate_k = self._choose_candidate_k(top_k)
 
+        query_variants, hyde_query = self._expand_and_hyde_parallel(query)
+        dense_queries = list(query_variants)
+        if hyde_query:
+            dense_queries.append(hyde_query)
         all_dense_hits = []
         all_bm25_hits = []
 
         t_dense_start = time.time()
-        all_dense_hits.append(self._dense_search(query, k=candidate_k))
+        all_dense_hits.extend(
+            self._dense_search(search_query, k=candidate_k)
+            for search_query in dense_queries
+        )
         t_dense = time.time() - t_dense_start
 
         t_bm25_start = time.time()
-        all_bm25_hits.append(self._bm25_search(query, k=candidate_k))
+        all_bm25_hits.extend(
+            self._bm25_search(search_query, k=candidate_k)
+            for search_query in query_variants
+        )
         t_bm25 = time.time() - t_bm25_start
 
         t_fuse_start = time.time()
@@ -332,7 +483,7 @@ class MasterHybridRetriever:
 
         fused_results = [
             c for c in fused_results
-            if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "score", 0.0)) >= 0.0
+            if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "retrieval_score", 0.0)) >= settings.min_score_threshold
         ]
 
         logger.info(
@@ -341,17 +492,30 @@ class MasterHybridRetriever:
         )
 
         candidates = [c for c in fused_results if not _cf_is_low_quality_chunk(c)]
-        rerank_candidates = sorted(
-            candidates,
-            key=lambda x: x.get("retrieval_score", 0.0) if isinstance(x, dict) else getattr(x, "retrieval_score", 0.0),
-            reverse=True
-        )[:20]
-        reranked = self._rerank(query, rerank_candidates)
+        rerank_candidates = candidates[:20] if rerank else []
+        t_fuse = time.time() - t_fuse_start
+        t_rerank_start = time.time()
+        if rerank:
+            reranked, reranker_status = self._rerank(query, rerank_candidates)
+        else:
+            logger.info("[Rerank] skipped (rerank=False); filtering candidates in RRF order")
+            reranked = candidates
+            reranker_status = {
+                "attempted": False,
+                "succeeded": False,
+                "error": None,
+                "skipped_reason": "rerank=False",
+            }
+        t_rerank = time.time() - t_rerank_start
 
-        filtered_chunks = [c for c in reranked if _cf_passes_strict_filter(c)]
+        t_filter_start = time.time()
+        filtered_chunks = [
+            c for c in reranked
+            if _cf_passes_strict_filter(c, allow_references=allow_references)
+        ]
 
         # Breakdown terstruktur: alasan tiap chunk ditolak
-        bd = _cf_filter_breakdown(reranked)
+        bd = _cf_filter_breakdown(reranked, allow_references=allow_references)
         logger.info(
             "[RETRIEVAL_STAGE] fused=%d | candidates=%d | "
             "rerank_candidates=%d | reranked=%d | filtered=%d | "
@@ -369,20 +533,36 @@ class MasterHybridRetriever:
             bd["not_informative"],
         )
 
-        if filtered_chunks:
-            final_chunks = filtered_chunks[:top_k]
+        def apply_reference_budget(items):
+            max_references = int(top_k * max_ref_ratio)
+            selected = []
+            references_used = 0
+            removed = 0
+            for item in items:
+                if _cf_is_reference_chunk(item):
+                    if not allow_references or references_used >= max_references:
+                        removed += 1
+                        continue
+                    references_used += 1
+                selected.append(item)
+                if len(selected) == top_k:
+                    break
+            return selected, removed
+
+        final_chunks, reference_budget_removed = apply_reference_budget(filtered_chunks)
+        if final_chunks:
             should_abstain = False
             filter_stage = "strict"
         else:
-            # Fallback TIDAK lagi menyuntikkan kandidat mentah:
-            # tetap terapkan minimum filter (buang fragment/title/author/reference),
-            # panjang & kelengkapan kalimat boleh dilonggarkan.
-            fallback_pool = [c for c in reranked if _cf_passes_minimum_filter(c)]
-            final_chunks = fallback_pool[:top_k]
+            fallback_pool = [
+                c for c in reranked
+                if _cf_passes_minimum_filter(c, allow_references=allow_references)
+            ]
+            final_chunks, reference_budget_removed = apply_reference_budget(fallback_pool)
             should_abstain = not bool(final_chunks)
             filter_stage = "fallback" if final_chunks else "none"
 
-            blocked = _cf_filter_breakdown(reranked)
+            blocked = _cf_filter_breakdown(reranked, allow_references=allow_references)
             logger.warning(
                 "[RETRIEVAL_FALLBACK] strict filter returned no chunks | "
                 "fallback_pool=%d | passed_minimum=%d | "
@@ -398,6 +578,7 @@ class MasterHybridRetriever:
                 blocked["not_informative"],
                 should_abstain,
             )
+        t_filter = time.time() - t_filter_start
 
         for c in final_chunks:
             cid = c["chunk_id"] if isinstance(c, dict) else getattr(c, "chunk_id", None)
@@ -409,12 +590,22 @@ class MasterHybridRetriever:
             score_str = f"{rerank_score:.2f}" if isinstance(rerank_score, (int, float)) else "n/a"
             print(f"  {cid}: score={score_str}, words={text_len}, complete=({starts_ok}&{ends_ok})")
 
-        formatted = self._format_output(final_chunks, "hybrid_rrf_rerank", should_abstain, filter_stage=filter_stage)
+        reranker_executed = reranker_status["succeeded"]
+        retrieval_method = "hybrid_rrf_rerank" if reranker_executed else "hybrid_rrf"
+        ranking_mode = "rrf_reranker" if reranker_executed else "rrf_only"
+        formatted = self._format_output(
+            final_chunks, retrieval_method, should_abstain,
+            filter_stage=filter_stage, ranking_mode=ranking_mode,
+        )
 
-        t_fuse = time.time() - t_fuse_start
         t_search_total = time.time() - t_search_start
+        t_fuse_and_rerank = t_fuse + t_rerank
 
-        raw_hits = (all_dense_hits[0] if all_dense_hits else []) + (all_bm25_hits[0] if all_bm25_hits else [])
+        raw_hits = [
+            hit
+            for hit_list in all_dense_hits + all_bm25_hits
+            for hit in hit_list
+        ]
         ref_count = sum(1 for hit in raw_hits if self._is_reference_chunk(hit))
 
         logger.info(
@@ -423,9 +614,102 @@ class MasterHybridRetriever:
             f"fuse_ms={t_fuse*1000:.1f} | total_ms={t_search_total*1000:.1f} | "
             f"raw_refs={ref_count} | final={len(formatted)}"
         )
-        return formatted
 
-    def _format_output(self, results: list, method: str, should_abstain: bool, filter_stage: str = "strict"):
+        def _ids(items):
+            ids = []
+            for it in items:
+                ids.append(it.get("chunk_id") if isinstance(it, dict) else getattr(it, "chunk_id", None))
+            return ids
+
+        def _scores(items, source: str):
+            rows: list[dict] = []
+            for it in items[:50]:
+                cid = it.get("chunk_id") if isinstance(it, dict) else getattr(it, "chunk_id", None)
+                did = it.get("doc_id") if isinstance(it, dict) else getattr(it, "doc_id", None)
+                text = it.get("text") if isinstance(it, dict) else getattr(it, "text", None)
+                if source == "dense":
+                    score = it.get("score") if isinstance(it, dict) else getattr(it, "score", None)
+                elif source == "bm25":
+                    score = it.get("score") if isinstance(it, dict) else getattr(it, "score", None)
+                elif source == "rrf":
+                    score = it.get("rrf_score", it.get("retrieval_score")) if isinstance(it, dict) else getattr(it, "rrf_score", None)
+                elif source == "reranked":
+                    score = it.get("rerank_score") if isinstance(it, dict) else getattr(it, "rerank_score", None)
+                else:
+                    score = None
+                if source in ("dense", "bm25"):
+                    score_map = it.get("source_scores", {}) if isinstance(it, dict) else getattr(it, "source_scores", None) or {}
+                    score = score_map.get(source, score)
+                meta_extra = {}
+                if source in ("rrf", "filtered", "final"):
+                    contrib = it.get("rrf_source_contributions") if isinstance(it, dict) else getattr(it, "rrf_source_contributions", None)
+                    if contrib:
+                        meta_extra = {"dense_contrib": contrib.get("dense"), "bm25_contrib": contrib.get("bm25")}
+                rows.append({"chunk_id": cid, "doc_id": did, "text": (text or "")[:200], "score": float(score) if score is not None else None, **meta_extra})
+            return rows
+
+        trace = {
+            "dense_ids": _ids(all_dense_hits[0] if all_dense_hits else []),
+            "bm25_ids": _ids(all_bm25_hits[0] if all_bm25_hits else []),
+            "dense_ids_by_query": [_ids(hits) for hits in all_dense_hits],
+            "bm25_ids_by_query": [_ids(hits) for hits in all_bm25_hits],
+            "rrf_ids": _ids(fused_results),
+            "reranked_ids": _ids(reranked),
+            "filtered_ids": _ids(filtered_chunks),
+            "final_ids": _ids(final_chunks),
+            "dense_rows": _scores(all_dense_hits[0] if all_dense_hits else [], "dense"),
+            "bm25_rows": _scores(all_bm25_hits[0] if all_bm25_hits else [], "bm25"),
+            "rrf_rows": _scores(fused_results, "rrf"),
+            "reranked_rows": _scores(reranked, "reranked"),
+            "filtered_rows": _scores(filtered_chunks, "rrf"),
+            "final_rows": _scores(final_chunks, "rrf"),
+            "rerank_input_ids": _ids(rerank_candidates),
+            "rerank_input_count": len(rerank_candidates),
+            "reranker_executed": reranker_executed,
+            "reranker_attempted": reranker_status["attempted"],
+            "reranker_succeeded": reranker_status["succeeded"],
+            "reranker_error": reranker_status["error"],
+            "reranker_skipped_reason": reranker_status["skipped_reason"],
+            "ranking_mode": ranking_mode,
+            "reranker_skip_reason": (
+                None if reranker_executed else reranker_status["skipped_reason"]
+            ),
+            "candidate_k": candidate_k,
+            "dense_query_count": len(dense_queries),
+            "bm25_query_count": len(query_variants),
+            "hyde_used": bool(hyde_query),
+            "should_abstain": should_abstain,
+            "filter_stage": filter_stage,
+            "reference_budget_removed": reference_budget_removed,
+            "latency_ms": {
+                "dense": round(t_dense * 1000, 2),
+                "bm25": round(t_bm25 * 1000, 2),
+                "fusion": round(t_fuse * 1000, 2),
+                "reranker": round(t_rerank * 1000, 2),
+                "filtering": round(t_filter * 1000, 2),
+                "fuse_and_rerank": round(t_fuse_and_rerank * 1000, 2),
+                "total": round(t_search_total * 1000, 2),
+            },
+            "counts": {
+                "dense": sum(map(len, all_dense_hits)),
+                "bm25": sum(map(len, all_bm25_hits)),
+                "fused": len(fused_results),
+                "reranked": len(reranked),
+                "strict_filtered": len(filtered_chunks),
+                "final": len(final_chunks),
+            },
+            "filter_breakdown": bd,
+        }
+        return formatted, trace
+
+    def _format_output(
+        self,
+        results: list,
+        method: str,
+        should_abstain: bool,
+        filter_stage: str = "strict",
+        ranking_mode: str = "rrf_only",
+    ):
         formatted = []
         for i, r in enumerate(results):
             if isinstance(r, dict):
@@ -449,9 +733,14 @@ class MasterHybridRetriever:
                 "doc_id":           did,
                 "rerank_score":     float(rerank_score) if rerank_score is not None else None,
                 "retrieval_score":  float(rrf_score),
+                "final_score":      float(rerank_score) if rerank_score is not None else float(rrf_score),
                 "retrieval_rank":   i + 1,
                 "retrieval_method": method,
+                "ranking_mode": ranking_mode,
                 "metadata":         meta,
+                "dense_score":      (r.get("source_scores", {}).get("dense", r.get("dense_score")) if isinstance(r, dict) else (getattr(r, "source_scores", None) or {}).get("dense", getattr(r, "score", None))),
+                "bm25_score":       (r.get("source_scores", {}).get("bm25", r.get("bm25_score")) if isinstance(r, dict) else (getattr(r, "source_scores", None) or {}).get("bm25", None)),
+                "rrf_score":        float(rrf_score),
                 "should_abstain":   should_abstain,
                 "filter_stage":     filter_stage,
             })

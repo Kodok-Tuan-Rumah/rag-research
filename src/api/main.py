@@ -10,8 +10,11 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from src.api.config import settings
+from typing import Optional
 
 load_dotenv()
+
+DEFAULT_USE_RERANKER = False
 
 # Setup logging
 logging.basicConfig(
@@ -77,11 +80,12 @@ class ChunkResult(BaseModel):
     text: str
     score: float
     metadata: dict = Field(default_factory=dict)
+    ranking_mode: Optional[str] = None
 
 class GenerateRequest(BaseModel):
     query: str = Field(..., min_length=3, max_length=1000)
-    top_k: int = Field(default=5, ge=1, le=20)
-    use_reranker: bool = False
+    top_k: int = Field(default=settings.default_top_k, ge=1, le=20)
+    use_reranker: bool = Field(default=DEFAULT_USE_RERANKER)
 class GenerateResponse(BaseModel):
     query: str
     answer: str
@@ -95,6 +99,11 @@ class GenerateResponse(BaseModel):
     decision: str
     retry_triggered: bool = False
     failure_type: str = "none"
+    generator_status: str = "UNKNOWN"
+    generator_confidence: float | None = None
+    llm_confidence: float | None = None
+    generation_chunk_ids: list[str] = Field(default_factory=list)
+    context_chunk_ids: list[str] = Field(default_factory=list)
 
 # Helpers 
 def _format_chunks(chunks: list, limit: int | None = None) -> list[ChunkResult]:
@@ -105,10 +114,20 @@ def _format_chunks(chunks: list, limit: int | None = None) -> list[ChunkResult]:
             doc_id=c.get("doc_id", "unk"),
             text=c.get("text", ""),
             score=round(float(c.get("retrieval_score", 0)), 4),
-            metadata=c.get("metadata", {})
+            metadata=c.get("metadata", {}),
+            ranking_mode=c.get("ranking_mode"),
         )
         for c in target
     ]
+
+
+def _chunk_ids(chunks: list) -> list[str]:
+    result = []
+    for chunk in chunks:
+        chunk_id = chunk.get("chunk_id") if isinstance(chunk, dict) else getattr(chunk, "chunk_id", None)
+        if chunk_id is not None:
+            result.append(str(chunk_id))
+    return result
 
 
 def _log_query_event(**event) -> None:
@@ -140,6 +159,7 @@ def _abstain_response(
         decision="REJECT",
         retry_triggered=retry_triggered,
         failure_type=failure_type,
+        generator_status="INSUFFICIENT_CONTEXT",
     )
 
 # Endpoints
@@ -148,13 +168,16 @@ async def health():
     if not store:
         raise HTTPException(status_code=503, detail="Store not initialized")
     count = store.client.count(store.collection_name).count
+    reranker_model_loaded = getattr(retriever, "reranker", None) is not None
     return {
         "status": "ready",
         "vectors": count,
         "mode": "PHASE1_BASELINE",
         "multi_query": settings.use_multi_query,
         "hyde": settings.use_hyde,
-        "reranker": True,
+        "reranker_model_loaded": reranker_model_loaded,
+        "reranker_default_enabled": DEFAULT_USE_RERANKER,
+        "reranker": reranker_model_loaded,  # deprecated: gunakan reranker_model_loaded
     }
 
 @app.post("/generate", response_model=GenerateResponse)
@@ -171,7 +194,11 @@ async def generate_answer(req: GenerateRequest):
         chunks = []
         conf_eval = {"confidence_score": 0.0, "decision": "REJECT", "signals": {}}
         for attempt in range(2):
-            search_kwargs = {"query": req.query, "top_k": req.top_k}
+            search_kwargs = {
+                "query": req.query,
+                "top_k": req.top_k,
+                "rerank": req.use_reranker,
+            }
             if attempt == 1:
                 retry_triggered = True
                 search_kwargs.update({"dense_weight": 0.3, "bm25_weight": 0.7})
@@ -245,8 +272,25 @@ async def generate_answer(req: GenerateRequest):
                 confidence=confidence,
                 decision=decision,
                 retry_triggered=retry_triggered,
+                generator_status=getattr(response, "status", "UNKNOWN"),
+                generator_confidence=getattr(response, "confidence_score", None),
+                llm_confidence=getattr(response, "llm_confidence_score", None),
+                generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
+                context_chunk_ids=getattr(response, "context_chunk_ids", []),
             )
-            _log_query_event(query_id=rid, query=req.query, answer_status="answered", failure_type="none", retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": latency_generation_ms, "total": result.latency_total_ms})
+            generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
+            _log_query_event(
+                query_id=rid, query=req.query,
+                answer_status="abstained" if generation_abstained else "answered",
+                failure_type="insufficient_context" if generation_abstained else "none",
+                generator_status=result.generator_status,
+                generator_confidence=result.generator_confidence,
+                llm_confidence=result.llm_confidence,
+                generation_chunk_ids=result.generation_chunk_ids,
+                context_chunk_ids=result.context_chunk_ids,
+                retry_triggered=retry_triggered,
+                latency_ms={"retrieval": latency_retrieval_ms, "generation": latency_generation_ms, "total": result.latency_total_ms},
+            )
             return result
 
         # GENERATE 
@@ -271,8 +315,25 @@ async def generate_answer(req: GenerateRequest):
             confidence=confidence,
             decision=decision,
             retry_triggered=retry_triggered,
+            generator_status=getattr(response, "status", "UNKNOWN"),
+            generator_confidence=getattr(response, "confidence_score", None),
+            llm_confidence=getattr(response, "llm_confidence_score", None),
+            generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
+            context_chunk_ids=getattr(response, "context_chunk_ids", []),
         )
-        _log_query_event(query_id=rid, query=req.query, answer_status="answered", failure_type="none", retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": latency_generation_ms, "total": latency_total_ms})
+        generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
+        _log_query_event(
+            query_id=rid, query=req.query,
+            answer_status="abstained" if generation_abstained else "answered",
+            failure_type="insufficient_context" if generation_abstained else "none",
+            generator_status=result.generator_status,
+            generator_confidence=result.generator_confidence,
+            llm_confidence=result.llm_confidence,
+            generation_chunk_ids=result.generation_chunk_ids,
+            context_chunk_ids=result.context_chunk_ids,
+            retry_triggered=retry_triggered,
+            latency_ms={"retrieval": latency_retrieval_ms, "generation": latency_generation_ms, "total": latency_total_ms},
+        )
         return result
     
     except Exception as e:

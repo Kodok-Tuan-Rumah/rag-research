@@ -1,5 +1,6 @@
 from enum import Enum
 from pathlib import Path
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
 class RetrievalBackend(str, Enum):
@@ -21,8 +22,14 @@ class Settings(BaseSettings):
     default_top_k: int = 10
     candidate_k: int = 50
     hybrid_rrf_k: int = 60
-    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    embed_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    reranker_model: str = Field(
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+        validation_alias=AliasChoices("RAG_RERANK_MODEL", "RERANKER_MODEL"),
+    )
+    embed_model: str = Field(
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        validation_alias=AliasChoices("RAG_EMBED_MODEL", "EMBED_MODEL"),
+    )
     score_gap_threshold: float = 15.0
     min_score_threshold: float = 0.0
     groq_api_key: str = ""

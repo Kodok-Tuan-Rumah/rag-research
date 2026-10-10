@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import src._compat 
+
 import os
 import re
 import uuid
@@ -18,20 +20,12 @@ CHUNK_ID_NAMESPACE = uuid.UUID('12345678-1234-5678-1234-567812345678')
 
 COLLECTION_NAME = "rag_research"
 QDRANT_PATH     = "./data/qdrant_storage"
-VECTOR_DIM      = 768
+VECTOR_DIM      = int(os.getenv("RAG_VECTOR_DIM", "384"))
 BATCH_SIZE      = 128
-
-
-# ---------------------------------------------------------------------------
-# Noise filter — safety net sebelum chunk masuk Qdrant
-# Aturan noise di-sentralisasi di src/retrieval/chunk_filters.py
-# supaya tidak berbeda-beda antar modul (ingestion/retrieval).
-# ---------------------------------------------------------------------------
 
 def _is_noise_chunk(text: str) -> bool:
     """Return True jika chunk tidak layak di-index ke Qdrant."""
     return _is_noise_chunk_text(text)
-
 
 @dataclass
 class RetrievalResult:
@@ -40,6 +34,11 @@ class RetrievalResult:
     text:     str
     score:    float
     metadata: dict
+    retrieval_score: Optional[float] = None
+    rrf_score: Optional[float] = None
+    rerank_score: Optional[float] = None
+    source_scores: Optional[dict] = None
+    rrf_source_contributions: Optional[dict] = None
 
 class QdrantVectorStore:
     def __init__(
@@ -131,7 +130,7 @@ class QdrantVectorStore:
         k: int = 5,
         filter_doc_id: Optional[str] = None
     ) -> List[RetrievalResult]:
-        query_emb = self.embedder.encode([f"Represent this sentence: {query}"], show_progress_bar=False)[0]
+        query_emb = self.embedder.encode([query], show_progress_bar=False)[0]
         query_emb = query_emb.tolist() if hasattr(query_emb, "tolist") else list(query_emb)
         qdrant_filter = (
             Filter(must=[FieldCondition(key="doc_id", match=MatchValue(value=filter_doc_id))])

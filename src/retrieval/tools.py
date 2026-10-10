@@ -22,11 +22,11 @@ class RetrievalTools:
         self.generator = generator
 
     async def search_dense(self, query: str, k: int = 10) -> dict[str, Any]:
-        chunks = self.vector_store.search(query, k=k)
+        chunks = self.retriever.dense_search(query, k)
         return {"tool": "search_dense", "query": query, "chunks": chunks}
 
     async def search_bm25(self, query: str, k: int = 10) -> dict[str, Any]:
-        chunks = self.retriever._bm25_search(query, k)
+        chunks = self.retriever.bm25_search(query, k)
         return {"tool": "search_bm25", "query": query, "chunks": chunks}
 
     async def search_hybrid(
@@ -35,15 +35,16 @@ class RetrievalTools:
         k: int = 5,
         use_multi_query: bool = False,
         use_hyde: bool = False,
+        rerank: bool = False,
     ) -> dict[str, Any]:
-
-        self.retriever.use_multi_query = use_multi_query
-        self.retriever.use_hyde = use_hyde
 
         chunks = await asyncio.to_thread(
             self.retriever.search,
             query,
-            top_k=k
+            top_k=k,
+            rerank=rerank,
+            use_multi_query=use_multi_query,
+            use_hyde=use_hyde,
         )
 
         return {
@@ -56,22 +57,8 @@ class RetrievalTools:
         if not candidates:
             return {"tool": "rerank_candidates", "query": query, "chunks": []}
 
-        pairs = []
-        for hit in candidates:
-            text = hit.get("text") if isinstance(hit, dict) else getattr(hit, "text", "")
-            pairs.append([query, text])
-
-        try:
-            scores = self.retriever.reranker.predict(pairs)
-            ranked = sorted(
-                zip(candidates, scores),
-                key=lambda item: item[1],
-                reverse=True,
-            )
-            ordered = [item[0] for item in ranked][:top_n]
-            return {"tool": "rerank_candidates", "query": query, "chunks": ordered}
-        except Exception as exc:
-            return {"tool": "rerank_candidates", "query": query, "chunks": candidates[:top_n], "error": str(exc)}
+        ranked = self.retriever.rerank(query, list(candidates))
+        return {"tool": "rerank_candidates", "query": query, "chunks": ranked[:top_n]}
 
     async def assess_retrieval_quality(self, chunks: list, query: str) -> dict[str, Any]:
         confidence = self.confidence_engine.calculate_confidence(chunks)
