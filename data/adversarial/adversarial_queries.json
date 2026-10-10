@@ -3,36 +3,60 @@
     "query": "What is the training cost in dollars for GPT-4?",
     "type": "out_of_corpus",
     "expected_behavior": "honest_abstention",
-    "difficulty": "easy"
+    "difficulty": "easy",
+    "query_id": "adv01",
+    "question": "What is the training cost in dollars for GPT-4?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
   },
   {
     "query": "Who won the 2024 Nobel Prize in Physics?",
     "type": "out_of_corpus",
     "expected_behavior": "honest_abstention",
-    "difficulty": "easy"
+    "difficulty": "easy",
+    "query_id": "adv02",
+    "question": "Who won the 2024 Nobel Prize in Physics?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
   },
   {
     "query": "How do the attention mechanisms described across different papers compare?",
     "type": "cross_document",
     "expected_behavior": "partial_context",
-    "difficulty": "hard"
+    "difficulty": "hard",
+    "query_id": "adv03",
+    "question": "How do the attention mechanisms described across different papers compare?",
+    "should_abstain": false,
+    "evaluation_type": "partial"
   },
   {
     "query": "What are the contradictions between RAG and fine-tuning approaches?",
     "type": "contradiction_seeking",
     "expected_behavior": "partial_context",
-    "difficulty": "hard"
+    "difficulty": "hard",
+    "query_id": "adv04",
+    "question": "What are the contradictions between RAG and fine-tuning approaches?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
   },
   {
     "query": "chunking",
     "type": "underspecified",
     "expected_behavior": "misleading_similarity",
-    "difficulty": "medium"
+    "difficulty": "medium",
+    "query_id": "adv05",
+    "question": "chunking",
+    "should_abstain": false,
+    "evaluation_type": "warning"
   },
   {
     "query": "What does the paper say about performance?",
     "type": "ambiguous_reference",
     "expected_behavior": "misleading_similarity",
-    "difficulty": "medium"
+    "difficulty": "medium",
+    "query_id": "adv06",
+    "question": "What does the paper say about performance?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
   }
 ]

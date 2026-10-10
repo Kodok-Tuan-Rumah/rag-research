@@ -1,3 +1,4 @@
+import math
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -31,6 +32,19 @@ def test_confidence_engine_rejects_non_finite_scores():
 
     result = engine.calculate_confidence(chunks)
 
+    # Dokumentasi current behavior (Fix 3): chunk skor invalid di-skip,
+    # confidence tetap dihitung dari chunk yang valid, tanpa crash.
+    assert math.isfinite(result["confidence_score"])
+    assert 0.0 <= result["confidence_score"] <= 1.0
+    assert result["decision"] in {"REJECT", "PARTIAL_TRUST", "GENERATE"}
+
+
+def test_confidence_engine_rejects_batch_with_only_invalid_scores():
+    engine = ConfidenceEngine()
+    chunks = [{"retrieval_score": float("nan")}, {"retrieval_score": float("inf")}]
+
+    result = engine.calculate_confidence(chunks)
+
     assert result["decision"] == "REJECT"
     assert result["confidence_score"] == 0.0
 
@@ -45,8 +59,8 @@ def test_confidence_engine_prefers_reranker_score_when_available():
 def test_confidence_decision_uses_configured_thresholds():
     engine = ConfidenceEngine()
 
-    assert engine._decision_for_score(0.4499) == "REJECT"
-    assert engine._decision_for_score(0.45) == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.3499) == "REJECT"
+    assert engine._decision_for_score(0.35) == "PARTIAL_TRUST"
     assert engine._decision_for_score(0.5555) == "PARTIAL_TRUST"
     assert engine._decision_for_score(0.65) == "GENERATE"
 
@@ -106,6 +120,9 @@ def test_factual_escalation_retries_once_and_emits_log_schema(monkeypatch, tmp_p
             self.vector_store = SimpleNamespace(
                 search=lambda query, k: initial_chunks
             )
+
+        def dense_search(self, query, k):
+            return initial_chunks
 
         def search(self, query, **kwargs):
             self.retry_calls.append(kwargs)

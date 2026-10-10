@@ -86,6 +86,9 @@ def test_run_single_query_baseline_includes_max_ref_budget():
         def __init__(self, vector_store, *args, **kwargs):
             self.vector_store = vector_store
 
+        def dense_search(self, query, k):
+            return self.vector_store.search(query, k=k)
+
     class DummyGenerator:
         def __init__(self, model):
             pass

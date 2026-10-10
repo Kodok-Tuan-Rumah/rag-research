@@ -10,11 +10,12 @@ import numpy as np
 import uuid
 
 from src.retrieval.qdrant_store import QdrantVectorStore
-from src.retrieval.hybrid_retriever import MasterHybridRetriever, MULTI_QUERY_PROMPT, HYDE_PROMPT
+from src.retrieval.hybrid_retriever import MasterHybridRetriever, MULTI_QUERY_PROMPT, HYDE_PROMPT, rrf_fuse
 from src.generation.generator import GroqGenerator, build_context
 from src.controller.policy_engine import PolicyEngine
 from src.api.config import settings
 from src.controller.confidence_engine import ConfidenceEngine
+from src.retrieval.chunk_filters import passes_minimum_filter as _cf_passes_minimum_filter
 from groq import Groq
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -85,36 +86,6 @@ def is_valid_query(q: str) -> bool:
     q_lower = q.lower()
     return any(kw in q_lower for kw in _DOMAIN_KEYWORDS)
 
-def reciprocal_rank_fusion(results_lists: list[list], k: int = RRF_K) -> list:
-    rrf_scores: dict[str, float] = {}
-    id_to_item:  dict[str, object] = {}
-
-    for results in results_lists:
-        for rank, item in enumerate(results):
-            cid = item.get("chunk_id") if isinstance(item, dict) else getattr(item, "chunk_id", "")
-            if not cid:
-                continue
-            rrf_scores[cid]  = rrf_scores.get(cid, 0.0) + 1.0 / (k + rank + 1)
-            id_to_item[cid]  = item  
-
-    fused = sorted(
-        id_to_item.values(),
-        key=lambda x: rrf_scores.get(
-            x.get("chunk_id") if isinstance(x, dict) else getattr(x, "chunk_id", ""),
-            0.0,
-        ),
-        reverse=True,
-    )
-
-    for item in fused:
-        cid   = item.get("chunk_id") if isinstance(item, dict) else getattr(item, "chunk_id", "")
-        score = round(rrf_scores.get(cid, 0.0), 6)
-        if isinstance(item, dict):
-            item["score"] = score
-        elif hasattr(item, "score"):
-            item.score = score
-    return fused
-
 def rrf_circuit_breaker_threshold(num_lists: int, rank_depth: int, k: int = RRF_K) -> tuple[float, float, float]:
     if num_lists <= 0 or rank_depth <= 0:
         return 0.0, 0.0, 0.0
@@ -122,7 +93,7 @@ def rrf_circuit_breaker_threshold(num_lists: int, rank_depth: int, k: int = RRF_
     max_score = num_lists * (1.0 / (k + 1))
     threshold = min_score + RRF_CIRCUIT_BREAKER_PERCENTILE * (max_score - min_score)
     return threshold, min_score, max_score
- 
+
 # Helpers
 def compute_context_overlap(answer: str, contexts: list[str]) -> float:
     if not answer or not contexts:
@@ -215,9 +186,9 @@ def _chunk_to_summary(chunk, rank: int) -> dict:
         "text": text[:200] + "...",
     }
 
-# Reference filter
+# Chunk validity — pakai filter bersama agar konsisten dengan jalur retrieval utama
 def is_valid_chunk(chunk) -> bool:
-    return True 
+    return _cf_passes_minimum_filter(chunk)
 
 # Context diversity ” soft reference limit
 def limit_reference_chunks(chunks: list, max_ref: int = MAX_REF_IN_CONTEXT) -> tuple[list, set]:
@@ -375,7 +346,7 @@ def run_single_query(
         expanded_queries = [query]
         hyde_doc         = None
         t0 = time.time()
-        fused_results = list(retriever.vector_store.search(query, k=top_k))
+        fused_results = list(retriever.dense_search(query, k=top_k))
         timings["embedding_ms"]        = round((time.time() - t0) * 1000, 2)
         timings["query_expansion_ms"]  = 0.0
         timings["hyde_ms"]             = 0.0
@@ -450,9 +421,9 @@ def run_single_query(
         t0 = time.time()
         all_dense_hits: list[list] = []
         for q in expanded_queries:
-            all_dense_hits.append(list(retriever.vector_store.search(q, k=candidate_k)))
+            all_dense_hits.append(list(retriever.dense_search(q, k=candidate_k)))
         if hyde_doc:
-            all_dense_hits.append(list(retriever.vector_store.search(hyde_doc, k=candidate_k)))
+            all_dense_hits.append(list(retriever.dense_search(hyde_doc, k=candidate_k)))
         timings["embedding_ms"] = round((time.time() - t0) * 1000, 2)
 
         # BM25 per expanded query
@@ -460,17 +431,9 @@ def run_single_query(
         t0 = time.time()
         all_bm25_hits: list[list] = []
         for q in expanded_queries:
-            scores  = retriever._bm25.get_scores(q.lower().split())
-            top_idx = np.argsort(scores)[::-1][:candidate_k]
             all_bm25_hits.append([
-                {
-                    "chunk_id": retriever._chunks[i]["chunk_id"],
-                    "text":     retriever._chunks[i]["text"],
-                    "score":    float(scores[i]),
-                    "doc_id":   retriever._chunks[i]["doc_id"],
-                    "metadata": retriever._chunks[i].get("metadata", {}),
-                }
-                for i in top_idx if scores[i] > 0
+                hit for hit in retriever.bm25_search(q, candidate_k)
+                if (hit.get("score") if isinstance(hit, dict) else getattr(hit, "score", 0)) > 0
             ])
         timings["bm25_ms"] = round((time.time() - t0) * 1000, 2)
         print(f"  Dense lists: {len(all_dense_hits)} | BM25 lists: {len(all_bm25_hits)}")
@@ -478,13 +441,13 @@ def run_single_query(
 
         # Qdrant warmup probe
         t0 = time.time()
-        _ = retriever.vector_store.search(query, k=1)
+        _ = retriever.dense_search(query, k=1)
         timings["qdrant_search_ms"] = round((time.time() - t0) * 1000, 2)
 
         # Real RRF across all dense + BM25 lists
         print("[Step 5] Real RRF fusion...")
         t0 = time.time()
-        fused_results = reciprocal_rank_fusion(all_dense_hits + all_bm25_hits)
+        fused_results = rrf_fuse(all_dense_hits + all_bm25_hits)
         timings["rrf_ms"] = round((time.time() - t0) * 1000, 2)
         print(f"  Fused candidates: {len(fused_results)} | RRF: {timings['rrf_ms']}ms")
         log_chunk_quality(fused_results, label="post_rrf")
@@ -502,6 +465,10 @@ def run_single_query(
         print()
 
         # CrossEncoder reranking + section penalty
+        # NOTE: retriever.search() sudah punya jalur rerank kanonik (flag `rerank=True`).
+        # Jalur di bawah dipertahankan karena punya circuit-breaker + section penalty
+        # yang tidak ada di retriever.search; jangan gandakan rerank dengan memanggil
+        # retriever.search() setelahnya (retry loop di bawah sudah memakai flag terpisah).
         print("[Step 6] Reranking + section penalty...")
         t0 = time.time()
         # Drop quality-failing chunks before reranker sees them
@@ -564,7 +531,7 @@ def run_single_query(
             if len(pairs) > RERANK_GUARD_MAX_PAIRS:
                 first_pairs = pairs[:RERANK_GUARD_MAX_PAIRS]
                 first_candidates = rerank_candidates[:RERANK_GUARD_MAX_PAIRS]
-                first_scores = list(retriever.reranker.predict(first_pairs))
+                first_scores = list(retriever.score_pairs(first_pairs))
                 elapsed_ms = (time.time() - t0) * 1000
                 if elapsed_ms > RERANK_LATENCY_BUDGET_MS:
                     print(
@@ -575,10 +542,10 @@ def run_single_query(
                     rerank_candidates = first_candidates
                     rerank_scores = first_scores
                 else:
-                    remaining_scores = list(retriever.reranker.predict(pairs[RERANK_GUARD_MAX_PAIRS:]))
+                    remaining_scores = list(retriever.score_pairs(pairs[RERANK_GUARD_MAX_PAIRS:]))
                     rerank_scores = first_scores + remaining_scores
             else:
-                rerank_scores = list(retriever.reranker.predict(pairs))
+                rerank_scores = list(retriever.score_pairs(pairs))
 
             reranker_scores_by_chunk_id = {
                 _get_attr(chunk, "chunk_id", ""): round(float(score), 4)
@@ -590,18 +557,25 @@ def run_single_query(
                 section     = _get_section(hit)
                 delta       = SECTION_SCORE_DELTA.get(section, 0.0)
                 final_score = base_score + delta
-                if hasattr(hit, "score"):
-                    hit.score = final_score
-                else:
+                # Canonical score fields: rerank_score = pure cross-encoder,
+                # score = rerank + section delta (legacy ordering key),
+                # final_score = same value, explicit name for new consumers.
+                if isinstance(hit, dict):
+                    hit["rerank_score"] = base_score
                     hit["score"] = final_score
+                    hit["final_score"] = final_score
+                else:
+                    hit.rerank_score = base_score
+                    hit.score = final_score
+                    hit.final_score = final_score
 
             rerank_candidates = sorted(
                 rerank_candidates,
-                key=lambda x: _get_attr(x, "score", 0) or 0,
+                key=lambda x: _get_attr(x, "final_score", 0) or 0,
                 reverse=True,
             )
         before_score_filter = len(rerank_candidates)
-        rerank_candidates = [c for c in rerank_candidates if (_get_attr(c, "score", 0) or 0) >= 0.0]
+        rerank_candidates = [c for c in rerank_candidates if (_get_attr(c, "final_score", 0) or 0) >= 0.0]
         removed_score_filter = before_score_filter - len(rerank_candidates)
         if removed_score_filter:
             print(
@@ -675,6 +649,15 @@ def run_single_query(
             final_context = final_context[:2500]
 
         print(f"  [GEN CONFIG] max_tokens={gen_max_tokens} | temperature={gen_temperature} | context_len={len(final_context)}")
+        import os as _os
+        if _os.getenv("SMOKE_STOP_BEFORE_GEN") == "1":
+            from src.generation.generator import _make_abstain_response
+            print("  [SMOKE] stop before generation (SMOKE_STOP_BEFORE_GEN=1)")
+            response = _make_abstain_response(
+                query=query, chunks=final_chunks_full, model=settings.groq_model,
+                reason="smoke_stop_before_gen",
+            )
+            break
         pre_gen_confidence = confidence_engine.calculate_confidence(final_chunks_full)
         retrieval_confidence = pre_gen_confidence
         if pre_gen_confidence["decision"] == "REJECT":
@@ -745,12 +728,13 @@ def run_single_query(
                 top_k=candidate_k_retry,
                 bm25_weight=_bm25_weight_retry,
                 dense_weight=_dense_weight_retry,
+                rerank=_use_reranker_retry,
             ))
             
         except Exception as e:
             print(f"  [RETRY] Fallback dense-only (retriever.search() error: {type(e).__name__}: {e})")
             try:
-                fused_results = list(retriever.vector_store.search(query, k=candidate_k_retry))
+                fused_results = list(retriever.dense_search(query, k=candidate_k_retry))
             except Exception as e2:
                 print(f"  [RETRY] Dense-only fallback ALSO failed ({type(e2).__name__}: {e2}) — aborting to abstain")
                 from src.generation.generator import _make_abstain_response

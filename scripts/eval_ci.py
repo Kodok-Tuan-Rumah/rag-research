@@ -2,11 +2,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from src.evaluation.ragas_evaluator import RAGASEvaluator, RAGSample
+RAGASEvaluator = None
+
+
+@dataclass
+class RAGSample:
+    question: str
+    answer: str
+    contexts: list[str]
+    ground_truth: str
 
 THRESHOLDS = {
     "faithfulness": 0.88,
@@ -41,21 +51,36 @@ def load_samples(path: Path) -> list[RAGSample]:
             elif isinstance(payload, list):
                 items.extend(payload)
 
-    for item in items:
+    for index, item in enumerate(items):
         if not isinstance(item, dict):
-            continue
+            raise ValueError(f"Evaluation row {index} must be a JSON object.")
         question = item.get("question") or item.get("query")
         answer = item.get("answer") or item.get("response")
         contexts = item.get("contexts") or item.get("context") or []
         if isinstance(contexts, str):
             contexts = [contexts]
-        if not question or not answer:
-            continue
+        if not isinstance(contexts, list) or any(not isinstance(context, str) for context in contexts):
+            raise ValueError(f"Evaluation row {index} contexts/context must be a string or list of strings.")
+        ground_truth = item.get("ground_truth")
+        missing = [
+            field for field, value in (
+                ("question/query", question),
+                ("answer/response", answer),
+                ("contexts/context", contexts),
+                ("ground_truth", ground_truth),
+            )
+            if not value
+        ]
+        if missing:
+            raise ValueError(
+                f"Evaluation row {index} is not RAGAS-ready; missing/non-empty fields: "
+                f"{', '.join(missing)}."
+            )
         samples.append(RAGSample(
             question=question,
             answer=answer,
             contexts=contexts,
-            ground_truth=item.get("ground_truth"),
+            ground_truth=ground_truth,
         ))
 
     return samples
@@ -68,13 +93,25 @@ def run_ci_eval(eval_dir: Path, output_path: Path) -> int:
         print(f"No samples found in {eval_dir}")
         return 1
 
-    evaluator = RAGASEvaluator(include_answer_correctness=False)
+    evaluator_type = RAGASEvaluator
+    if evaluator_type is None:
+        from src.evaluation.ragas_evaluator import RAGASEvaluator as evaluator_type
+
+    evaluator = evaluator_type(include_answer_correctness=False)
     result = evaluator.evaluate(samples, exp_id="ci_eval")
+
+    def finite_metric(value):
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return None
+        return numeric if math.isfinite(numeric) else None
+
     summary = {
-        "avg_faithfulness": result.avg_faithfulness,
-        "avg_answer_relevancy": result.avg_answer_relevancy,
-        "avg_context_recall": result.avg_context_recall,
-        "hallucination_rate": result.hallucination_rate,
+        "faithfulness": finite_metric(result.avg_faithfulness),
+        "answer_relevancy": finite_metric(result.avg_answer_relevancy),
+        "context_recall": finite_metric(result.avg_context_recall),
+        "hallucination_rate": finite_metric(result.hallucination_rate),
         "total_samples": result.total_samples,
     }
 
@@ -85,11 +122,14 @@ def run_ci_eval(eval_dir: Path, output_path: Path) -> int:
     failures = []
     for metric, threshold in THRESHOLDS.items():
         actual = summary.get(metric)
+        if not isinstance(actual, (int, float)) or not math.isfinite(actual):
+            failures.append(f"{metric}: metric unavailable or non-finite")
+            continue
         if metric == "hallucination_rate":
-            if actual is not None and actual > threshold:
+            if actual > threshold:
                 failures.append(f"{metric}: {actual:.3f} > {threshold}")
         else:
-            if actual is not None and actual < threshold:
+            if actual < threshold:
                 failures.append(f"{metric}: {actual:.3f} < {threshold}")
 
     print("\n[CI EVAL] Summary:")

@@ -39,3 +39,5 @@ jobs:
           python -m pip install -r requirements.txt
       - name: Run CI evaluation gate
         run: python scripts/eval_ci.py --eval-dir data/adversarial --output results/ci_eval.json
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}

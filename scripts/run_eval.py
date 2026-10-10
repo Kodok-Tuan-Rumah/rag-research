@@ -34,7 +34,7 @@ def run_full_pipeline(limit=55):
     for i, item in enumerate(test_data):
         print(f"[{i+1}/{limit}] {item['question'][:60]}...")
         try:
-            chunks = retriever.search(item['question'], top_k=10)
+            chunks = retriever.search(item['question'], top_k=10, rerank=True)
             resp = generator.generate(item['question'], chunks)
             samples.append(RAGSample(
                 question=item['question'],

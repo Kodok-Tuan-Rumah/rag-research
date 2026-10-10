@@ -59,7 +59,7 @@ def evaluate_retrieval(
         query = item["question"]
         gold_chunk_id = item["gold_chunk_id"]
 
-        chunks = retriever.search(query, top_k=top_k)
+        chunks = retriever.search(query, top_k=top_k, rerank=True)
 
         r1  = recall_at_k(chunks, gold_chunk_id, k=1)
         r5  = recall_at_k(chunks, gold_chunk_id, k=5)
