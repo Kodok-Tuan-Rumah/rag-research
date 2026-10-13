@@ -1,0 +1,171 @@
+{
+  "summary": {
+    "total": 20,
+    "passed": 20,
+    "failed": 0,
+    "mode": "full",
+    "stop_before_gen": true
+  },
+  "results": [
+    {
+      "index": 1,
+      "query": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 2,
+      "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 3,
+      "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 4,
+      "query": "How are high-confidence predictions filtered in the method described?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 5,
+      "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 6,
+      "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 7,
+      "query": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 8,
+      "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 9,
+      "query": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 10,
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 11,
+      "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 12,
+      "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 13,
+      "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 14,
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 15,
+      "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 16,
+      "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 17,
+      "query": "How are high-confidence predictions filtered in the method described?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 18,
+      "query": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 19,
+      "query": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    },
+    {
+      "index": 20,
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "status": "INSUFFICIENT_CONTEXT",
+      "answer_status": "abstained",
+      "failure_type": "generation_fail",
+      "error": null
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-.PHONY: setup rust-build ingest index eval viz all clean
+.PHONY: setup rust-build ingest index eval viz phase1-smoke all clean
 
 # Vars
 PYTHON = python
@@ -23,6 +23,9 @@ eval:
 
 viz:
 	$(PYTHON) $(SCRIPTS)/visualize.py
+
+phase1-smoke:
+	$(PYTHON) $(SCRIPTS)/phase1_smoke.py
 
 # THE MASTER COMMAND
 all: rust-build ingest index eval viz
