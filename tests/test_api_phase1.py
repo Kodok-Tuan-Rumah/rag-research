@@ -17,6 +17,10 @@ class FakeRetriever:
             raise outcome
         return outcome
 
+    def search_with_trace(self, **kwargs):
+        results = self.search(**kwargs)
+        return {"results": results, "trace": {"latency_ms": {"reranker": 0.0}}}
+
 
 class FakeConfidenceEngine:
     def __init__(self, decisions):
@@ -576,3 +580,114 @@ def test_api_records_reason_for_pipeline_error(monkeypatch):
     assert response.failure_type == "pipeline_error"
     assert response.abstain_reason
     assert "boom" in response.abstain_reason
+
+
+# --- §4 structured log schema on the API adapter ----------------------------
+
+# PROJECT_GOALS.md §4 fixes these keys. The CLI (run_single_query.py) emitted
+# them but the API did not, so the adapter serving real traffic was the one
+# missing query_type / retrieval_scores / reranker_scores / chunks_used and
+# latency_ms.reranker.
+REQUIRED_LOG_FIELDS = {
+    "query_id",
+    "query",
+    "query_type",
+    "retrieval_scores",
+    "reranker_scores",
+    "chunks_used",
+    "confidence_score",
+    "failure_type",
+    "answer_status",
+    "latency_ms",
+    "retry_triggered",
+}
+
+
+def test_api_query_event_carries_full_goals_log_schema(monkeypatch):
+    chunk = {
+        "chunk_id": "c1",
+        "doc_id": "d1",
+        "text": "complete grounded context.",
+        "retrieval_score": 0.2,
+        "rerank_score": 0.35,
+        "metadata": {},
+    }
+    monkeypatch.setattr(main, "retriever", FakeRetriever([[chunk]]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    events = []
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: events.append(event))
+
+    asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert len(events) == 1
+    event = events[0]
+    missing = REQUIRED_LOG_FIELDS - event.keys()
+    assert not missing, f"missing §4 log fields: {sorted(missing)}"
+    assert set(event["latency_ms"]) == {"retrieval", "reranker", "generation", "total"}
+    assert event["query_type"] == "general"
+    assert event["answer_status"] == "answered"
+    assert event["chunks_used"] == ["c1"]
+    assert event["retrieval_scores"] == [0.2]
+    assert event["reranker_scores"] == [0.35]
+
+
+def test_api_event_reports_retriever_reranker_latency(monkeypatch):
+    """latency_ms.reranker must come from the retriever trace, not a hardcoded 0."""
+
+    class TracingRetriever(FakeRetriever):
+        def search_with_trace(self, **kwargs):
+            results = self.search(**kwargs)
+            return {"results": results, "trace": {"latency_ms": {"reranker": 12.5}}}
+
+    monkeypatch.setattr(main, "retriever", TracingRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    events = []
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: events.append(event))
+
+    asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert events[0]["latency_ms"]["reranker"] == 12.5
+
+
+def test_api_abstain_event_still_carries_full_log_schema(monkeypatch):
+    """Abstains are the path §4 cares most about — they must not skip fields."""
+    monkeypatch.setattr(main, "retriever", FakeRetriever([[], []]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.0, "decision": "REJECT", "signals": {}},
+            {"confidence_score": 0.0, "decision": "REJECT", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    events = []
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: events.append(event))
+
+    asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    event = events[0]
+    missing = REQUIRED_LOG_FIELDS - event.keys()
+    assert not missing, f"missing §4 log fields: {sorted(missing)}"
+    assert set(event["latency_ms"]) == {"retrieval", "reranker", "generation", "total"}
+    assert event["answer_status"] == "abstained"
+    assert event["chunks_used"] == []
+    assert event["retrieval_scores"] == []
+    assert event["reranker_scores"] == []

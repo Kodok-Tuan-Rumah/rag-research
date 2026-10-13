@@ -146,6 +146,19 @@ def _chunk_ids(chunks: list) -> list[str]:
     return result
 
 
+def _chunk_scores(chunks: list, key: str) -> list:
+    """Score series for the §4 log schema, parallel to `chunks`.
+
+    Missing scores stay an explicit `None` so a reader can tell "not reranked"
+    apart from "scored zero" instead of seeing a fabricated 0.0.
+    """
+    scores = []
+    for chunk in chunks:
+        value = chunk.get(key) if isinstance(chunk, dict) else getattr(chunk, key, None)
+        scores.append(round(float(value), 4) if value is not None else None)
+    return scores
+
+
 def _log_query_event(**event) -> None:
     """Emit one machine-readable event for every completed API query."""
     logger.info(json.dumps(event, ensure_ascii=False, default=str))
@@ -206,6 +219,7 @@ async def generate_answer(req: GenerateRequest):
     rid = str(uuid.uuid4())[:8]
     t_api_start = time.time()
     retry_triggered = False
+    rerank_ms = 0.0
     plan = policy_engine.initial_plan(req.query)
     query_type = plan.query_type
     top_k = req.top_k if req.top_k is not None else plan.top_k_hint
@@ -229,7 +243,19 @@ async def generate_answer(req: GenerateRequest):
                 retry_triggered = True
                 search_kwargs.update({"dense_weight": 0.3, "bm25_weight": 0.7})
 
-            chunks = await run_in_threadpool(retriever.search, **search_kwargs)
+            # search_with_trace is the same canonical retrieval as search() but
+            # also returns the per-stage trace, which is the only way this
+            # adapter can report latency_ms.reranker without re-timing a stage
+            # that runs inside the retriever.
+            search_result = await run_in_threadpool(
+                retriever.search_with_trace, **search_kwargs
+            )
+            chunks = search_result["results"]
+            rerank_ms = (
+                search_result.get("trace", {})
+                .get("latency_ms", {})
+                .get("reranker", 0.0)
+            )
             conf_eval = confidence_engine.calculate_confidence(
                 chunks,
                 query_type=query_type,
@@ -258,7 +284,17 @@ async def generate_answer(req: GenerateRequest):
                 failure_type="retrieval_miss",
                 abstain_reason="retrieval returned no usable chunks",
             )
-            _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, abstain_reason=result.abstain_reason, retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": 0.0, "total": result.latency_total_ms})
+            _log_query_event(
+                query_id=rid, query=req.query,
+                query_type=query_type,
+                answer_status="abstained",
+                failure_type=result.failure_type,
+                abstain_reason=result.abstain_reason,
+                confidence_score=0.0,
+                retrieval_scores=[], reranker_scores=[], chunks_used=[],
+                retry_triggered=retry_triggered,
+                latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": 0.0, "total": result.latency_total_ms},
+            )
             return result
 
         # REJECT
@@ -275,7 +311,19 @@ async def generate_answer(req: GenerateRequest):
                 failure_type="low_confidence",
                 abstain_reason=f"confidence {confidence:.3f} below reject threshold",
             )
-            _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, abstain_reason=result.abstain_reason, retry_triggered=retry_triggered, latency_ms={"retrieval": latency_retrieval_ms, "generation": 0.0, "total": result.latency_total_ms})
+            _log_query_event(
+                query_id=rid, query=req.query,
+                query_type=query_type,
+                answer_status="abstained",
+                failure_type=result.failure_type,
+                abstain_reason=result.abstain_reason,
+                confidence_score=confidence,
+                retrieval_scores=_chunk_scores(chunks, "retrieval_score"),
+                reranker_scores=_chunk_scores(chunks, "rerank_score"),
+                chunks_used=[],
+                retry_triggered=retry_triggered,
+                latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": 0.0, "total": result.latency_total_ms},
+            )
             return result
         
         if decision == "PARTIAL_TRUST":
@@ -346,18 +394,24 @@ async def generate_answer(req: GenerateRequest):
                 ),
             )
             generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
+            used_chunks = chunks[:PARTIAL_TRUST_CHUNK_LIMIT]
             _log_query_event(
                 query_id=rid, query=req.query,
+                query_type=query_type,
                 answer_status="abstained" if generation_abstained else "answered",
                 failure_type="insufficient_context" if generation_abstained else "none",
                 abstain_reason=getattr(response, "reason", None) if generation_abstained else None,
+                confidence_score=confidence,
+                retrieval_scores=_chunk_scores(used_chunks, "retrieval_score"),
+                reranker_scores=_chunk_scores(used_chunks, "rerank_score"),
+                chunks_used=_chunk_ids(used_chunks),
                 generator_status=result.generator_status,
                 generator_confidence=result.generator_confidence,
                 llm_confidence=result.llm_confidence,
                 generation_chunk_ids=result.generation_chunk_ids,
                 context_chunk_ids=result.context_chunk_ids,
                 retry_triggered=retry_triggered,
-                latency_ms={"retrieval": latency_retrieval_ms, "generation": latency_generation_ms, "total": result.latency_total_ms},
+                latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": result.latency_total_ms},
             )
             return result
 
@@ -425,16 +479,21 @@ async def generate_answer(req: GenerateRequest):
         generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
         _log_query_event(
             query_id=rid, query=req.query,
+            query_type=query_type,
             answer_status="abstained" if generation_abstained else "answered",
             failure_type="insufficient_context" if generation_abstained else "none",
             abstain_reason=getattr(response, "reason", None) if generation_abstained else None,
+            confidence_score=confidence,
+            retrieval_scores=_chunk_scores(chunks, "retrieval_score"),
+            reranker_scores=_chunk_scores(chunks, "rerank_score"),
+            chunks_used=_chunk_ids(chunks),
             generator_status=result.generator_status,
             generator_confidence=result.generator_confidence,
             llm_confidence=result.llm_confidence,
             generation_chunk_ids=result.generation_chunk_ids,
             context_chunk_ids=result.context_chunk_ids,
             retry_triggered=retry_triggered,
-            latency_ms={"retrieval": latency_retrieval_ms, "generation": latency_generation_ms, "total": latency_total_ms},
+            latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": latency_total_ms},
         )
         return result
     
@@ -448,7 +507,17 @@ async def generate_answer(req: GenerateRequest):
             failure_type="pipeline_error",
             abstain_reason=f"{type(e).__name__}: {e}"[:300],
         )
-        _log_query_event(query_id=rid, query=req.query, answer_status="abstained", failure_type=result.failure_type, abstain_reason=result.abstain_reason, retry_triggered=retry_triggered, latency_ms={"retrieval": 0.0, "generation": 0.0, "total": result.latency_total_ms})
+        _log_query_event(
+            query_id=rid, query=req.query,
+            query_type=query_type,
+            answer_status="abstained",
+            failure_type=result.failure_type,
+            abstain_reason=result.abstain_reason,
+            confidence_score=0.0,
+            retrieval_scores=[], reranker_scores=[], chunks_used=[],
+            retry_triggered=retry_triggered,
+            latency_ms={"retrieval": 0.0, "reranker": 0.0, "generation": 0.0, "total": result.latency_total_ms},
+        )
         return result
 
 
