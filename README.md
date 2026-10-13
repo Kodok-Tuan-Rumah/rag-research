@@ -443,7 +443,7 @@ rag-research/
 │   ├── debug/failure_analysis.json   # Failure mode breakdown
 │   └── qdrant_storage/               # Local Qdrant persistent (796 vectors)
 ├── results/
-│   ├── metrics/                      # 130 artifacts + INDEX.md (see results/metrics/INDEX.md)
+│   ├── metrics/                      # 129 artifacts + INDEX.md (see results/metrics/INDEX.md)
 │   ├── debug/
 │   └── logs/
 ├── cmd/server/main.go                # Go dashboard server
