@@ -89,3 +89,70 @@ def test_legacy_validator_chunk_alias_remains_supported():
     report = validate_dataset([item], CHUNKS)
     assert report["summary"]["VALID_QA"] == 1
     assert report["rows"][0]["gold_chunk_id"] == "doc_a_rs_0001"
+
+
+# --- abstain rows -----------------------------------------------------------
+#
+# An abstain row declares no gold answer and no supporting chunk; that is what
+# the label means. It used to be reported as MISSING_ANSWER plus
+# MISSING_GOLD_CHUNK, which made the one label the Phase 2 exit criteria ask
+# for impossible to ship in a dataset that passes its own gate.
+
+
+def _abstain_item(question="What is the capital of France?", answer=""):
+    return {
+        "query_id": "adv_000",
+        "question": question,
+        "gold_answer": answer,
+        "ground_truth": answer,
+        "gold_chunk_id": "",
+        "gold_doc_id": "",
+        "should_abstain": True,
+    }
+
+
+def test_abstain_row_is_valid_and_counts_toward_the_denominator():
+    report = validate_dataset([_item(), _abstain_item()], CHUNKS, require_answer=True)
+    s = report["summary"]
+
+    assert s["TOTAL_QA"] == 2 and s["VALID_QA"] == 2
+    assert s["MISSING_ANSWER"] == 0
+    assert s["MISSING_GOLD_CHUNK"] == 0
+
+
+def test_abstain_row_is_flagged_in_the_audit_row():
+    report = validate_dataset([_abstain_item()], CHUNKS, require_answer=True)
+    row = report["rows"][0]
+
+    assert row["status"] == "ok"
+    assert row["abstain_row"] is True
+    assert row["gold_chunk_ids"] == []
+
+
+def test_abstain_row_still_requires_a_question():
+    item = _abstain_item()
+    del item["question"]
+    report = validate_dataset([item], CHUNKS, require_answer=True)
+
+    assert report["summary"]["MISSING_QUESTION"] == 1
+    assert report["summary"]["VALID_QA"] == 0
+
+
+def test_unknown_abstain_label_is_not_exempted():
+    """A string label is not a decision, so the row is validated normally."""
+    item = {"question": "Q?", "gold_answer": "ans", "gold_chunk_id": "missing_rs_9999",
+            "should_abstain": "UNKNOWN"}
+    report = validate_dataset([item], CHUNKS, require_answer=True)
+
+    assert report["summary"]["VALID_QA"] == 0
+    assert report["summary"]["MISSING_GOLD_CHUNK"] == 1
+
+
+def test_empty_gold_without_the_abstain_label_is_still_an_error():
+    """The exemption must not become a blanket escape hatch."""
+    item = {"question": "Q?", "gold_answer": "ans", "gold_chunk_id": "",
+            "should_abstain": False}
+    report = validate_dataset([item], CHUNKS, require_answer=True)
+
+    assert report["summary"]["VALID_QA"] == 0
+    assert report["summary"]["MISSING_GOLD_CHUNK"] == 1

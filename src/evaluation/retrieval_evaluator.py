@@ -63,18 +63,28 @@ def evaluate_query(
     gold_chunk_id: object = _UNSET,
     gold_chunk_ids: object = _UNSET,
     gold_doc_id: Optional[str] = None,
+    should_abstain: bool = False,
     retrieved_chunk_ids: List[str],
     retrieved_doc_ids: Optional[List[str]] = None,
     stage: str,
     latency_ms: float = 0.0,
     corpus_chunk_ids: Optional[Set[str]] = None,
 ) -> QueryStageResult:
-    gold_ids = normalize_gold_chunk_ids(
-        {
-            **({"gold_chunk_id": gold_chunk_id} if gold_chunk_id is not _UNSET else {}),
-            **({"gold_chunk_ids": gold_chunk_ids} if gold_chunk_ids is not _UNSET else {}),
-        }
-    )
+    if should_abstain:
+        # A row labelled should_abstain has no supporting chunk, so Recall@10
+        # and MRR@10 are undefined for it. It is reported through the existing
+        # FAILURE_EVAL_DATA path so aggregate_rows drops it from the retrieval
+        # denominator: counting it as a hit would inflate recall, counting it
+        # as a miss would charge the retriever for a label that says the
+        # answer does not exist in the corpus at all.
+        gold_ids: list[str] = []
+    else:
+        gold_ids = normalize_gold_chunk_ids(
+            {
+                **({"gold_chunk_id": gold_chunk_id} if gold_chunk_id is not _UNSET else {}),
+                **({"gold_chunk_ids": gold_chunk_ids} if gold_chunk_ids is not _UNSET else {}),
+            }
+        )
 
     # A gold id that is not in the corpus cannot be retrieved by anything, so
     # scoring it would charge the retriever for a labelling mistake. It is
@@ -87,11 +97,11 @@ def evaluate_query(
         if corpus_chunk_ids is not None
         else []
     )
-    if missing:
+    if missing or not gold_ids:
         return QueryStageResult(
             query_id=query_id,
             question=question,
-            gold_chunk_id=gold_ids[0],
+            gold_chunk_id=gold_ids[0] if gold_ids else None,
             gold_chunk_ids=gold_ids,
             gold_doc_id=gold_doc_id,
             stage=stage,

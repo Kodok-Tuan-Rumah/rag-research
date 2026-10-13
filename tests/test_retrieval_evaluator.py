@@ -7,7 +7,11 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.evaluation.retrieval_evaluator import aggregate_rows, evaluate_query
+from src.evaluation.retrieval_evaluator import (
+    FAILURE_EVAL_DATA,
+    aggregate_rows,
+    evaluate_query,
+)
 from src.evaluation.gold_schema import dataset_records, normalize_gold_chunk_ids
 
 
@@ -245,3 +249,67 @@ def _row_without_gold():
         retrieved_chunk_ids=[],
         stage="rrf_fused",
     )
+
+
+# --- abstain rows are unscorable for retrieval, not failed -------------------
+
+
+def test_abstain_row_does_not_raise_and_carries_no_gold():
+    """It used to crash: evaluate_query read gold_ids[0] on an empty list."""
+    row = evaluate_query(
+        query_id="adv_000",
+        question="What is the capital of France?",
+        gold_chunk_id="",
+        should_abstain=True,
+        retrieved_chunk_ids=["A", "B", "C"],
+        stage="rrf_reranked",
+    )
+
+    assert row.gold_chunk_ids == []
+    assert row.gold_chunk_id is None
+    assert row.gold_rank is None
+
+
+def test_abstain_row_is_excluded_from_retrieval_denominators():
+    """Neither a hit nor a miss.
+
+    Counting it as a miss charges the retriever for a label saying the answer
+    does not exist in the corpus; counting it as a hit inflates recall. Both
+    were worse than leaving it out, and the abstain label is the only way the
+    dataset can express that case.
+    """
+    scored = _row("hit", "A", ["A", "B", "C"])
+    abstain = evaluate_query(
+        query_id="adv_000",
+        question="q",
+        gold_chunk_id="",
+        should_abstain=True,
+        retrieved_chunk_ids=["A", "B", "C"],
+        stage="rrf_reranked",
+    )
+
+    agg = aggregate_rows([scored, abstain])
+
+    assert agg["n"] == 1
+    assert agg["recall@10"] == 1.0
+    assert agg["mrr@10"] == 1.0
+    assert agg["excluded_evaluation_data_errors"] == 1
+    assert agg["failure_counts"][FAILURE_EVAL_DATA] == 1
+
+
+def test_abstain_row_does_not_inflate_recall_for_a_real_miss():
+    scored = _row("miss", "Z", ["A", "B", "C"])
+    abstain = evaluate_query(
+        query_id="adv_000",
+        question="q",
+        gold_chunk_id="",
+        should_abstain=True,
+        retrieved_chunk_ids=["A", "B", "C"],
+        stage="rrf_reranked",
+    )
+
+    agg = aggregate_rows([scored, abstain])
+
+    assert agg["n"] == 1
+    assert agg["recall@10"] == 0.0
+    assert agg["mrr@10"] == 0.0

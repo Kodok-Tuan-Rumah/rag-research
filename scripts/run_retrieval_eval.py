@@ -24,7 +24,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.evaluation.retrieval_evaluator import aggregate_rows, evaluate_query
-from src.evaluation.gold_schema import dataset_records, normalize_gold_chunk_ids
+from src.evaluation.gold_schema import (
+    dataset_records,
+    is_abstain_row,
+    normalize_gold_chunk_ids,
+)
 from src.retrieval.qdrant_store import QdrantVectorStore
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
 
@@ -73,6 +77,7 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
         elapsed = (time.perf_counter() - t0) * 1000.0
         trace = out["trace"]
         gold_ids = normalize_gold_chunk_ids(item)
+        should_abstain = is_abstain_row(item)
         for stage, key in STAGE_TRACE_KEYS.items():
             ids = trace.get(key, [])
             docs = [chunk_doc.get(cid, "") for cid in ids]
@@ -81,6 +86,7 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
                 question=item["question"],
                 gold_chunk_ids=gold_ids,
                 gold_doc_id=item.get("gold_doc_id"),
+                should_abstain=should_abstain,
                 retrieved_chunk_ids=ids,
                 retrieved_doc_ids=docs,
                 stage=stage,

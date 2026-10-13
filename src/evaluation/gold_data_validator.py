@@ -25,7 +25,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.evaluation.gold_schema import dataset_records, normalize_gold_chunk_ids
+from src.evaluation.gold_schema import (
+    dataset_records,
+    is_abstain_row,
+    normalize_gold_chunk_ids,
+)
 
 logger = logging.getLogger("rag.gold_data_validator")
 
@@ -104,18 +108,27 @@ def validate_dataset(
             "details": [],
         }
 
+        # An abstain row declares no gold answer and no supporting chunk; that
+        # is its definition, not a defect. It still needs a question, and it
+        # still has to be counted as a valid row so abstain accuracy has a
+        # denominator. Everything below that checks the gold answer or the gold
+        # chunk is therefore skipped for these rows only.
+        abstain = is_abstain_row(it)
+
         if not q:
             row["status"] = ITEM_ERROR
             row["error_type"] = "missing_question"
             row["details"].append("item has no question/query field")
             counts["MISSING_QUESTION"] += 1
-        if require_answer and not answer:
+        if require_answer and not answer and not abstain:
             row["status"] = ITEM_ERROR
             row["error_type"] = "missing_answer"
             row["details"].append("item has no answer/gold_answer/ground_truth field")
             counts["MISSING_ANSWER"] += 1
 
-        if gold_error:
+        if abstain:
+            row["abstain_row"] = True
+        elif gold_error:
             row["status"] = ITEM_ERROR
             row["error_type"] = "invalid_gold_chunk_ids"
             row["details"].append(gold_error)
