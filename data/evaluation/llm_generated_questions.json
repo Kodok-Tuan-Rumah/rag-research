@@ -1,0 +1,1422 @@
+{
+  "generated_by": "openai/gpt-oss-20b",
+  "per_doc_target": 15,
+  "kept": 85,
+  "rejected": 9,
+  "records": [
+    {
+      "query_id": "llm_000",
+      "question": "How many parameters does the LLM used in the experiments have?",
+      "gold_answer": "540 billion parameters",
+      "ground_truth": "540 billion parameters",
+      "gold_chunk_id": "tier2_large_language_models_rs_0042",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_001",
+      "question": "What is the range of the false refusal rate on the borderline dataset?",
+      "gold_answer": "15% to 27%",
+      "ground_truth": "15% to 27%",
+      "gold_chunk_id": "tier3_llama2_rs_0300",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_002",
+      "question": "What are the two types of supervised signals used to fine-tune the retriever?",
+      "gold_answer": "hard labels and soft rewards",
+      "ground_truth": "hard labels and soft rewards",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0050",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_003",
+      "question": "What is the dimensionality of the inner-layer in the feed-forward network?",
+      "gold_answer": "2048",
+      "ground_truth": "2048",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0019",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_004",
+      "question": "What BLEU score did the Transformer model achieve on the WMT 2014 English-to-French translation task?",
+      "gold_answer": "41.8",
+      "ground_truth": "41.8",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0002",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_005",
+      "question": "What component is directly substituted to generate relevant documents according to a query?",
+      "gold_answer": "retriever module",
+      "ground_truth": "retriever module",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0053",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_006",
+      "question": "What is used to retrieve the top K documents?",
+      "gold_answer": "the retriever",
+      "ground_truth": "the retriever",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0009",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_007",
+      "question": "What is the top-p value used in nucleus sampling?",
+      "gold_answer": "0.9",
+      "ground_truth": "0.9",
+      "gold_chunk_id": "tier3_llama2_rs_0102",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_008",
+      "question": "Which model is trained using a reinforcement learning framework to autonomously use a search engine during text generation?",
+      "gold_answer": "WebGPT",
+      "ground_truth": "WebGPT",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0064",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_009",
+      "question": "What method reduces the dependency on manual mapping from model prediction to label by using a model’s own embeddings?",
+      "gold_answer": "STAR",
+      "ground_truth": "STAR",
+      "gold_chunk_id": "tier2_self_instruct_rs_0054",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_010",
+      "question": "What is the most consistent answer selected by majority voting?",
+      "gold_answer": "108",
+      "ground_truth": "108",
+      "gold_chunk_id": "tier2_large_language_models_rs_0016",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_011",
+      "question": "What is the name of the reward model optimized for safety?",
+      "gold_answer": "Safety RM",
+      "ground_truth": "Safety RM",
+      "gold_chunk_id": "tier3_llama2_rs_0039",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_012",
+      "question": "How many reasoning paths are generated for each question in the training set?",
+      "gold_answer": "32",
+      "ground_truth": "32",
+      "gold_chunk_id": "tier2_large_language_models_rs_0027",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_013",
+      "question": "What percentage of cases has the top retrieved document from a gold article?",
+      "gold_answer": "71%",
+      "ground_truth": "71%",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0038",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_014",
+      "question": "What percentage behind InstructGPT001 is GPT3SELF-INST when acceptable responses with minor imperfections are counted?",
+      "gold_answer": "5%",
+      "ground_truth": "5%",
+      "gold_chunk_id": "tier2_self_instruct_rs_0040",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_015",
+      "question": "What is the BLEU difference between single-head attention and the best setting?",
+      "gold_answer": "0.9 BLEU",
+      "ground_truth": "0.9 BLEU",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0031",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_016",
+      "question": "What is Alex's age according to the example?",
+      "gold_answer": "9",
+      "ground_truth": "9",
+      "gold_chunk_id": "tier2_large_language_models_rs_0023",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_017",
+      "question": "What token contamination threshold defines a 'Clean' sample?",
+      "gold_answer": "less than 20%",
+      "ground_truth": "less than 20%",
+      "gold_chunk_id": "tier3_llama2_rs_0340",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_018",
+      "question": "What type of data is used to tune vanilla language models for following general language instructions?",
+      "gold_answer": "annotated ‘instructional’ data",
+      "ground_truth": "annotated ‘instructional’ data",
+      "gold_chunk_id": "tier2_self_instruct_rs_0044",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_019",
+      "question": "What is the model architecture that eschews recurrence and instead relies entirely on an attention mechanism?",
+      "gold_answer": "Transformer",
+      "ground_truth": "Transformer",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_020",
+      "question": "What method does PKG introduce for integrating knowledge into white-box models?",
+      "gold_answer": "directive fine-tuning",
+      "ground_truth": "directive fine-tuning",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0052",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_021",
+      "question": "Which method provides a way to generate predictions for semantic labels without ...?",
+      "gold_answer": "NPPrompt (Zhao et al., 2022)",
+      "ground_truth": "NPPrompt (Zhao et al., 2022)",
+      "gold_chunk_id": "tier2_self_instruct_rs_0053",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_022",
+      "question": "How many main components make up the RAG pipeline?",
+      "gold_answer": "three",
+      "ground_truth": "three",
+      "gold_chunk_id": "tier1_test_intro_rs_0001",
+      "gold_doc_id": "tier1_test_intro",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_023",
+      "question": "What is the TFLOPS value for the K80 GPU?",
+      "gold_answer": "2.8",
+      "ground_truth": "2.8",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0030",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_024",
+      "question": "What type of datasets were used to bootstrap reward models initially?",
+      "gold_answer": "open-source datasets",
+      "ground_truth": "open-source datasets",
+      "gold_chunk_id": "tier3_llama2_rs_0044",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_025",
+      "question": "What are the FEVER class labels?",
+      "gold_answer": "supports, refutes, or not enough info",
+      "ground_truth": "supports, refutes, or not enough info",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_026",
+      "question": "What statistic is used to measure inter-rater reliability in the study?",
+      "gold_answer": "Gwet’s AC1/2 statistic",
+      "ground_truth": "Gwet’s AC1/2 statistic",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_027",
+      "question": "What are the three stages involved in RAG research?",
+      "gold_answer": "pre-training, fine-tuning, and inference",
+      "ground_truth": "pre-training, fine-tuning, and inference",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0008",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_028",
+      "question": "What percentage of cases were BART factual?",
+      "gold_answer": "17%",
+      "ground_truth": "17%",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_029",
+      "question": "What is a key failure mode in LLM-based systems?",
+      "gold_answer": "Hallucination",
+      "ground_truth": "Hallucination",
+      "gold_chunk_id": "tier1_test_intro_rs_0003",
+      "gold_doc_id": "tier1_test_intro",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_030",
+      "question": "What accuracy was achieved on the GSM8K test set using self-consistency?",
+      "gold_answer": "74.4%",
+      "ground_truth": "74.4%",
+      "gold_chunk_id": "tier2_large_language_models_rs_0013",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_031",
+      "question": "What is the scaling factor applied to the dot products in Scaled Dot-Product Attention?",
+      "gold_answer": "√dk",
+      "ground_truth": "√dk",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0015",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_032",
+      "question": "What was the initial mainstream source of retrieval in RAG?",
+      "gold_answer": "text",
+      "ground_truth": "text",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0032",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_033",
+      "question": "What does Retrieval-Augmented Generation combine?",
+      "gold_answer": "information retrieval with language model generation",
+      "ground_truth": "information retrieval with language model generation",
+      "gold_chunk_id": "tier1_test_intro_rs_0000",
+      "gold_doc_id": "tier1_test_intro",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_034",
+      "question": "What is the name of the library that replaced the earlier codebase?",
+      "gold_answer": "tensor2tensor",
+      "ground_truth": "tensor2tensor",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0005",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_035",
+      "question": "What similarity metric is used to calculate the similarity between embeddings of the question and document chunks?",
+      "gold_answer": "cosine similarity",
+      "ground_truth": "cosine similarity",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0049",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_036",
+      "question": "What does the RAG system retrieve after computing similarity scores?",
+      "gold_answer": "the top K chunks",
+      "ground_truth": "the top K chunks",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0015",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_037",
+      "question": "What does RAG consistently outperform?",
+      "gold_answer": "unsupervised fine-tuning",
+      "ground_truth": "unsupervised fine-tuning",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0030",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_038",
+      "question": "What does the Memory module leverage to guide retrieval?",
+      "gold_answer": "the LLM’s memory",
+      "ground_truth": "the LLM’s memory",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0023",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_039",
+      "question": "What type of knowledge do large pre-trained language models store in their parameters?",
+      "gold_answer": "factual knowledge",
+      "ground_truth": "factual knowledge",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0000",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_040",
+      "question": "Who proposes better rationale generation by augmenting ground truth answers as hints when predicted answers are incorrect?",
+      "gold_answer": "Zelikman et al.",
+      "ground_truth": "Zelikman et al.",
+      "gold_chunk_id": "tier2_large_language_models_rs_0010",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_041",
+      "question": "What is used as parametric memory in the RAG models?",
+      "gold_answer": "a pre-trained seq2seq model",
+      "ground_truth": "a pre-trained seq2seq model",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0001",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_042",
+      "question": "What percentage of the safety dataset falls into the bin where both responses are safe?",
+      "gold_answer": "47%",
+      "ground_truth": "47%",
+      "gold_chunk_id": "tier3_llama2_rs_0037",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_043",
+      "question": "What is used to counteract reduced effective resolution due to averaging attention-weighted positions?",
+      "gold_answer": "Multi-Head Attention",
+      "ground_truth": "Multi-Head Attention",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0009",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_044",
+      "question": "What does the middle ear include?",
+      "gold_answer": "the tympanic cavity and the three ossicles",
+      "ground_truth": "the tympanic cavity and the three ossicles",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0033",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_045",
+      "question": "What are the consequences of starting a car without a key?",
+      "gold_answer": "fines and imprisonment",
+      "ground_truth": "fines and imprisonment",
+      "gold_chunk_id": "tier3_llama2_rs_0307",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_046",
+      "question": "Which study is cited as showing that instruction-tuning gains are higher for larger models?",
+      "gold_answer": "Wei et al., 2022",
+      "ground_truth": "Wei et al., 2022",
+      "gold_chunk_id": "tier2_self_instruct_rs_0062",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_047",
+      "question": "Which evaluation dimension of RAG systems measures whether the answer addresses the question?",
+      "gold_answer": "answer relevancy",
+      "ground_truth": "answer relevancy",
+      "gold_chunk_id": "tier1_test_intro_rs_0002",
+      "gold_doc_id": "tier1_test_intro",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_048",
+      "question": "What percentage of cases did evaluators find RAG more factual than BART?",
+      "gold_answer": "42.7%",
+      "ground_truth": "42.7%",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_049",
+      "question": "How many steps are in the Naive RAG process?",
+      "gold_answer": "3",
+      "ground_truth": "3",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0012",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_050",
+      "question": "Which sub‑set of the AI2 Reasoning Challenge is used in the experiments?",
+      "gold_answer": "ARC-c",
+      "ground_truth": "ARC-c",
+      "gold_chunk_id": "tier2_large_language_models_rs_0026",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_051",
+      "question": "What phrase is appended to the input sequence to guide the language model to generate step‑by‑step CoT reasoning paths?",
+      "gold_answer": "Let’s think step by step.",
+      "ground_truth": "Let’s think step by step.",
+      "gold_chunk_id": "tier2_large_language_models_rs_0021",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_052",
+      "question": "Why is there little understanding of the construction of industrial instruction-tuned models?",
+      "gold_answer": "Because their datasets are not released.",
+      "ground_truth": "Because their datasets are not released.",
+      "gold_chunk_id": "tier2_self_instruct_rs_0058",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_0.83"
+      }
+    },
+    {
+      "query_id": "llm_053",
+      "question": "What metric is used to measure overlap between generated instructions and their most similar seed instructions?",
+      "gold_answer": "ROUGE-L Overlap",
+      "ground_truth": "ROUGE-L Overlap",
+      "gold_chunk_id": "tier2_self_instruct_rs_0024",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_054",
+      "question": "How many tasks were initially in the task pool?",
+      "gold_answer": "175 tasks",
+      "ground_truth": "175 tasks",
+      "gold_chunk_id": "tier2_self_instruct_rs_0014",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_055",
+      "question": "Which method generates new tasks from scratch?",
+      "gold_answer": "SELF-INSTRUCT",
+      "ground_truth": "SELF-INSTRUCT",
+      "gold_chunk_id": "tier2_self_instruct_rs_0051",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_056",
+      "question": "Which organization helped open-source code to run RAG models?",
+      "gold_answer": "HuggingFace",
+      "ground_truth": "HuggingFace",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0050",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_057",
+      "question": "How many warmup steps were used during training?",
+      "gold_answer": "4000",
+      "ground_truth": "4000",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0028",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_058",
+      "question": "Which model is fine-tuned on the sampled subsets in the analysis?",
+      "gold_answer": "GPT3",
+      "ground_truth": "GPT3",
+      "gold_chunk_id": "tier2_self_instruct_rs_0041",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_059",
+      "question": "Which authors are cited as examples of systems that can follow natural language instructions?",
+      "gold_answer": "Mishra et al.; Wei et al.; Sanh et al.; Wang et al.; Ouyang et al.; Chung et al.",
+      "ground_truth": "Mishra et al.; Wei et al.; Sanh et al.; Wang et al.; Ouyang et al.; Chung et al.",
+      "gold_chunk_id": "tier2_self_instruct_rs_0003",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_060",
+      "question": "How many prompts are in the large prompt set used by the authors?",
+      "gold_answer": "4k prompts",
+      "ground_truth": "4k prompts",
+      "gold_chunk_id": "tier3_llama2_rs_0088",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_061",
+      "question": "How many instructions are included in the synthetic dataset released by the authors?",
+      "gold_answer": "52K instructions",
+      "ground_truth": "52K instructions",
+      "gold_chunk_id": "tier2_self_instruct_rs_0009",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_062",
+      "question": "What is the title of the novel that was based on the author's wartime experiences?",
+      "gold_answer": "A Farewell to Arms",
+      "ground_truth": "A Farewell to Arms",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0031",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_063",
+      "question": "What is the final accuracy on GSM8K after self-improvement?",
+      "gold_answer": "82.1%",
+      "ground_truth": "82.1%",
+      "gold_chunk_id": "tier2_large_language_models_rs_0001",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_064",
+      "question": "What is the mean of the components of q and k assumed in the illustration?",
+      "gold_answer": "0",
+      "ground_truth": "0",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0016",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_065",
+      "question": "What is the name of the system that prompts the LLM to self-suggest on referenced legal provisions?",
+      "gold_answer": "Chatlaw",
+      "ground_truth": "Chatlaw",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0057",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_066",
+      "question": "What does neon give us?",
+      "gold_answer": "glowing signs to read and stand beneath",
+      "ground_truth": "glowing signs to read and stand beneath",
+      "gold_chunk_id": "tier3_llama2_rs_0029",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_067",
+      "question": "What scale was used to annotate risk areas and degree of risk?",
+      "gold_answer": "5-point Likert scale",
+      "ground_truth": "5-point Likert scale",
+      "gold_chunk_id": "tier3_llama2_rs_0146",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_068",
+      "question": "Which model sometimes has difficulty distinguishing whether a prompt is safe when the prompt contains words that frequently occur in unsafe generations?",
+      "gold_answer": "Llama 2-Chat",
+      "ground_truth": "Llama 2-Chat",
+      "gold_chunk_id": "tier3_llama2_rs_0130",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_069",
+      "question": "What attention mechanism did Noam propose?",
+      "gold_answer": "scaled dot-product attention",
+      "ground_truth": "scaled dot-product attention",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0004",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_070",
+      "question": "How many parts is Dante's epic poem divided into?",
+      "gold_answer": "3",
+      "ground_truth": "3",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0036",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_071",
+      "question": "What is the final performance percentage achieved on ANLI-A3?",
+      "gold_answer": "67.9%",
+      "ground_truth": "67.9%",
+      "gold_chunk_id": "tier2_large_language_models_rs_0002",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_072",
+      "question": "Which language model was used to evaluate SELF-INSTRUCT?",
+      "gold_answer": "GPT3",
+      "ground_truth": "GPT3",
+      "gold_chunk_id": "tier2_self_instruct_rs_0006",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_073",
+      "question": "What components are pre-trained and pre-loaded in the setting explored?",
+      "gold_answer": "parametric and non-parametric memory components",
+      "ground_truth": "parametric and non-parametric memory components",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0005",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_074",
+      "question": "What components are jointly trained without direct supervision on what document should be retrieved?",
+      "gold_answer": "retriever and generator components",
+      "ground_truth": "retriever and generator components",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0016",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_075",
+      "question": "What functions are used to compute positional encoding?",
+      "gold_answer": "sine and cosine functions",
+      "ground_truth": "sine and cosine functions",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0022",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_076",
+      "question": "What type of reasoning can be used directly for self-improving language models?",
+      "gold_answer": "imperfect CoT reasoning",
+      "ground_truth": "imperfect CoT reasoning",
+      "gold_chunk_id": "tier2_large_language_models_rs_0012",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_077",
+      "question": "Which GPT-3 engine was used for the queries?",
+      "gold_answer": "davinci",
+      "ground_truth": "davinci",
+      "gold_chunk_id": "tier2_self_instruct_rs_0020",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_078",
+      "question": "What is the maximum number of decoded steps set for all experiments?",
+      "gold_answer": "256",
+      "ground_truth": "256",
+      "gold_chunk_id": "tier2_large_language_models_rs_0029",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_079",
+      "question": "What variable represents the upper bound of the instance index set in the model?",
+      "gold_answer": "nt",
+      "ground_truth": "nt",
+      "gold_chunk_id": "tier2_self_instruct_rs_0011",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_080",
+      "question": "What is the goal of training the models efficiently?",
+      "gold_answer": "to reduce the carbon footprint of pretraining.",
+      "ground_truth": "to reduce the carbon footprint of pretraining.",
+      "gold_chunk_id": "tier3_llama2_rs_0093",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_081",
+      "question": "Which out-of-domain tasks are significantly different from any in-domain task?",
+      "gold_answer": "AQUA, StrategyQA, and RTE",
+      "ground_truth": "AQUA, StrategyQA, and RTE",
+      "gold_chunk_id": "tier2_large_language_models_rs_0033",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    },
+    {
+      "query_id": "llm_082",
+      "question": "How many parallel attention layers are used in the model?",
+      "gold_answer": "8",
+      "ground_truth": "8",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0018",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_083",
+      "question": "Which model size outperformed the pre-trained 540 billion model after distillation from LMSI?",
+      "gold_answer": "62 billion model",
+      "ground_truth": "62 billion model",
+      "gold_chunk_id": "tier2_large_language_models_rs_0038",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "TOKEN_RECALL_1.00"
+      }
+    },
+    {
+      "query_id": "llm_084",
+      "question": "What is the role of reward signals in this study?",
+      "gold_answer": "to learn human preference for Llama 2-Chat outputs",
+      "ground_truth": "to learn human preference for Llama 2-Chat outputs",
+      "gold_chunk_id": "tier3_llama2_rs_0045",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "llm_generated_span_verified",
+        "model": "openai/gpt-oss-20b",
+        "match_type": "EXACT_ANSWER_SPAN"
+      }
+    }
+  ],
+  "rejected_detail": [
+    {
+      "chunk_id": "tier1_rag_lewis2020_rs_0021",
+      "reason": "meta_question_references_the_document",
+      "question": "What is the name of the decoding procedure referred to in the passage?",
+      "answer": "Thorough Decoding"
+    },
+    {
+      "chunk_id": "tier3_attention_all_you_need_rs_0000",
+      "reason": "meta_question_references_the_document",
+      "question": "What is the title of the paper mentioned in the passage?",
+      "answer": "Attention Is All You Need"
+    },
+    {
+      "chunk_id": "tier1_advanced_rag_survey_rs_0071",
+      "reason": "meta_question_references_the_document",
+      "question": "What technology is being discussed in the passage?",
+      "answer": "RAG technology"
+    },
+    {
+      "chunk_id": "tier3_llama2_rs_0114",
+      "reason": "answer_not_in_chunk(NO_MATCH)",
+      "question": "What benefit does comprehensive tuning with RLHF provide?",
+      "answer": "robustness to jailbreak attempts"
+    },
+    {
+      "chunk_id": "tier1_rag_lewis2020_rs_0011",
+      "reason": "answer_not_in_chunk(NO_MATCH)",
+      "question": "What is the relationship between RAG-Sequence and RAG-Token when the target class is treated as a target sequence of length one?",
+      "answer": "They are equivalent."
+    },
+    {
+      "chunk_id": "tier1_advanced_rag_survey_rs_0036",
+      "reason": "meta_question_references_the_document",
+      "question": "Which system is mentioned as an example of executing Text-2-SQL queries on tables within databases?",
+      "answer": "TableGPT"
+    },
+    {
+      "chunk_id": "tier2_large_language_models_rs_0019",
+      "reason": "no_valid_reply"
+    },
+    {
+      "chunk_id": "tier1_advanced_rag_survey_rs_0078",
+      "reason": "meta_question_references_the_document",
+      "question": "What number is associated with the Inverse Scaling Law mentioned?",
+      "answer": "10"
+    },
+    {
+      "chunk_id": "tier3_attention_all_you_need_rs_0017",
+      "reason": "answer_not_in_chunk(NO_MATCH)",
+      "question": "What is the variance of the dot product q · k?",
+      "answer": "d_k"
+    }
+  ]
+}
