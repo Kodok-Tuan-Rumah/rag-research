@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.controller.confidence_engine import ConfidenceEngine
@@ -309,3 +311,46 @@ def test_factual_escalation_retries_once_and_emits_log_schema(monkeypatch, tmp_p
     assert result["retrieval_scores"] == [0.8]
     assert result["reranker_scores"] == [None]
     assert set(result["latency_ms"]) == {"retrieval", "reranker", "generation", "total"}
+
+
+# --- sanity_check_answer: the 5 cases §7 Phase 1 names -----------------------
+
+_LONG_CHUNK = (
+    "Attention mechanisms let a model compare query representations with key representations, "
+    "produce normalized weights, and use those weights to combine value representations into a "
+    "context vector. This helps the model focus on relevant tokens when generating each output "
+    "rather than compressing an entire sequence into one fixed representation. The mechanism is "
+    "especially useful in encoder decoder and transformer architectures because it creates a "
+    "direct path between distant positions in the input sequence."
+)
+_HIGH_OVERLAP_ANSWER = (
+    "model Attention mechanisms let a model compare query representations with key representations, "
+    "produce normalized weights, and use those weights to combine value representations into a "
+    "context vector. This helps the model focus on relevant tokens when generating each output"
+)
+_NORMAL_ANSWER = (
+    "An attention mechanism scores which input tokens matter for the current output step and "
+    "uses those scores to build a context representation from the source sequence."
+)
+
+# PROJECT_GOALS.md §7 Phase 1 names exactly five manual cases. They lived only
+# in generator.py's __main__, so the suite's one sanity test covered a single
+# case and the other four were never exercised by CI.
+SANITY_CHECK_CASES = [
+    ("short answer <20 words", "Attention weights identify relevant input tokens.", [{"text": _LONG_CHUNK}], True),
+    ("verbatim chunk copy >200 chars", _LONG_CHUNK, [{"text": _LONG_CHUNK}], False),
+    ("word overlap >=0.95", _HIGH_OVERLAP_ANSWER, [{"text": _LONG_CHUNK}], False),
+    ("normal grounded answer", _NORMAL_ANSWER, [{"text": _LONG_CHUNK}], True),
+    ("empty answer", "", [{"text": _LONG_CHUNK}], True),
+]
+
+
+@pytest.mark.parametrize(
+    ("name", "answer", "chunks", "expected"),
+    SANITY_CHECK_CASES,
+    ids=[case[0] for case in SANITY_CHECK_CASES],
+)
+def test_sanity_check_answer_manual_cases(name, answer, chunks, expected):
+    ok, reason = sanity_check_answer(answer, chunks)
+
+    assert ok is expected, f"{name}: expected {expected}, got {ok} ({reason})"
