@@ -1,0 +1,443 @@
+{
+  "dataset_version": "v4",
+  "dataset_sha256": "2421efa93805862c6ca8cdcce9e74b6e8e1dad4d142aeda0679fe09fec9bd3ea",
+  "corpus_chunks_sha256": "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6",
+  "corpus_documents_sha256": "9048aca17d69289a7174edc3d938ea2d79f03896d3900deba76f9fb6c7f0dc8a",
+  "created_from": "human_authored_questions_span_verified",
+  "verification_method": "exact_span_or_token_recall_0.8",
+  "notes": "Template-generated questions were removed. The previous revision produced 67 of 88 rows that passed CI but were not usable as evaluation data.",
+  "records": [
+    {
+      "query_id": "par_000",
+      "question": "Can you explain What statistic was used to measure inter?",
+      "gold_answer": "Gwet’s AC1/2 was used to measure inter-rater reliability. On the 7-point Likert scale helpfulness task, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific model comparison.",
+      "ground_truth": "Gwet’s AC1/2 was used to measure inter-rater reliability. On the 7-point Likert scale helpfulness task, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific model comparison.",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+        "matched_chunk": "tier3_llama2_rs_0086"
+      }
+    },
+    {
+      "query_id": "par_001",
+      "question": "Can you explain What is a notable issue that large langu?",
+      "gold_answer": "They produce hallucinations when handling queries beyond their training data or requiring current information.",
+      "ground_truth": "They produce hallucinations when handling queries beyond their training data or requiring current information.",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+        "matched_chunk": "tier1_advanced_rag_survey_rs_0002"
+      }
+    },
+    {
+      "query_id": "par_002",
+      "question": "Can you explain How are FEVER class labels mapped for tr?",
+      "gold_answer": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "ground_truth": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How are FEVER class labels mapped for training in the context of RAG models?",
+        "matched_chunk": "tier1_rag_lewis2020_rs_0023"
+      }
+    },
+    {
+      "query_id": "par_003",
+      "question": "Can you explain How are high-confidence predictions filt?",
+      "gold_answer": "Multiple CoT paths and answers are generated. The most consistent answer is selected by majority voting. High-confidence CoT reasoning paths leading to that answer are augmented with mixed formats as the final training samples.",
+      "ground_truth": "Multiple CoT paths and answers are generated. The most consistent answer is selected by majority voting. High-confidence CoT reasoning paths leading to that answer are augmented with mixed formats as the final training samples.",
+      "gold_chunk_id": "tier2_large_language_models_rs_0006",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How are high-confidence predictions filtered in the method described?",
+        "matched_chunk": "tier2_large_language_models_rs_0006"
+      }
+    },
+    {
+      "query_id": "par_004",
+      "question": "Can you explain How does RAG compare to Fine-tuning (FT)?",
+      "gold_answer": "RAG is ideal for precise information retrieval tasks, while fine-tuning (FT) is suitable for scenarios requiring replication of specific structures, styles, or formats.",
+      "ground_truth": "RAG is ideal for precise information retrieval tasks, while fine-tuning (FT) is suitable for scenarios requiring replication of specific structures, styles, or formats.",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+        "matched_chunk": "tier1_advanced_rag_survey_rs_0028"
+      }
+    },
+    {
+      "query_id": "par_005",
+      "question": "Can you explain What limitation do instruction-tuning wi?",
+      "gold_answer": "Because of SELFINSTRUCT’s dependence on the inductive biases extracted from language models, it might work best for larger models. The paper says, “If true,” this may create barriers to access for those without large computing resources. Separately, it states that instruction-tuning with human annotation has a similar limitation: its gains are higher for larger models.",
+      "ground_truth": "Because of SELFINSTRUCT’s dependence on the inductive biases extracted from language models, it might work best for larger models. The paper says, “If true,” this may create barriers to access for those without large computing resources. Separately, it states that instruction-tuning with human annotation has a similar limitation: its gains are higher for larger models.",
+      "gold_chunk_id": "tier2_self_instruct_rs_0062",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+        "matched_chunk": "tier2_self_instruct_rs_0062"
+      }
+    },
+    {
+      "query_id": "par_006",
+      "question": "Can you explain Why may RAG-Token perform best at genera?",
+      "gold_answer": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "ground_truth": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+        "matched_chunk": "tier1_rag_lewis2020_rs_0027"
+      }
+    },
+    {
+      "query_id": "par_007",
+      "question": "Can you explain What percentage of cases did evaluators?",
+      "gold_answer": "RAG was more factual than BART in 42.7% of cases.",
+      "ground_truth": "RAG was more factual than BART in 42.7% of cases.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+        "matched_chunk": "tier1_rag_lewis2020_rs_0026"
+      }
+    },
+    {
+      "query_id": "par_008",
+      "question": "Can you explain How do attention mechanisms typically fu?",
+      "gold_answer": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences. In all but a few cases, such attention mechanisms are used in conjunction with a recurrent network.",
+      "ground_truth": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences. In all but a few cases, such attention mechanisms are used in conjunction with a recurrent network.",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+        "matched_chunk": "tier3_attention_all_you_need_rs_0008"
+      }
+    },
+    {
+      "query_id": "par_009",
+      "question": "Can you explain How does the margin component affect the?",
+      "gold_answer": "The margin component can improve Helpfulness reward model accuracy, especially on samples where two responses are more separable.",
+      "ground_truth": "The margin component can improve Helpfulness reward model accuracy, especially on samples where two responses are more separable.",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How does the margin component affect the Helpfulness reward model accuracy?",
+        "matched_chunk": "tier3_llama2_rs_0043"
+      }
+    },
+    {
+      "query_id": "par_010",
+      "question": "Can you explain What are some limitations of human evalu?",
+      "gold_answer": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the inherent difficulty of comparing generations.",
+      "ground_truth": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the inherent difficulty of comparing generations.",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "What are some limitations of human evaluations that can introduce noise into the results?",
+        "matched_chunk": "tier3_llama2_rs_0007"
+      }
+    },
+    {
+      "query_id": "par_011",
+      "question": "Can you explain How does the HateBERT classifier assign?",
+      "gold_answer": "The HateBERT classifier scores each line of a document separately and averages the scores to assign a document score.",
+      "ground_truth": "The HateBERT classifier scores each line of a document separately and averages the scores to assign a document score.",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+        "matched_chunk": "tier3_llama2_rs_0098"
+      }
+    },
+    {
+      "query_id": "par_012",
+      "question": "Can you explain How is the inter-rater reliability (IRR)?",
+      "gold_answer": "Gwet’s AC1/2 statistic was used to measure inter-rater reliability. For Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure.",
+      "ground_truth": "Gwet’s AC1/2 statistic was used to measure inter-rater reliability. For Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure.",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "paraphrase",
+      "difficulty": "medium",
+      "should_abstain": false,
+      "provenance": {
+        "source": "human_question_reworded",
+        "original_question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+        "matched_chunk": "tier3_llama2_rs_0152"
+      }
+    },
+    {
+      "query_id": "adv01",
+      "question": "What is the training cost in dollars for GPT-4?",
+      "gold_answer": "",
+      "ground_truth": "",
+      "gold_chunk_id": "",
+      "gold_doc_id": "",
+      "question_type": "adversarial",
+      "difficulty": "easy",
+      "should_abstain": true,
+      "provenance": {
+        "source": "human_out_of_corpus",
+        "type": "out_of_corpus",
+        "expected_behavior": "honest_abstention"
+      }
+    },
+    {
+      "query_id": "adv02",
+      "question": "Who won the 2024 Nobel Prize in Physics?",
+      "gold_answer": "",
+      "ground_truth": "",
+      "gold_chunk_id": "",
+      "gold_doc_id": "",
+      "question_type": "adversarial",
+      "difficulty": "easy",
+      "should_abstain": true,
+      "provenance": {
+        "source": "human_out_of_corpus",
+        "type": "out_of_corpus",
+        "expected_behavior": "honest_abstention"
+      }
+    },
+    {
+      "query_id": "adv04",
+      "question": "What are the contradictions between RAG and fine-tuning approaches?",
+      "gold_answer": "",
+      "ground_truth": "",
+      "gold_chunk_id": "",
+      "gold_doc_id": "",
+      "question_type": "adversarial",
+      "difficulty": "hard",
+      "should_abstain": true,
+      "provenance": {
+        "source": "human_out_of_corpus",
+        "type": "contradiction_seeking",
+        "expected_behavior": "partial_context"
+      }
+    },
+    {
+      "query_id": "adv06",
+      "question": "What does the paper say about performance?",
+      "gold_answer": "",
+      "ground_truth": "",
+      "gold_chunk_id": "",
+      "gold_doc_id": "",
+      "question_type": "adversarial",
+      "difficulty": "medium",
+      "should_abstain": true,
+      "provenance": {
+        "source": "human_out_of_corpus",
+        "type": "ambiguous_reference",
+        "expected_behavior": "misleading_similarity"
+      }
+    },
+    {
+      "query_id": "fail_000",
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "gold_answer": "The Gwets AC1/2 statistic was used to measure inter-rater reliability, and its score (Gwets AC2) varies between 0.37 and 0.55 on the 7-point Likert sc",
+      "ground_truth": "The Gwets AC1/2 statistic was used to measure inter-rater reliability, and its score (Gwets AC2) varies between 0.37 and 0.55 on the 7-point Likert sc",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_0.85",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_001",
+      "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "gold_answer": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "ground_truth": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_0.86",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_002",
+      "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "gold_answer": "RAG is ideal for precise information retrieval tasks, while FT is suitable for scenarios requiring replication of specific structures, styles, or patt",
+      "ground_truth": "RAG is ideal for precise information retrieval tasks, while FT is suitable for scenarios requiring replication of specific structures, styles, or patt",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "difficulty": "prompt_reject",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_0.90",
+        "original_failure_type": "prompt_reject"
+      }
+    },
+    {
+      "query_id": "fail_003",
+      "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "gold_answer": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "ground_truth": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "EXACT_ANSWER_SPAN",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_004",
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "gold_answer": "RAG was more factual in 42.7% of cases.",
+      "ground_truth": "RAG was more factual in 42.7% of cases.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_1.00",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_005",
+      "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "gold_answer": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences, and are often used in conjuncti",
+      "ground_truth": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences, and are often used in conjuncti",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_0.86",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_006",
+      "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "gold_answer": "The margin component can improve Helpfulness reward model accuracy especially on samples where two responses are more separable.",
+      "ground_truth": "The margin component can improve Helpfulness reward model accuracy especially on samples where two responses are more separable.",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_1.00",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_007",
+      "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "gold_answer": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the",
+      "ground_truth": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "EXACT_ANSWER_SPAN",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_008",
+      "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "gold_answer": "The HateBERT classifier scores each line of a document separately and averages them to assign a document score.",
+      "ground_truth": "The HateBERT classifier scores each line of a document separately and averages them to assign a document score.",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_0.94",
+        "original_failure_type": "ok"
+      }
+    },
+    {
+      "query_id": "fail_009",
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "gold_answer": "The inter-rater reliability (IRR) is measured using Gwets AC1/2 statistic, and the average IRR score for Llama 2-Chat annotations is 0.92 according to",
+      "ground_truth": "The inter-rater reliability (IRR) is measured using Gwets AC1/2 statistic, and the average IRR score for Llama 2-Chat annotations is 0.92 according to",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "difficulty": "ok",
+      "should_abstain": false,
+      "provenance": {
+        "source": "failure_analysis_json",
+        "match_type": "TOKEN_RECALL_0.83",
+        "original_failure_type": "ok"
+      }
+    }
+  ]
+}
