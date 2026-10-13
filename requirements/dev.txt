@@ -14,7 +14,7 @@ pytest-asyncio==1.4.0
 # ── run the suite ─────────────────────────────────────────────────────────────
 #   python3 -m pytest tests/ -q
 #
-#   Baseline: 322 passed, 0 failed. No --ignore flags required.
+#   Baseline: 380 passed, 0 failed. No --ignore flags required.
 #
 # RESOLVED — an earlier version of this file listed 3 pre-existing failures and
 # attributed them to "numpy 2.5.3 on Python 3.14 raises ImportError: cannot load
