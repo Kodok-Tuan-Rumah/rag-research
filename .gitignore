@@ -75,7 +75,10 @@ htmlcov/
 # =============================================================================
 # Local Vector Database (Never Commit)
 # =============================================================================
-data/qdrant_storage/
+# Written without a trailing slash on purpose: `git check-ignore` only honours
+# a trailing-slash pattern for a directory that already exists on disk, so the
+# pattern must match the bare path too.
+data/qdrant_storage
 
 # =============================================================================
 # Retrieval Indexes & Cached Artifacts
@@ -122,7 +125,8 @@ results/metrics/eval_phase2_*.json
 # data/raw/ holds the source papers. Ignored on purpose: ~7 PDFs, tens of MB.
 # Consequence: chunks_semantic*.json cannot be regenerated from a fresh clone,
 # which is why the processed JSON above IS committed. See the note there.
-data/raw/
+# Bare `data/raw` (no trailing slash) so `git check-ignore data/raw` matches too.
+data/raw
 *.zip
 
 # =============================================================================

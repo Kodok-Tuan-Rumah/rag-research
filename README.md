@@ -281,7 +281,7 @@ bash scripts/bootstrap_env.sh --verify   # check only, install nothing
     OK  protobuf upb shim (src/_compat.py, needed on Python 3.14)
 
 ==> Test suite
-    305 passed
+    322 passed
 ```
 
 Verify the key and the pipeline:
@@ -355,7 +355,7 @@ recorded in `ACKNOWLEDGED_DEAD_PATHS` rather than silently tolerated.
 python3 -m pytest tests/ -q
 ```
 
-Baseline: **305 passed, 0 failed**. No `--ignore` flags are needed.
+Baseline: **322 passed, 0 failed**. No `--ignore` flags are needed.
 
 > **If a test fails with** `ImportError: cannot load module more than once per process` **from `numpy/fft/_pocketfft.py`** — that is a test-harness problem, not a numpy or Python 3.14 defect. `unittest.mock.patch.dict(sys.modules, ...)` snapshots `sys.modules` and restores it wholesale on exit, evicting modules first imported *inside* the block. `numpy.fft._pocketfft_umath` is a C extension, and CPython forbids re-initialising the same extension twice in one process. Fix: pre-import `numpy.fft` above the `patch.dict` block. See `tests/test_qdrant_store.py` and `tests/test_semantic_chunker.py`.
 
@@ -423,7 +423,7 @@ rag-research/
 │       ├── main.py                   # FastAPI endpoint
 │       └── config.py                 # Settings (pydantic-settings)
 ├── scripts/                          # ~40 diagnostic + eval scripts (6.6k LOC)
-├── tests/                            # pytest suite (305 passed, 0 failed)
+├── tests/                            # pytest suite (322 passed, 0 failed)
 ├── experiments/                      # Phase 1 ablation (legacy stack)
 ├── archive/
 │   └── legacy_2026_10/               # Zero-import modules + provenance README
@@ -443,7 +443,7 @@ rag-research/
 │   ├── debug/failure_analysis.json   # Failure mode breakdown
 │   └── qdrant_storage/               # Local Qdrant persistent (796 vectors)
 ├── results/
-│   ├── metrics/                      # 128 artifacts + INDEX.md (see results/metrics/INDEX.md)
+│   ├── metrics/                      # 130 artifacts + INDEX.md (see results/metrics/INDEX.md)
 │   ├── debug/
 │   └── logs/
 ├── cmd/server/main.go                # Go dashboard server
