@@ -214,32 +214,115 @@ def check_evaluable_schema() -> list[str]:
     return failures
 
 
+def check_query_leakage(chunks: list, embedder=None, report_path: pathlib.Path | None = None) -> list[str]:
+    """PROJECT_GOALS.md §10.2 — reject samples whose question restates its gold chunk.
+
+    A sample with similarity > 0.9 needs no ranking skill to retrieve: returning
+    that chunk scores Recall@10 = 1.0. It reports perfect retrieval for a
+    system that cannot retrieve, and that number is inherited by every metric
+    computed from the set.
+
+    The embedder is injected so this gate can be exercised without loading a
+    model. It loads one on first call, and reports the failure rather than
+    crashing CI if the model is unavailable — an unrunnable gate would be
+    indistinguishable from a passing one.
+    """
+    if not chunks:
+        return []
+
+    try:
+        from src.evaluation.query_leakage import dataset_leakage
+    except Exception as exc:  # noqa: BLE001
+        return [f"query leakage check could not be imported: {exc}"]
+
+    failures: list[str] = []
+    # Built once, reused for every dataset. default_embedder() loads the model
+    # on each call, and six datasets meant six loads — roughly 40 seconds of
+    # CI time for the same weights.
+    try:
+        from src.evaluation.query_leakage import default_embedder, dataset_leakage
+
+        embedder = embedder or default_embedder()
+    except Exception as exc:  # noqa: BLE001
+        return [f"query leakage check could not be imported: {exc}"]
+
+    reports: list[dict] = []
+    for path in dataset_paths():
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue  # dataset_records reports the parse failure elsewhere
+
+        try:
+            report = dataset_leakage(payload, chunks, embedder=embedder)
+        except Exception as exc:  # noqa: BLE001
+            failures.append(
+                f"{path.name}: leakage check did not run ({type(exc).__name__}: "
+                f"{str(exc)[:120]}). §10.2 is unenforced while this happens."
+            )
+            continue
+
+        report["dataset"] = path.name
+        reports.append(report)
+        print(f"    {path.name:38s} scored={report['scored']:3d} "
+              f"leaked={report['leaked']:2d} max_sim={report['max_similarity']}")
+        if report["leaked"]:
+            names = ", ".join(
+                f"{d['query_id']}({d['similarity']})" for d in report["detail"]
+                if d["leaked"]
+            )
+            failures.append(
+                f"{path.name}: {report['leaked']} row(s) exceed the §10.2 "
+                f"similarity threshold {report['threshold']} -> {names}. "
+                f"A question that restates its gold chunk retrieves trivially, "
+                f"so it inflates recall without measuring retrieval."
+            )
+
+    if report_path is not None and reports:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps({
+            "rule": "PROJECT_GOALS.md §10.2 — similarity(query, gold_chunk) > 0.9",
+            "datasets_checked": len(reports),
+            "total_scored": sum(r["scored"] for r in reports),
+            "total_leaked": sum(r["leaked"] for r in reports),
+            "passing": not failures,
+            "reports": reports,
+        }, indent=2, ensure_ascii=False), encoding="utf-8")
+    return failures
+
+
 def main() -> int:
-    print("[CI contracts] 1/4 import surface of src/")
+    print("[CI contracts] 1/5 import surface of src/")
     import_failures = check_imports()
     total = len(list(src_modules()))
     print(f"    {total - len(import_failures)}/{total} modules import cleanly")
     for line in import_failures:
         print(f"    FAIL {line}", file=sys.stderr)
 
-    print("[CI contracts] 2/4 corpus still matches the dataset fingerprints")
+    print("[CI contracts] 2/5 corpus still matches the dataset fingerprints")
     fingerprint_failures = check_corpus_fingerprint()
     for line in fingerprint_failures:
         print(f"    FAIL {line}", file=sys.stderr)
 
-    print("[CI contracts] 3/4 labeled datasets match the corpus")
+    print("[CI contracts] 3/5 labeled datasets match the corpus")
     chunks = json.loads(CHUNKS_PATH.read_text(encoding="utf-8")) if CHUNKS_PATH.exists() else []
     dataset_failures = check_datasets(chunks)
     for line in dataset_failures:
         print(f"    FAIL {line}", file=sys.stderr)
 
-    print("[CI contracts] 4/4 datasets are readable by the evaluator")
+    print("[CI contracts] 4/5 datasets are readable by the evaluator")
     schema_failures = check_evaluable_schema()
     for line in schema_failures:
         print(f"    FAIL {line}", file=sys.stderr)
 
+    print("[CI contracts] 5/5 no query restates its gold chunk (§10.2)")
+    leakage_report = REPO_ROOT / "results" / "metrics" / "query_leakage_report.json"
+    leakage_failures = check_query_leakage(chunks, report_path=leakage_report)
+    for line in leakage_failures:
+        print(f"    FAIL {line}", file=sys.stderr)
+
     failures = (import_failures + fingerprint_failures
-                + dataset_failures + schema_failures)
+                + dataset_failures + schema_failures + leakage_failures)
     if failures:
         print(f"\n[CI contracts] FAILED ({len(failures)} problem(s))", file=sys.stderr)
         return 1

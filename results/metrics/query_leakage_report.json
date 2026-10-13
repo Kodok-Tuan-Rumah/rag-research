@@ -1,0 +1,599 @@
+{
+  "rule": "PROJECT_GOALS.md §10.2 — similarity(query, gold_chunk) > 0.9",
+  "datasets_checked": 6,
+  "total_scored": 74,
+  "total_leaked": 0,
+  "passing": true,
+  "reports": [
+    {
+      "threshold": 0.9,
+      "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "total_rows": 14,
+      "scored": 14,
+      "skipped": 0,
+      "leaked": 0,
+      "max_similarity": 0.7803,
+      "detail": [
+        {
+          "query_id": "q01",
+          "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+          "gold_chunk_id": "tier3_llama2_rs_0086",
+          "similarity": 0.7803,
+          "leaked": false
+        },
+        {
+          "query_id": "q02",
+          "question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+          "similarity": 0.758,
+          "leaked": false
+        },
+        {
+          "query_id": "q19",
+          "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+          "gold_chunk_id": "tier3_llama2_rs_0098",
+          "similarity": 0.733,
+          "leaked": false
+        },
+        {
+          "query_id": "q09",
+          "question": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+          "gold_chunk_id": "tier2_self_instruct_rs_0062",
+          "similarity": 0.7227,
+          "leaked": false
+        },
+        {
+          "query_id": "q16",
+          "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+          "gold_chunk_id": "tier3_llama2_rs_0007",
+          "similarity": 0.7129,
+          "leaked": false
+        },
+        {
+          "query_id": "q10",
+          "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "similarity": 0.6935,
+          "leaked": false
+        },
+        {
+          "query_id": "q13",
+          "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+          "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "similarity": 0.6839,
+          "leaked": false
+        },
+        {
+          "query_id": "q20",
+          "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+          "gold_chunk_id": "tier3_llama2_rs_0152",
+          "similarity": 0.6825,
+          "leaked": false
+        },
+        {
+          "query_id": "q03",
+          "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+          "similarity": 0.6765,
+          "leaked": false
+        },
+        {
+          "query_id": "q11",
+          "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "similarity": 0.6548,
+          "leaked": false
+        },
+        {
+          "query_id": "q14",
+          "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+          "gold_chunk_id": "tier3_llama2_rs_0043",
+          "similarity": 0.6526,
+          "leaked": false
+        },
+        {
+          "query_id": "q06",
+          "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "similarity": 0.3649,
+          "leaked": false
+        },
+        {
+          "query_id": "q04",
+          "question": "How are high-confidence predictions filtered in the method described?",
+          "gold_chunk_id": "tier2_large_language_models_rs_0006",
+          "similarity": 0.3248,
+          "leaked": false
+        },
+        {
+          "query_id": "q15",
+          "question": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0046",
+          "similarity": 0.1332,
+          "leaked": false
+        }
+      ],
+      "dataset": "retrieval_eval_dataset.json"
+    },
+    {
+      "threshold": 0.9,
+      "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "total_rows": 13,
+      "scored": 13,
+      "skipped": 0,
+      "leaked": 0,
+      "max_similarity": 0.7803,
+      "detail": [
+        {
+          "query_id": "q01",
+          "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+          "gold_chunk_id": "tier3_llama2_rs_0086",
+          "similarity": 0.7803,
+          "leaked": false
+        },
+        {
+          "query_id": "q02",
+          "question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+          "similarity": 0.758,
+          "leaked": false
+        },
+        {
+          "query_id": "q19",
+          "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+          "gold_chunk_id": "tier3_llama2_rs_0098",
+          "similarity": 0.733,
+          "leaked": false
+        },
+        {
+          "query_id": "q09",
+          "question": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+          "gold_chunk_id": "tier2_self_instruct_rs_0062",
+          "similarity": 0.7227,
+          "leaked": false
+        },
+        {
+          "query_id": "q16",
+          "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+          "gold_chunk_id": "tier3_llama2_rs_0007",
+          "similarity": 0.7129,
+          "leaked": false
+        },
+        {
+          "query_id": "q10",
+          "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "similarity": 0.6935,
+          "leaked": false
+        },
+        {
+          "query_id": "q13",
+          "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+          "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "similarity": 0.6839,
+          "leaked": false
+        },
+        {
+          "query_id": "q20",
+          "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+          "gold_chunk_id": "tier3_llama2_rs_0152",
+          "similarity": 0.6825,
+          "leaked": false
+        },
+        {
+          "query_id": "q03",
+          "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+          "similarity": 0.6765,
+          "leaked": false
+        },
+        {
+          "query_id": "q11",
+          "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "similarity": 0.6548,
+          "leaked": false
+        },
+        {
+          "query_id": "q14",
+          "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+          "gold_chunk_id": "tier3_llama2_rs_0043",
+          "similarity": 0.6526,
+          "leaked": false
+        },
+        {
+          "query_id": "q06",
+          "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "similarity": 0.3649,
+          "leaked": false
+        },
+        {
+          "query_id": "q04",
+          "question": "How are high-confidence predictions filtered in the method described?",
+          "gold_chunk_id": "tier2_large_language_models_rs_0006",
+          "similarity": 0.3248,
+          "leaked": false
+        }
+      ],
+      "dataset": "retrieval_eval_dataset_v2.json"
+    },
+    {
+      "threshold": 0.9,
+      "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "total_rows": 10,
+      "scored": 10,
+      "skipped": 0,
+      "leaked": 0,
+      "max_similarity": 0.7803,
+      "detail": [
+        {
+          "query_id": "esti",
+          "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+          "gold_chunk_id": "tier3_llama2_rs_0086",
+          "similarity": 0.7803,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+          "gold_chunk_id": "tier3_llama2_rs_0098",
+          "similarity": 0.733,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+          "gold_chunk_id": "tier3_llama2_rs_0007",
+          "similarity": 0.7129,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "similarity": 0.6935,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+          "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "similarity": 0.6839,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+          "gold_chunk_id": "tier3_llama2_rs_0152",
+          "similarity": 0.6825,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+          "similarity": 0.6765,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "similarity": 0.6548,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+          "gold_chunk_id": "tier3_llama2_rs_0043",
+          "similarity": 0.6526,
+          "leaked": false
+        },
+        {
+          "query_id": "esti",
+          "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "similarity": 0.3649,
+          "leaked": false
+        }
+      ],
+      "dataset": "retrieval_eval_dataset_v3.json"
+    },
+    {
+      "threshold": 0.9,
+      "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "total_rows": 27,
+      "scored": 23,
+      "skipped": 4,
+      "leaked": 0,
+      "max_similarity": 0.7803,
+      "detail": [
+        {
+          "query_id": "fail_000",
+          "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+          "gold_chunk_id": "tier3_llama2_rs_0086",
+          "similarity": 0.7803,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_008",
+          "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+          "gold_chunk_id": "tier3_llama2_rs_0098",
+          "similarity": 0.733,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_007",
+          "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+          "gold_chunk_id": "tier3_llama2_rs_0007",
+          "similarity": 0.7129,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_003",
+          "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "similarity": 0.6935,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_005",
+          "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+          "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "similarity": 0.6839,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_009",
+          "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+          "gold_chunk_id": "tier3_llama2_rs_0152",
+          "similarity": 0.6825,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_001",
+          "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+          "similarity": 0.6765,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_004",
+          "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "similarity": 0.6548,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_006",
+          "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+          "gold_chunk_id": "tier3_llama2_rs_0043",
+          "similarity": 0.6526,
+          "leaked": false
+        },
+        {
+          "query_id": "par_005",
+          "question": "Can you explain What limitation do instruction-tuning wi?",
+          "gold_chunk_id": "tier2_self_instruct_rs_0062",
+          "similarity": 0.5215,
+          "leaked": false
+        },
+        {
+          "query_id": "par_002",
+          "question": "Can you explain How are FEVER class labels mapped for tr?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+          "similarity": 0.507,
+          "leaked": false
+        },
+        {
+          "query_id": "par_012",
+          "question": "Can you explain How is the inter-rater reliability (IRR)?",
+          "gold_chunk_id": "tier3_llama2_rs_0152",
+          "similarity": 0.4451,
+          "leaked": false
+        },
+        {
+          "query_id": "par_011",
+          "question": "Can you explain How does the HateBERT classifier assign?",
+          "gold_chunk_id": "tier3_llama2_rs_0098",
+          "similarity": 0.4357,
+          "leaked": false
+        },
+        {
+          "query_id": "par_006",
+          "question": "Can you explain Why may RAG-Token perform best at genera?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "similarity": 0.4338,
+          "leaked": false
+        },
+        {
+          "query_id": "par_008",
+          "question": "Can you explain How do attention mechanisms typically fu?",
+          "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "similarity": 0.4175,
+          "leaked": false
+        },
+        {
+          "query_id": "par_010",
+          "question": "Can you explain What are some limitations of human evalu?",
+          "gold_chunk_id": "tier3_llama2_rs_0007",
+          "similarity": 0.406,
+          "leaked": false
+        },
+        {
+          "query_id": "fail_002",
+          "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "similarity": 0.3649,
+          "leaked": false
+        },
+        {
+          "query_id": "par_000",
+          "question": "Can you explain What statistic was used to measure inter?",
+          "gold_chunk_id": "tier3_llama2_rs_0086",
+          "similarity": 0.3219,
+          "leaked": false
+        },
+        {
+          "query_id": "par_004",
+          "question": "Can you explain How does RAG compare to Fine-tuning (FT)?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "similarity": 0.3193,
+          "leaked": false
+        },
+        {
+          "query_id": "par_003",
+          "question": "Can you explain How are high-confidence predictions filt?",
+          "gold_chunk_id": "tier2_large_language_models_rs_0006",
+          "similarity": 0.3059,
+          "leaked": false
+        },
+        {
+          "query_id": "par_001",
+          "question": "Can you explain What is a notable issue that large langu?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+          "similarity": 0.261,
+          "leaked": false
+        },
+        {
+          "query_id": "par_009",
+          "question": "Can you explain How does the margin component affect the?",
+          "gold_chunk_id": "tier3_llama2_rs_0043",
+          "similarity": 0.2372,
+          "leaked": false
+        },
+        {
+          "query_id": "par_007",
+          "question": "Can you explain What percentage of cases did evaluators?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "similarity": 0.2285,
+          "leaked": false
+        }
+      ],
+      "dataset": "retrieval_eval_dataset_v4.json"
+    },
+    {
+      "threshold": 0.9,
+      "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "total_rows": 8,
+      "scored": 8,
+      "skipped": 0,
+      "leaked": 0,
+      "max_similarity": 0.7803,
+      "detail": [
+        {
+          "query_id": "q01",
+          "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+          "gold_chunk_id": "tier3_llama2_rs_0086",
+          "similarity": 0.7803,
+          "leaked": false
+        },
+        {
+          "query_id": "q19",
+          "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+          "gold_chunk_id": "tier3_llama2_rs_0098",
+          "similarity": 0.733,
+          "leaked": false
+        },
+        {
+          "query_id": "q10",
+          "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "similarity": 0.6935,
+          "leaked": false
+        },
+        {
+          "query_id": "q20",
+          "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+          "gold_chunk_id": "tier3_llama2_rs_0152",
+          "similarity": 0.6825,
+          "leaked": false
+        },
+        {
+          "query_id": "q11",
+          "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "similarity": 0.6548,
+          "leaked": false
+        },
+        {
+          "query_id": "q14",
+          "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+          "gold_chunk_id": "tier3_llama2_rs_0043",
+          "similarity": 0.6526,
+          "leaked": false
+        },
+        {
+          "query_id": "q06",
+          "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "similarity": 0.3649,
+          "leaked": false
+        },
+        {
+          "query_id": "q15",
+          "question": "What characteristic of RAG allows it to achieve strong results without requiring expensive pre-training?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0046",
+          "similarity": 0.1332,
+          "leaked": false
+        }
+      ],
+      "dataset": "retrieval_train_eval.json"
+    },
+    {
+      "threshold": 0.9,
+      "embed_model": "sentence-transformers/all-MiniLM-L6-v2",
+      "total_rows": 6,
+      "scored": 6,
+      "skipped": 0,
+      "leaked": 0,
+      "max_similarity": 0.758,
+      "detail": [
+        {
+          "query_id": "q02",
+          "question": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+          "gold_chunk_id": "tier1_advanced_rag_survey_rs_0002",
+          "similarity": 0.758,
+          "leaked": false
+        },
+        {
+          "query_id": "q09",
+          "question": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+          "gold_chunk_id": "tier2_self_instruct_rs_0062",
+          "similarity": 0.7227,
+          "leaked": false
+        },
+        {
+          "query_id": "q16",
+          "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+          "gold_chunk_id": "tier3_llama2_rs_0007",
+          "similarity": 0.7129,
+          "leaked": false
+        },
+        {
+          "query_id": "q13",
+          "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+          "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "similarity": 0.6839,
+          "leaked": false
+        },
+        {
+          "query_id": "q03",
+          "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+          "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+          "similarity": 0.6765,
+          "leaked": false
+        },
+        {
+          "query_id": "q04",
+          "question": "How are high-confidence predictions filtered in the method described?",
+          "gold_chunk_id": "tier2_large_language_models_rs_0006",
+          "similarity": 0.3248,
+          "leaked": false
+        }
+      ],
+      "dataset": "retrieval_holdout_eval.json"
+    }
+  ]
+}
