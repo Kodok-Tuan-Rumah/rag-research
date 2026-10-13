@@ -21,6 +21,11 @@
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },
+    "build_eval_dataset_v4.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
     "build_evidence_index.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
@@ -107,6 +112,11 @@
       "acknowledged_dead_paths": []
     },
     "fast_ingest.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "generate_eval_questions_llm.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
