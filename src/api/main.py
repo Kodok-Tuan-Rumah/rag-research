@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from src.api.config import settings
 from src.controller.policy_engine import PolicyEngine
+from src.controller.agent_state import MAX_RETRIEVAL_RETRIES
 from src.generation.generator import PARTIAL_TRUST_CHUNK_LIMIT, apply_partial_trust_policy
 from typing import Optional
 
@@ -56,15 +57,25 @@ async def lifespan(app: FastAPI):
             # flags now travel with the search call instead.
         )
 
+        index_info = store.require_nonempty_index(
+            expected_corpus_chunks=len(retriever.chunks),
+            consumer="FastAPI startup",
+        )
+        logger.info("[STARTUP] Qdrant index: %s", json.dumps(index_info, sort_keys=True))
+
         generator = GroqGenerator(model=settings.groq_model)
-        count = store.client.count(store.collection_name).count
-        logger.info(f"[STARTUP] Success — {count} vectors loaded into memory")
+        logger.info(
+            "[STARTUP] Success — %d vectors available in collection '%s'",
+            index_info["vector_count"], index_info["collection"],
+        )
         logger.info(
             f"[STARTUP] CONFIG — multi_query={settings.use_multi_query} | "
             f"hyde={settings.use_hyde} | model={settings.groq_model}"
         )
     except Exception as e:
         logger.error(f"[STARTUP] Critical Error: {str(e)}")
+        if store:
+            store.close()
         raise e
     yield
 
@@ -200,7 +211,8 @@ async def health():
     if not store:
         raise HTTPException(status_code=503, detail="Store not initialized")
     count = store.client.count(store.collection_name).count
-    reranker_model_loaded = getattr(retriever, "reranker", None) is not None
+    # Health polling must not load the optional CrossEncoder as a side effect.
+    reranker_model_loaded = getattr(retriever, "reranker_loaded", False)
     return {
         "status": "ready",
         "vectors": count,
@@ -220,16 +232,18 @@ async def generate_answer(req: GenerateRequest):
     t_api_start = time.time()
     retry_triggered = False
     rerank_ms = 0.0
-    plan = policy_engine.initial_plan(req.query)
-    query_type = plan.query_type
-    top_k = req.top_k if req.top_k is not None else plan.top_k_hint
+    query_type = "unknown"
+    top_k = req.top_k
 
     try:
-        # Retrieval is deliberately bounded: initial attempt plus one BM25-heavy retry.
+        plan = policy_engine.initial_plan(req.query)
+        query_type = plan.query_type
+        top_k = req.top_k if req.top_k is not None else plan.top_k_hint
+        # Shared with Agent: initial retrieval plus the configured retry limit.
         t_retrieval_start = time.time()
         chunks = []
         conf_eval = {"confidence_score": 0.0, "decision": "REJECT", "signals": {}}
-        for attempt in range(2):
+        for attempt in range(MAX_RETRIEVAL_RETRIES + 1):
             search_kwargs = {
                 "query": req.query,
                 "top_k": top_k,
@@ -239,7 +253,7 @@ async def generate_answer(req: GenerateRequest):
                 "use_multi_query": plan.allow_multi_query,
                 "use_hyde": plan.allow_hyde,
             }
-            if attempt == 1:
+            if attempt > 0:
                 retry_triggered = True
                 search_kwargs.update({"dense_weight": 0.3, "bm25_weight": 0.7})
 
@@ -259,6 +273,7 @@ async def generate_answer(req: GenerateRequest):
             conf_eval = confidence_engine.calculate_confidence(
                 chunks,
                 query_type=query_type,
+                query=req.query,
             )
             if chunks and conf_eval["decision"] != "REJECT":
                 break

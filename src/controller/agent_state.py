@@ -5,6 +5,10 @@ from enum import Enum
 from typing import Any
 
 
+# One retrieval retry is the shared Phase 1 contract for API and Agent paths.
+MAX_RETRIEVAL_RETRIES = 1
+
+
 class AgentStatus(Enum):
     RUNNING = "running"
     ANSWERED = "answered"
@@ -23,7 +27,7 @@ class AgentState:
     prev_top_score: float = 0.0
     stagnation_count: int = 0
     force_expand: bool = False
-    retry_attempted: bool = False
+    retrieval_retries: int = 0
     status: AgentStatus = AgentStatus.RUNNING
     source_chunk_id: str | None = None
     last_tool: str | None = None
@@ -31,6 +35,11 @@ class AgentState:
     # Machine-readable cause when the loop ends in a non-answer outcome, so
     # PROJECT_GOALS.md §4 failure classification is available to callers.
     failure_reason: str | None = None
+
+    @property
+    def retry_attempted(self) -> bool:
+        """Compatibility signal for callers that only need retry/no-retry."""
+        return self.retrieval_retries > 0
 
     def add_observation(self, tool: str, result: Any):
         self.scratchpad.append({

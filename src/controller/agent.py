@@ -3,7 +3,11 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 import logging
 
-from src.controller.agent_state import AgentState, AgentStatus
+from src.controller.agent_state import (
+    MAX_RETRIEVAL_RETRIES,
+    AgentState,
+    AgentStatus,
+)
 from src.controller.policy_engine import PolicyEngine, PlanHints
 from src.controller.confidence_engine import ConfidenceEngine
 from src.api.config import settings
@@ -220,9 +224,9 @@ class Agent:
 
             action = self._decide_next_action(signals, decision)
             if action == "REJECT":
-                if not state.retry_attempted:
+                if state.retrieval_retries < MAX_RETRIEVAL_RETRIES:
                     logger.info("[RETRY_CONTRACT] Attempt 1 rejected (confidence=%.3f). Triggering Attempt 2 retry per Section 3.4.", state.confidence_score)
-                    state.retry_attempted = True
+                    state.retrieval_retries += 1
                     state.force_expand = True
                     continue
                 else:
@@ -239,12 +243,12 @@ class Agent:
                 # the budget ran out — 3 attempts at the default max_steps=8,
                 # and scaling linearly with max_steps when scores moved enough to
                 # defeat stagnation detection.
-                if not state.retry_attempted:
+                if state.retrieval_retries < MAX_RETRIEVAL_RETRIES:
                     logger.info(
                         "[RETRY_CONTRACT] Retrieval unstable on attempt 1. "
                         "Triggering the single retry permitted by Section 3.4."
                     )
-                    state.retry_attempted = True
+                    state.retrieval_retries += 1
                     state.force_expand = True
                     continue
                 logger.warning(

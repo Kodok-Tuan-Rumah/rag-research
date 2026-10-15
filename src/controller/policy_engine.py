@@ -125,10 +125,13 @@ class PolicyEngine:
         }
 
     def initial_plan(self, query: str) -> PlanHints:
-        q_type = self.decide_query_type(query)
-        retrieval = self.retrieval_strategy(q_type)
-        reference = self.reference_policy(query, q_type)
-        generation = self.generation_policy(q_type)
+        # Resolve the shared policy once so the CLI's dict contract and the
+        # API/Agent's typed plan cannot drift in how query policy is computed.
+        resolved = self.resolve(query)
+        q_type = resolved["query_type"]
+        retrieval = resolved["retrieval"]
+        reference = resolved["reference"]
+        generation = resolved["generation"]
 
         preferred_strategy = "hybrid" if q_type != "factual" else "dense"
         expected_complexity = (

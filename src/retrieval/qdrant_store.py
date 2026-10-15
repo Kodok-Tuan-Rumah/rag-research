@@ -8,6 +8,7 @@ import uuid
 from dataclasses import dataclass
 from typing import List, Optional
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -58,12 +59,22 @@ class QdrantVectorStore:
 
         # ── Qdrant client ──────────────────────────────────────────
         if qdrant_url:
-            print(f"[QdrantStore] Connecting to Qdrant Cloud: {qdrant_url}")
+            self.backend = "remote"
+            self.storage_path = None
+            parsed_url = urlsplit(qdrant_url)
+            host = parsed_url.hostname or "unknown-host"
+            port = f":{parsed_url.port}" if parsed_url.port else ""
+            self.endpoint = f"{parsed_url.scheme}://{host}{port}"
+            print("[QdrantStore] Connecting to remote Qdrant")
             self.client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
         else:
-            print(f"[QdrantStore] Using local Qdrant storage: {qdrant_path}")
-            Path(qdrant_path).mkdir(parents=True, exist_ok=True)
-            self.client = QdrantClient(path=qdrant_path)
+            self.backend = "local"
+            resolved_path = Path(qdrant_path).expanduser().resolve()
+            self.storage_path = str(resolved_path)
+            self.endpoint = None
+            print(f"[QdrantStore] Using local Qdrant storage: {self.storage_path}")
+            resolved_path.mkdir(parents=True, exist_ok=True)
+            self.client = QdrantClient(path=str(resolved_path))
 
         # ── Embedder dari registry — tidak reload ──────────────────
         from src.retrieval.model_registry import ModelRegistry
@@ -83,6 +94,60 @@ class QdrantVectorStore:
         else:
             count = self.client.count(self.collection_name).count
             print(f"[QdrantStore] Collection '{self.collection_name}' exists ({count} vectors)")
+
+    def index_diagnostics(self) -> dict:
+        """Return the exact backend/collection and vector count used by this store."""
+        collection_names = {
+            collection.name
+            for collection in self.client.get_collections().collections
+        }
+        exists = self.collection_name in collection_names
+        count = (
+            int(self.client.count(self.collection_name, exact=True).count)
+            if exists else 0
+        )
+        return {
+            "backend": self.backend,
+            "endpoint": self.endpoint,
+            "storage_path": self.storage_path,
+            "collection": self.collection_name,
+            "collection_exists": exists,
+            "vector_count": count,
+            "vector_dim": self.vector_dim,
+        }
+
+    def require_nonempty_index(
+        self,
+        expected_corpus_chunks: int,
+        consumer: str,
+        query_probe: Optional[str] = None,
+    ) -> dict:
+        """Fail clearly when a configured retrieval corpus has no dense index."""
+        diagnostics = self.index_diagnostics()
+        probe_hits = self.search(query_probe, k=5) if query_probe else None
+        diagnostics["probe_hit_count"] = len(probe_hits) if probe_hits is not None else None
+        diagnostics["probe_chunk_ids"] = (
+            [hit.chunk_id for hit in probe_hits] if probe_hits is not None else []
+        )
+        if expected_corpus_chunks > 0 and diagnostics["vector_count"] == 0:
+            location = (
+                diagnostics["storage_path"]
+                if diagnostics["backend"] == "local"
+                else diagnostics["endpoint"]
+            )
+            message = (
+                f"Qdrant index is empty for {consumer}: collection="
+                f"'{diagnostics['collection']}', backend={diagnostics['backend']}, "
+                f"location={location}, exact_vector_count=0, "
+                f"dense_probe_hits={diagnostics['probe_hit_count']}, "
+                f"BM25 corpus chunks={expected_corpus_chunks}. "
+                "Dense retrieval cannot run against this empty index. Verify "
+                "QDRANT_URL/QDRANT_PATH/QDRANT_COLLECTION, then index the canonical "
+                "chunks before starting the query service."
+            )
+            self.close()
+            raise RuntimeError(message)
+        return diagnostics
 
     def index_chunks(self, chunks: List[dict], reset: bool = False) -> None:
         if reset:
@@ -169,9 +234,9 @@ class QdrantVectorStore:
 if __name__ == "__main__":
     import json, sys
 
-    chunks_path = Path("data/processed/chunks_semantic.json")
+    chunks_path = Path("data/processed/chunks_semantic_v2.json")
     if not chunks_path.exists():
-        print(f"[ERROR] {chunks_path} tidak ditemukan. Jalankan semantic_chunker.py dulu.")
+        print(f"[ERROR] Canonical corpus {chunks_path} tidak ditemukan. Jalankan semantic_chunker.py dulu.")
         sys.exit(1)
 
     with open(chunks_path, "r", encoding="utf-8") as f:

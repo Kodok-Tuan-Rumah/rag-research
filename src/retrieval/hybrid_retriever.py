@@ -27,6 +27,8 @@ from dotenv import load_dotenv
 logger = logging.getLogger("rag.retriever")
 load_dotenv()
 
+_RERANKER_UNSET = object()
+
 def rrf_fuse(
     all_hits: List[List],
     k: int = 60,
@@ -135,8 +137,9 @@ class MasterHybridRetriever:
             logger.info(f"[MasterRetriever] BM25 loaded: {len(self._chunks)} chunks")
 
         from src.retrieval.model_registry import ModelRegistry
-        self.reranker = ModelRegistry.get().reranker
-        logger.info(f"[MasterRetriever] Reranker loaded (disabled in baseline)")
+        self._model_registry = ModelRegistry.get()
+        self._reranker_override = _RERANKER_UNSET
+        logger.info("[MasterRetriever] Reranker configured for lazy, opt-in loading")
 
         api_key = os.getenv("GROQ_API_KEY")
         if api_key:
@@ -145,6 +148,24 @@ class MasterHybridRetriever:
         else:
             self.groq = None
             logger.info(f"[MasterRetriever] No GROQ_API_KEY available")
+
+    @property
+    def reranker(self):
+        # Tests and specialized callers can explicitly inject or disable it.
+        # The default path defers model loading until `_rerank()` is requested.
+        if self._reranker_override is not _RERANKER_UNSET:
+            return self._reranker_override
+        return self._model_registry.reranker
+
+    @reranker.setter
+    def reranker(self, value):
+        self._reranker_override = value
+
+    @property
+    def reranker_loaded(self) -> bool:
+        if self._reranker_override is not _RERANKER_UNSET:
+            return self._reranker_override is not None
+        return self._model_registry.reranker_loaded
 
     def _is_reference_chunk(self, chunk) -> bool:
         return _cf_is_reference_chunk(chunk)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import threading
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from src.api.config import settings
 
@@ -29,12 +30,31 @@ class ModelRegistry:
         print(f"[ModelRegistry] Loading embedder: {EMBED_MODEL}")
         self.embedder = SentenceTransformer(EMBED_MODEL)
         _embedder_probe(self.embedder, EMBED_MODEL)
-        print("[ModelRegistry] Loading reranker...")
-        self.reranker = CrossEncoder(RERANK_MODEL)
-        probe = self.reranker.predict([["q", "a"]], batch_size=1)
-        if not np.all(np.isfinite(np.asarray(probe, dtype=float))):
-            raise RuntimeError(f"[ModelRegistry] Reranker '{RERANK_MODEL}' produced non-finite scores")
-        print("[ModelRegistry] All models loaded. Will reuse for all queries.")
+        self._reranker = None
+        self._reranker_lock = threading.Lock()
+        print("[ModelRegistry] Embedder loaded. Reranker will load on first use.")
+
+    @property
+    def reranker(self):
+        """Load the optional cross-encoder only when a caller requests reranking."""
+        if self._reranker is None:
+            with self._reranker_lock:
+                if self._reranker is None:
+                    print(f"[ModelRegistry] Loading reranker: {RERANK_MODEL}")
+                    reranker = CrossEncoder(RERANK_MODEL)
+                    probe = reranker.predict([["q", "a"]], batch_size=1)
+                    if not np.all(np.isfinite(np.asarray(probe, dtype=float))):
+                        raise RuntimeError(
+                            f"[ModelRegistry] Reranker '{RERANK_MODEL}' produced non-finite scores"
+                        )
+                    self._reranker = reranker
+                    print("[ModelRegistry] Reranker loaded and ready for reuse.")
+        return self._reranker
+
+    @property
+    def reranker_loaded(self) -> bool:
+        """Report model state without triggering the optional model load."""
+        return self._reranker is not None
 
     @classmethod
     def get(cls) -> "ModelRegistry":

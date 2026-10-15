@@ -62,6 +62,19 @@ def test_run_single_query_baseline_includes_max_ref_budget():
     import scripts.run_single_query as module
 
     class DummyVectorStore:
+        def require_nonempty_index(
+            self, expected_corpus_chunks, consumer, query_probe=None
+        ):
+            return {
+                "backend": "test",
+                "collection": "test-collection",
+                "vector_count": expected_corpus_chunks,
+                "endpoint": "in-memory",
+                "storage_path": "in-memory",
+                "probe_hit_count": 1,
+                "probe_chunk_ids": ["c1"],
+            }
+
         def search(self, query, k):
             long_text = "dummy body text " * 10
             long_ref = "dummy reference text " * 10
@@ -85,6 +98,7 @@ def test_run_single_query_baseline_includes_max_ref_budget():
     class DummyMasterHybridRetriever:
         def __init__(self, vector_store, *args, **kwargs):
             self.vector_store = vector_store
+            self.chunks = []
 
         def dense_search(self, query, k):
             return self.vector_store.search(query, k=k)
