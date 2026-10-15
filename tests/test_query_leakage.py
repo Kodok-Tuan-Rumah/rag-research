@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.evaluation.query_leakage import (
+    default_embedder,
     LEAKAGE_THRESHOLD,
     cosine_similarities,
     dataset_leakage,
@@ -207,6 +208,39 @@ def test_find_leaks_accepts_a_bare_list():
     assert report["leaked"] == 1
 
 
+def _checked_in_datasets() -> list[tuple[str, dict]]:
+    """Every evaluation dataset this checkout actually has.
+
+    Globbed rather than named, because §10.2 binds whatever is shipped: pinning
+    dataset v4 alone would have kept this test green while the other five
+    datasets leaked unnoticed. The corpus is still checked explicitly, because
+    a missing corpus is a broken checkout rather than an empty result.
+    """
+    import json
+
+    corpus_path = ROOT / "data" / "processed" / "chunks_semantic_v2.json"
+    if not corpus_path.exists():
+        pytest.skip("corpus not present")
+    chunks = json.loads(corpus_path.read_text(encoding="utf-8"))
+
+    eval_dir = ROOT / "data" / "evaluation"
+    found = []
+    for path in sorted(eval_dir.glob("retrieval_*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, list) or isinstance(payload.get("records"), list):
+            found.append((path.name, payload))
+
+    if not found:
+        pytest.skip(
+            "no evaluation dataset is checked in — nothing for §10.2 to score. "
+            "An absent dataset is a missing input, not a clean result."
+        )
+    return found, chunks
+
+
 def test_real_datasets_are_not_leaking():
     """The shipped datasets must pass §10.2 under the real encoder.
 
@@ -214,24 +248,21 @@ def test_real_datasets_are_not_leaking():
     tests above still run offline. A gate that cannot run must not report
     success, which is why this skips rather than passing.
     """
-    import json
-
-    chunks_path = ROOT / "data" / "processed" / "chunks_semantic_v2.json"
-    if not chunks_path.exists():
-        pytest.skip("corpus not present")
-    chunks = json.loads(chunks_path.read_text(encoding="utf-8"))
-    payload = json.loads(
-        (ROOT / "data" / "evaluation" / "retrieval_eval_dataset_v4.json")
-        .read_text(encoding="utf-8")
-    )
+    datasets, chunks = _checked_in_datasets()
 
     try:
-        report = dataset_leakage(payload, chunks)
+        embedder = default_embedder()
     except Exception as exc:  # noqa: BLE001
         pytest.skip(f"embedder unavailable: {type(exc).__name__}: {str(exc)[:100]}")
 
-    leaked = [d for d in report["detail"] if d["leaked"]]
-    assert not leaked, (
-        f"{len(leaked)} row(s) in retrieval_eval_dataset_v4.json exceed "
-        f"§10.2: " + ", ".join(f"{d['query_id']}({d['similarity']})" for d in leaked[:5])
+    offenders: list[str] = []
+    for name, payload in datasets:
+        report = dataset_leakage(payload, chunks, embedder=embedder)
+        offenders += [
+            f"{name}:{d['query_id']}({d['similarity']})"
+            for d in report["detail"] if d["leaked"]
+        ]
+
+    assert not offenders, (
+        "rows exceeding the §10.2 similarity threshold: " + ", ".join(offenders[:8])
     )
