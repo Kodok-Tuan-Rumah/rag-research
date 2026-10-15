@@ -180,12 +180,64 @@ class ConfidenceEngine:
             return None
         return round(len(answer_words & context_words) / len(answer_words), 4)
 
+    @staticmethod
+    def _content_terms(text: Optional[str]) -> set[str]:
+        """Return question/evidence terms after removing common RAG filler words."""
+        if not text:
+            return set()
+        stopwords = {
+            "the", "a", "an", "is", "are", "was", "were", "do", "does", "did",
+            "what", "which", "who", "when", "where", "why", "how", "say", "says",
+            "about", "paper", "document", "according", "describe", "describes",
+            "explain", "tell", "me", "please", "in", "on", "at", "to", "for", "of",
+            "and", "or", "but", "it", "this", "that", "with", "as", "by", "from",
+            "be", "has", "have", "can", "could", "would", "should", "their", "its",
+        }
+        return {
+            token for token in re.findall(r"[a-z0-9]+", text.lower())
+            if len(token) > 1 and token not in stopwords
+        }
+
+    def _evidence_relevance(self, query: Optional[str], chunks: List[Any]) -> Optional[float]:
+        """Measure whether an individual retrieved passage addresses query terms.
+
+        Use the best per-chunk coverage, rather than pooling all chunks: unrelated
+        passages must not collectively look like one passage that answers the query.
+        """
+        query_terms = self._content_terms(query)
+        if not query_terms:
+            return None
+        scores = []
+        for chunk in chunks[:5]:
+            if isinstance(chunk, dict):
+                text = chunk.get("text", "")
+            else:
+                text = getattr(chunk, "text", "")
+            evidence_terms = self._content_terms(text)
+            if evidence_terms:
+                scores.append(len(query_terms & evidence_terms) / len(query_terms))
+        return round(max(scores), 4) if scores else 0.0
+
+    @staticmethod
+    def _is_broad_topic_query(query: Optional[str]) -> bool:
+        """Detect open-ended topic prompts that need a focused passage to answer."""
+        if not query:
+            return False
+        normalized = re.sub(r"[^a-z0-9 ]", " ", query.lower())
+        normalized = " ".join(normalized.split())
+        broad_phrases = (
+            "what does the paper say about", "what does this paper say about",
+            "what does the document say about", "tell me about", "what about",
+        )
+        return any(phrase in normalized for phrase in broad_phrases)
+
     def calculate_confidence(
         self,
         chunks: list[Any],
         answer: Optional[str] = None,
         contexts: Optional[List[str]] = None,
         query_type: Optional[str] = None,
+        query: Optional[str] = None,
     ) -> Dict[str, Any]:
         if not chunks:
             return {
@@ -251,6 +303,7 @@ class ConfidenceEngine:
         score_level = float(np.mean(normalized_scores[:3])) if len(normalized_scores) >= 3 else normalized_scores[0]
         entropy = self._calculate_entropy(normalized_scores)
         agreement = self._source_agreement(valid_chunks)
+        evidence_relevance = self._evidence_relevance(query, valid_chunks)
 
         base_confidence = (
             0.45 * top_score_norm +
@@ -275,6 +328,20 @@ class ConfidenceEngine:
 
         confidence_score = max(0.0, base_confidence - penalty)
 
+        # Retrieval scores indicate ranking, not whether a passage answers the
+        # user's question. Weak per-passage query coverage or an open-ended topic
+        # prompt spread across multiple documents cannot authorize GENERATE.
+        broad_topic_with_mixed_sources = (
+            self._is_broad_topic_query(query)
+            and len({
+                (chunk.get("doc_id") or chunk.get("metadata", {}).get("doc_id"))
+                if isinstance(chunk, dict)
+                else getattr(chunk, "doc_id", None)
+                for chunk in valid_chunks[:5]
+            } - {None}) >= 3
+        )
+        weak_evidence = evidence_relevance is not None and evidence_relevance < 0.25
+
         # --- Context overlap + conflicting signal detection (Goals 5.3 / 12.2) ---
         context_overlap = self._context_overlap(answer, contexts)
         conflicts = []
@@ -286,6 +353,16 @@ class ConfidenceEngine:
             if top_score_norm < 0.4 and context_overlap > 0.8:
                 confidence_score -= 0.10
                 conflicts.append("low_retrieval_high_overlap")
+
+        # Apply evidence gates last so answer/context overlap cannot raise a
+        # weakly supported or mixed-source broad query back into GENERATE.
+        if weak_evidence:
+            confidence_score = min(confidence_score, self.reject_threshold)
+        elif broad_topic_with_mixed_sources:
+            confidence_score = min(
+                confidence_score,
+                max(self.reject_threshold, self.partial_threshold - 1e-6),
+            )
 
         confidence_score = max(0.0, min(1.0, confidence_score))
 
@@ -320,6 +397,9 @@ class ConfidenceEngine:
                 "entropy": round(entropy, 4),
                 "agreement": round(agreement, 4),
                 "context_overlap": context_overlap,
+                "evidence_relevance": evidence_relevance,
+                "broad_topic_with_mixed_sources": broad_topic_with_mixed_sources,
+                "weak_evidence": weak_evidence,
                 "conflicts": conflicts,
                 "query_type": query_type,
                 "spurious_match": patterns["spurious_match"],

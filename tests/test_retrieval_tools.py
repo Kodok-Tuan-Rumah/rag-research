@@ -35,7 +35,7 @@ def test_assess_retrieval_quality_passes_query_type():
         def __init__(self):
             self.query_type = None
 
-        def calculate_confidence(self, chunks, query_type=None):
+        def calculate_confidence(self, chunks, query_type=None, query=None):
             self.query_type = query_type
             return {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}}
 

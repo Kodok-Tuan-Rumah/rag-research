@@ -75,3 +75,46 @@ def test_invalid_scores_do_not_shift_valid_chunk_alignment():
     ]
 
     assert engine.calculate_confidence(chunks)["signals"]["agreement"] == 1.0
+
+
+def test_broad_question_with_mixed_sources_cannot_reach_generate():
+    engine = _engine()
+    chunks = [
+        {
+            "rerank_score": score,
+            "doc_id": doc,
+            "text": "This paper discusses performance measurements and evaluation results.",
+        }
+        for score, doc in ((5.0, "paper-a"), (4.0, "paper-b"), (3.0, "paper-c"))
+    ]
+
+    result = engine.calculate_confidence(
+        chunks,
+        answer="The paper discusses performance measurements and evaluation results.",
+        contexts=[chunk["text"] for chunk in chunks],
+        query="What does the paper say about performance?",
+    )
+
+    assert result["signals"]["broad_topic_with_mixed_sources"] is True
+    assert result["decision"] == "PARTIAL_TRUST"
+
+
+def test_lexically_unrelated_evidence_cannot_reach_generate():
+    engine = _engine()
+    chunks = [
+        {
+            "rerank_score": score,
+            "doc_id": "same-paper",
+            "text": "The training corpus contains examples of language model prompts.",
+        }
+        for score in (5.0, 4.0, 3.0)
+    ]
+
+    result = engine.calculate_confidence(
+        chunks,
+        query="How does the authors calculate inter rater reliability?",
+    )
+
+    assert result["signals"]["evidence_relevance"] < 0.25
+    assert result["signals"]["weak_evidence"] is True
+    assert result["decision"] != "GENERATE"

@@ -14,6 +14,7 @@ from scripts.run_single_query import should_skip_reranker
 from src.generation.generator import (
     GroqGenerator,
     _make_abstain_response,
+    check_answer_evidence,
     sanity_check_answer,
     should_abort_before_generation,
 )
@@ -27,6 +28,132 @@ def test_sanity_check_rejects_verbatim_reference_dump():
 
     assert ok is False
     assert "reference_dump" in reason.lower()
+
+
+def test_answer_evidence_check_rejects_partial_topic_match():
+    answer = (
+        "HateBERT reported 94 percent accuracy on the benchmark and outperformed "
+        "all baseline systems."
+    )
+    chunks = [{"text": "The study evaluates toxicity classification using HateBERT."}]
+
+    ok, reason = check_answer_evidence(answer, chunks)
+
+    assert ok is False
+    assert reason.startswith("insufficient_evidence:")
+
+
+def test_generator_abstains_with_reason_for_unsupported_specific_answer():
+    chunk = {
+        "chunk_id": "c1",
+        "doc_id": "paper-a",
+        "text": "The study evaluates toxicity classification using HateBERT.",
+        "retrieval_score": 0.8,
+        "metadata": {"section": "body"},
+    }
+
+    class Client:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+        def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                content=(
+                    '{"answer":"HateBERT reported 94 percent accuracy on the benchmark '
+                    'and outperformed all baseline systems.","status":"ANSWERED",'
+                    '"confidence_score":0.99,"supporting_sources":["[Source 1]"]}'
+                )
+            ))])
+
+    class HighConfidence:
+        def calculate_confidence(self, chunks, **kwargs):
+            return {"confidence_score": 0.95, "decision": "GENERATE", "signals": {}}
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = HighConfidence()
+
+    result = generator.generate(
+        "What was HateBERT's benchmark accuracy?",
+        [chunk],
+        retrieval_decision="GENERATE",
+        retrieval_confidence=0.95,
+    )
+
+    assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.answer == "INSUFFICIENT_CONTEXT"
+    assert result.reason.startswith("insufficient_evidence:")
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "What does the paper say about performance?",
+        "Tell me about performance.",
+        "What about model performance?",
+    ],
+    ids=["p1_abstain_04", "tell-me-about", "what-about"],
+)
+def test_broad_topic_query_with_mixed_relevant_context_abstains(query):
+    chunks = [
+        {
+            "chunk_id": f"chunk-{index}",
+            "doc_id": doc_id,
+            "text": text,
+            "retrieval_score": score,
+            "metadata": {"section": "body"},
+        }
+        for index, (doc_id, text, score) in enumerate([
+            (
+                "paper-a",
+                "The paper describes performance evaluation of retrieval systems "
+                "using recall and ranking metrics.",
+                0.030,
+            ),
+            (
+                "paper-b",
+                "Model benchmarks report accuracy on knowledge and reasoning tasks "
+                "across datasets.",
+                0.020,
+            ),
+            (
+                "paper-c",
+                "The results section compares performance across several datasets "
+                "and model configurations.",
+                0.010,
+            ),
+        ], 1)
+    ]
+
+    class Client:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+        def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                content=(
+                    '{"answer":"Performance is evaluated with recall metrics across datasets.",'
+                    '"status":"ANSWERED","confidence_score":0.99,'
+                    '"supporting_sources":["[Source 1]"]}'
+                )
+            ))])
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = ConfidenceEngine()
+
+    result = generator.generate(
+        query,
+        chunks,
+        retrieval_decision="GENERATE",
+        retrieval_confidence=0.9,
+    )
+
+    assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.answer == "INSUFFICIENT_CONTEXT"
+    assert "broad topic question" in result.reason
 
 
 def test_confidence_engine_rejects_non_finite_scores():
@@ -218,6 +345,7 @@ def test_factual_escalation_retries_once_and_emits_log_schema(monkeypatch, tmp_p
     class FakeRetriever:
         def __init__(self):
             self.retry_calls = []
+            self.chunks = []
             self.vector_store = SimpleNamespace(
                 search=lambda query, k: initial_chunks
             )
@@ -252,7 +380,7 @@ def test_factual_escalation_retries_once_and_emits_log_schema(monkeypatch, tmp_p
             return self.responses.pop(0)
 
     class FakeConfidenceEngine:
-        def calculate_confidence(self, chunks):
+        def calculate_confidence(self, chunks, **kwargs):
             return {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}}
 
     class FakePolicyEngine:
@@ -267,7 +395,18 @@ def test_factual_escalation_retries_once_and_emits_log_schema(monkeypatch, tmp_p
     retriever = FakeRetriever()
     generator = FakeGenerator()
     overlap_scores = iter([0.1, 0.8, 0.8])
-    monkeypatch.setattr(runner, "QdrantVectorStore", lambda: object())
+    fake_store = SimpleNamespace(
+        require_nonempty_index=lambda **kwargs: {
+            "backend": "test",
+            "collection": "test",
+            "vector_count": 796,
+            "endpoint": None,
+            "storage_path": None,
+            "probe_hit_count": 1,
+            "probe_chunk_ids": ["initial"],
+        }
+    )
+    monkeypatch.setattr(runner, "QdrantVectorStore", lambda: fake_store)
     monkeypatch.setattr(runner, "MasterHybridRetriever", lambda vector_store: retriever)
     monkeypatch.setattr(runner, "GroqGenerator", lambda model: generator)
     monkeypatch.setattr(runner, "Groq", lambda **kwargs: object())

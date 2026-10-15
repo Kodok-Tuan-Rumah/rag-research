@@ -75,6 +75,7 @@ class RetrievalTools:
         confidence = self.confidence_engine.calculate_confidence(
             chunks,
             query_type=query_type,
+            query=query,
         )
         return {"tool": "assess_retrieval_quality", "query": query, "confidence": confidence}
 

@@ -256,7 +256,7 @@ def test_gate_accepts_a_positive_top_score():
     def _create(**kwargs):
         return SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(
-                content='{"answer":"grounded","status":"ANSWERED",'
+                content='{"answer":"Hybrid search combines dense retrieval with BM25 and fuses them.","status":"ANSWERED",'
                         '"confidence_score":0.8,"supporting_sources":["[Source 1]"]}'
             ))]
         )

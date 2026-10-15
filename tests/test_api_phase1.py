@@ -27,7 +27,7 @@ class FakeConfidenceEngine:
         self.decisions = decisions
         self.query_types = []
 
-    def calculate_confidence(self, chunks, query_type=None):
+    def calculate_confidence(self, chunks, query_type=None, query=None):
         self.query_types.append(query_type)
         return self.decisions.pop(0)
 

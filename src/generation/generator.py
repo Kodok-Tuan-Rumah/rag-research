@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import json
 import os
+import re
 import time
 from src.api.config import settings
 from dataclasses import dataclass, asdict
@@ -267,6 +268,69 @@ def sanity_check_answer(answer: str, chunks: list, verbatim_threshold: float = 0
             return False, f"reference_dump: word_overlap={overlap:.2f} di chunk {i+1}"
     return True, "ok"
 
+
+def check_answer_evidence(
+    answer: str,
+    chunks: list,
+    min_sentence_coverage: float = 0.35,
+) -> tuple[bool, str]:
+    """Reject generated statements with too little lexical support in any chunk.
+
+    Each sentence is compared with each retrieved passage independently. This
+    avoids treating a collection of loosely related passages as if one passage
+    supported the whole answer. It is a conservative lexical guard, not an NLI
+    entailment model; callers should keep the threshold configurable.
+    """
+    if not answer or not chunks:
+        return False, "insufficient_evidence: answer or evidence is empty"
+
+    stopwords = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "do", "does", "did", "has", "have", "had", "what", "which", "who",
+        "when", "where", "why", "how", "and", "or", "but", "if", "then",
+        "this", "that", "these", "those", "it", "its", "they", "them", "their",
+        "with", "from", "for", "to", "of", "in", "on", "at", "by", "as",
+        "can", "could", "would", "should", "will", "may", "might", "must",
+        "also", "than", "into", "using", "use", "used", "based", "according",
+    }
+
+    def content_terms(text: str) -> set[str]:
+        return {
+            token for token in re.findall(r"[a-z0-9]+", text.lower())
+            if len(token) > 1 and token not in stopwords
+        }
+
+    evidence_terms = []
+    for chunk in chunks:
+        text = _get_attr(chunk, "text", "") or ""
+        terms = content_terms(text)
+        if terms:
+            evidence_terms.append(terms)
+    if not evidence_terms:
+        return False, "insufficient_evidence: retrieved chunks contain no usable text"
+
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?;])\s+", answer) if part.strip()]
+    if not sentences:
+        sentences = [answer.strip()]
+
+    weak_sentences = []
+    for sentence in sentences:
+        terms = content_terms(sentence)
+        if not terms:
+            weak_sentences.append((sentence, 0.0))
+            continue
+        best_coverage = max(len(terms & passage) / len(terms) for passage in evidence_terms)
+        if best_coverage < min_sentence_coverage:
+            weak_sentences.append((sentence, best_coverage))
+
+    if weak_sentences:
+        examples = "; ".join(
+            f"'{sentence[:80]}' ({coverage:.2f})"
+            for sentence, coverage in weak_sentences[:2]
+        )
+        return False, f"insufficient_evidence: answer statement(s) lack chunk support: {examples}"
+    return True, "ok"
+
 # Retrieval Hit Guard
 def _make_abstain_response(
     query: str,
@@ -524,6 +588,20 @@ class GroqGenerator:
             )
         if status == "INSUFFICIENT_CONTEXT":
             answer = "I'm sorry, I couldn't find the answer in the provided context."
+        elif status == "ANSWERED":
+            evidence_ok, evidence_reason = check_answer_evidence(answer, filtered_chunks)
+            if not evidence_ok:
+                return _make_abstain_response(
+                    query=query,
+                    chunks=chunks,
+                    model=self.model,
+                    reason=evidence_reason,
+                    context_used=context,
+                    context_chunk_ids=context_chunk_ids,
+                    llm_confidence_score=confidence,
+                    retrieval_confidence_score=retrieval_confidence,
+                    retrieval_decision=retrieval_decision,
+                )
 
         latency_context_ms = round((t1 - t0_total) * 1000, 2)
         latency_gen_ms     = round((t2 - t1) * 1000, 2)
@@ -543,10 +621,29 @@ class GroqGenerator:
             answer=answer,
             contexts=[(_get_attr(c, "text", "") or "") for c in filtered_chunks],
             query_type=query_type,
+            query=query,
         )
         final_confidence = float(confidence_result.get("confidence_score", 0.0))
         final_confidence = max(0.0, min(1.0, final_confidence))
         confidence_result["confidence_score"] = final_confidence
+
+        if confidence_result.get("signals", {}).get("broad_topic_with_mixed_sources"):
+            return _make_abstain_response(
+                query=query,
+                chunks=chunks,
+                model=self.model,
+                reason=(
+                    "insufficient_evidence: broad topic question retrieved mixed-source "
+                    "context without a focused passage"
+                ),
+                context_used=context,
+                context_chunk_ids=context_chunk_ids,
+                llm_confidence_score=confidence,
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
+                post_generation_confidence_score=final_confidence,
+                post_generation_decision=confidence_result.get("decision"),
+            )
 
         if should_abort_before_generation(
             confidence_score=final_confidence,
