@@ -1,4 +1,4 @@
-.PHONY: setup rust-build ingest index eval viz phase1-smoke all clean
+.PHONY: setup rust-build ingest index eval viz phase1-smoke phase1-review phase1-check all clean
 
 # Vars
 PYTHON = python
@@ -26,6 +26,15 @@ viz:
 
 phase1-smoke:
 	$(PYTHON) $(SCRIPTS)/phase1_smoke.py
+
+# Annotate human_review for the 20 acceptance cases. Reads the existing report
+# and shows only the chunks the generator actually placed in the prompt.
+# No LLM call. Finish with `make phase1-check`.
+phase1-review:
+	$(PYTHON) $(SCRIPTS)/phase1_smoke_review.py
+
+phase1-check:
+	$(PYTHON) $(SCRIPTS)/phase1_smoke.py --check-report results/metrics/phase1_smoke.json
 
 # THE MASTER COMMAND
 all: rust-build ingest index eval viz

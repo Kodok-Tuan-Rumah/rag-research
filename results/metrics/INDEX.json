@@ -1,5 +1,5 @@
 {
-  "total_files": 126,
+  "total_files": 129,
   "by_group": {
     "Ablations": [
       {
@@ -111,6 +111,12 @@
         "bytes": 2804,
         "ext": "json",
         "sha256_12": "c0fdaa9afa5e"
+      },
+      {
+        "name": "gold_data_audit_v4.json",
+        "bytes": 8175,
+        "ext": "json",
+        "sha256_12": "4ab8ff8eab88"
       },
       {
         "name": "gold_loss_by_stage.json",
@@ -333,6 +339,14 @@
         "sha256_12": "229fb1018576"
       }
     ],
+    "Phase 1 — generation and abstention acceptance": [
+      {
+        "name": "phase1_smoke.json",
+        "bytes": 650117,
+        "ext": "json",
+        "sha256_12": "58fb9c54acf2"
+      }
+    ],
     "Phase F — reranker ablation": [
       {
         "name": "fase_e_reranker_analysis.md",
@@ -516,9 +530,9 @@
       },
       {
         "name": "j6_documentation_drift.md",
-        "bytes": 1448,
+        "bytes": 2066,
         "ext": "md",
-        "sha256_12": "fff45686ae10"
+        "sha256_12": "6287bf52abfb"
       },
       {
         "name": "j7_architecture_readiness_gate.md",
@@ -787,6 +801,12 @@
         "sha256_12": "5c8ad41d7a88"
       },
       {
+        "name": "query_leakage_report.json",
+        "bytes": 46123,
+        "ext": "json",
+        "sha256_12": "967d48f2ccd4"
+      },
+      {
         "name": "radar_chart.png",
         "bytes": 110077,
         "ext": "png",
@@ -824,8 +844,11 @@
     "fase_i1_dense_failure_analysis.json",
     "gold_data_audit.json",
     "gold_data_audit_v3.json",
+    "gold_data_audit_v4.json",
     "k1_baseline_freeze_v1_14q.json",
     "k1_baseline_freeze_v2_verify.json",
+    "phase1_smoke.json",
+    "query_leakage_report.json",
     "ragas_phase2_postfix.json",
     "ragas_phase2_postfix_8b.json",
     "ragas_results.json",

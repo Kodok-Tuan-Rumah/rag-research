@@ -1,0 +1,290 @@
+{
+  "dataset_version": "phase1-smoke-v1",
+  "created_from": "human_selected_v4_span_verified_plus_manual_attention_regression_and_out_of_corpus_case",
+  "expected_cases": 20,
+  "expected_answerable": 15,
+  "expected_abstain": 5,
+  "expected_qdrant_vectors": 796,
+  "canonical_chunks_sha256": "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6",
+  "notes": "Fixed Phase 1 full-generation acceptance set. Human review required for answer correctness and grounding; this small set is not a calibrated quality evaluation.",
+  "records": [
+    {
+      "query_id": "p1_answer_01",
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "gold_answer": "The Gwets AC1/2 statistic was used to measure inter-rater reliability, and its score (Gwets AC2) varies between 0.37 and 0.55 on the 7-point Likert sc",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_000",
+        "gold_chunk_id": "tier3_llama2_rs_0086"
+      }
+    },
+    {
+      "query_id": "p1_answer_02",
+      "question": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "gold_answer": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_001",
+        "gold_chunk_id": "tier1_rag_lewis2020_rs_0023"
+      }
+    },
+    {
+      "query_id": "p1_answer_03",
+      "question": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "gold_answer": "RAG is ideal for precise information retrieval tasks, while FT is suitable for scenarios requiring replication of specific structures, styles, or patt",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_002",
+        "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028"
+      }
+    },
+    {
+      "query_id": "p1_answer_04",
+      "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "gold_answer": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_003",
+        "gold_chunk_id": "tier1_rag_lewis2020_rs_0027"
+      }
+    },
+    {
+      "query_id": "p1_answer_05",
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "gold_answer": "RAG was more factual in 42.7% of cases.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_004",
+        "gold_chunk_id": "tier1_rag_lewis2020_rs_0026"
+      }
+    },
+    {
+      "query_id": "p1_answer_06",
+      "question": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "gold_answer": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences, and are often used in conjuncti",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_005",
+        "gold_chunk_id": "tier3_attention_all_you_need_rs_0008"
+      }
+    },
+    {
+      "query_id": "p1_answer_07",
+      "question": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "gold_answer": "The margin component can improve Helpfulness reward model accuracy especially on samples where two responses are more separable.",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_006",
+        "gold_chunk_id": "tier3_llama2_rs_0043"
+      }
+    },
+    {
+      "query_id": "p1_answer_08",
+      "question": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "gold_answer": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_007",
+        "gold_chunk_id": "tier3_llama2_rs_0007"
+      }
+    },
+    {
+      "query_id": "p1_answer_09",
+      "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "gold_answer": "The HateBERT classifier scores each line of a document separately and averages them to assign a document score.",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_008",
+        "gold_chunk_id": "tier3_llama2_rs_0098"
+      }
+    },
+    {
+      "query_id": "p1_answer_10",
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "gold_answer": "The inter-rater reliability (IRR) is measured using Gwets AC1/2 statistic, and the average IRR score for Llama 2-Chat annotations is 0.92 according to",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "gold_doc_id": "tier3_llama2",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "fail_009",
+        "gold_chunk_id": "tier3_llama2_rs_0152"
+      }
+    },
+    {
+      "query_id": "p1_answer_11",
+      "question": "How many parameters does the LLM used in the experiments have?",
+      "gold_answer": "540 billion parameters",
+      "gold_chunk_id": "tier2_large_language_models_rs_0042",
+      "gold_doc_id": "tier2_large_language_models",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "llm_000",
+        "gold_chunk_id": "tier2_large_language_models_rs_0042"
+      }
+    },
+    {
+      "query_id": "p1_answer_12",
+      "question": "What BLEU score did the Transformer model achieve on the WMT 2014 English-to-French translation task?",
+      "gold_answer": "41.8",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0002",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "llm_004",
+        "gold_chunk_id": "tier3_attention_all_you_need_rs_0002"
+      }
+    },
+    {
+      "query_id": "p1_answer_13",
+      "question": "What component is directly substituted to generate relevant documents according to a query?",
+      "gold_answer": "retriever module",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0053",
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "llm_005",
+        "gold_chunk_id": "tier1_advanced_rag_survey_rs_0053"
+      }
+    },
+    {
+      "query_id": "p1_answer_14",
+      "question": "What method reduces the dependency on manual mapping from model prediction to label by using a model’s own embeddings?",
+      "gold_answer": "STAR",
+      "gold_chunk_id": "tier2_self_instruct_rs_0054",
+      "gold_doc_id": "tier2_self_instruct",
+      "question_type": "lexical",
+      "should_abstain": false,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "llm_009",
+        "gold_chunk_id": "tier2_self_instruct_rs_0054"
+      }
+    },
+    {
+      "query_id": "p1_answer_15_attention",
+      "question": "What is attention mechanism in transformer models?",
+      "gold_answer": "Self-attention relates different positions in a single sequence to compute a representation of that sequence.",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0010",
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "question_type": "factual",
+      "should_abstain": false,
+      "provenance": {
+        "source": "manual_regression",
+        "reason": "Reproduces the attention query that recently returned an ungrounded abstention. Gold evidence is the canonical attention paper."
+      }
+    },
+    {
+      "query_id": "p1_abstain_01",
+      "question": "What is the training cost in dollars for GPT-4?",
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "gold_doc_id": null,
+      "question_type": "adversarial",
+      "should_abstain": true,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "adv01",
+        "source": "human_out_of_corpus"
+      }
+    },
+    {
+      "query_id": "p1_abstain_02",
+      "question": "Who won the 2024 Nobel Prize in Physics?",
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "gold_doc_id": null,
+      "question_type": "adversarial",
+      "should_abstain": true,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "adv02",
+        "source": "human_out_of_corpus"
+      }
+    },
+    {
+      "query_id": "p1_abstain_03",
+      "question": "What are the contradictions between RAG and fine-tuning approaches?",
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "gold_doc_id": null,
+      "question_type": "adversarial",
+      "should_abstain": true,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "adv04",
+        "source": "human_out_of_corpus"
+      }
+    },
+    {
+      "query_id": "p1_abstain_04",
+      "question": "What does the paper say about performance?",
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "gold_doc_id": null,
+      "question_type": "adversarial",
+      "should_abstain": true,
+      "provenance": {
+        "source_dataset": "retrieval_eval_dataset_v4.json",
+        "source_query_id": "adv06",
+        "source": "human_out_of_corpus"
+      }
+    },
+    {
+      "query_id": "p1_abstain_05_manual",
+      "question": "What was the closing price of Bitcoin in Indonesian rupiah on 15 October 2026?",
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "gold_doc_id": null,
+      "question_type": "out_of_corpus",
+      "should_abstain": true,
+      "provenance": {
+        "source": "manual_out_of_corpus",
+        "reason": "The canonical corpus consists of research papers and contains no time-specific Bitcoin market prices; manually authored to exercise clean abstention."
+      }
+    }
+  ]
+}

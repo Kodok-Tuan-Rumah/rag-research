@@ -168,7 +168,7 @@ def _get_section(chunk) -> str:
     meta = _get_attr(chunk, "metadata", {}) or {}
     return meta.get("section", "body").lower()
 
-def _chunk_to_summary(chunk, rank: int) -> dict:
+def _chunk_to_summary(chunk, rank: int, retrieval_sources=None) -> dict:
     text = _get_attr(chunk, "text", "") or ""
     score = _get_attr(chunk, "rerank_score", None)
     if score is None:
@@ -181,6 +181,9 @@ def _chunk_to_summary(chunk, rank: int) -> dict:
         "chunk_id": _get_attr(chunk, "chunk_id", ""),
         "doc_id": _get_attr(chunk, "doc_id", ""),
         "section": _get_section(chunk),
+        "retrieval_sources": (retrieval_sources or {}).get(
+            _get_attr(chunk, "chunk_id", ""), []
+        ),
         "score": round(float(score), 4),
         "length": len(text),
         "text": text[:200] + "...",
@@ -304,6 +307,22 @@ def run_single_query(
 
     store      = QdrantVectorStore()
     retriever  = MasterHybridRetriever(vector_store=store)
+    index_diagnostics = store.require_nonempty_index(
+        expected_corpus_chunks=len(retriever.chunks),
+        consumer="run_single_query",
+        query_probe=query,
+    )
+    print(
+        "[QDRANT_INDEX] "
+        f"backend={index_diagnostics['backend']} "
+        f"collection={index_diagnostics['collection']} "
+        f"vectors={index_diagnostics['vector_count']} "
+        f"endpoint={index_diagnostics['endpoint']} "
+        f"path={index_diagnostics['storage_path']} "
+        f"bm25_chunks={len(retriever.chunks)} "
+        f"probe_hits={index_diagnostics['probe_hit_count']} "
+        f"probe_chunk_ids={index_diagnostics['probe_chunk_ids']}"
+    )
     generator  = GroqGenerator(model=settings.groq_model)
     groq       = Groq(api_key=os.getenv("GROQ_API_KEY"))
     confidence_engine = ConfidenceEngine()
@@ -331,6 +350,20 @@ def run_single_query(
     print(f"  Gen policy: max_tokens={gen_max_tokens} | temperature={gen_temperature}")
 
     candidate_k = settings.candidate_k
+    all_dense_hits: list[list] = []
+    all_bm25_hits: list[list] = []
+    retrieval_source_map: dict[str, list[str]] = {}
+    retrieval_stage_counts = {
+        "dense_query_lists": 0,
+        "bm25_query_lists": 0,
+        "dense_hits": 0,
+        "bm25_hits": 0,
+        "dense_unique_chunks": 0,
+        "bm25_unique_chunks": 0,
+        "fused_candidates": 0,
+        "rerank_candidates": 0,
+        "final_chunks": 0,
+    }
     retrieval_scores_by_chunk_id: dict[str, float | None] = {}
     reranker_scores_by_chunk_id: dict[str, float] = {}
 
@@ -347,6 +380,17 @@ def run_single_query(
         hyde_doc         = None
         t0 = time.time()
         fused_results = list(retriever.dense_search(query, k=top_k))
+        all_dense_hits = [fused_results]
+        retrieval_stage_counts["dense_query_lists"] = 1
+        retrieval_stage_counts["dense_hits"] = len(fused_results)
+        retrieval_stage_counts["dense_unique_chunks"] = len({
+            _get_attr(hit, "chunk_id", "") for hit in fused_results
+        })
+        retrieval_stage_counts["fused_candidates"] = len(fused_results)
+        retrieval_source_map = {
+            _get_attr(chunk, "chunk_id", ""): ["dense"]
+            for chunk in fused_results
+        }
         timings["embedding_ms"]        = round((time.time() - t0) * 1000, 2)
         timings["query_expansion_ms"]  = 0.0
         timings["hyde_ms"]             = 0.0
@@ -356,11 +400,12 @@ def run_single_query(
         timings["rerank_ms"]           = 0.0
 
         rerank_candidates = fused_results[:top_k]
+        retrieval_stage_counts["rerank_candidates"] = len(rerank_candidates)
         retrieval_scores_by_chunk_id = {
             _get_attr(chunk, "chunk_id", ""): _retrieval_score(chunk)
             for chunk in rerank_candidates
         }
-        retrieval_confidence = confidence_engine.calculate_confidence(rerank_candidates)
+        retrieval_confidence = confidence_engine.calculate_confidence(rerank_candidates, query=query)
         print(f"  Dense hits: {len(fused_results)} | Embedding: {timings['embedding_ms']}ms")
         print(f"  [CONF_ENGINE] baseline confidence={retrieval_confidence['confidence_score']:.4f} decision={retrieval_confidence['decision']}")
         log_chunk_quality(fused_results, label="baseline_dense")
@@ -419,7 +464,6 @@ def run_single_query(
         candidate_k = 30
 
         t0 = time.time()
-        all_dense_hits: list[list] = []
         for q in expanded_queries:
             all_dense_hits.append(list(retriever.dense_search(q, k=candidate_k)))
         if hyde_doc:
@@ -429,13 +473,30 @@ def run_single_query(
         # BM25 per expanded query
         print("BM25 retrieval...")
         t0 = time.time()
-        all_bm25_hits: list[list] = []
         for q in expanded_queries:
             all_bm25_hits.append([
                 hit for hit in retriever.bm25_search(q, candidate_k)
                 if (hit.get("score") if isinstance(hit, dict) else getattr(hit, "score", 0)) > 0
             ])
         timings["bm25_ms"] = round((time.time() - t0) * 1000, 2)
+        dense_ids = {
+            _get_attr(hit, "chunk_id", "")
+            for hit_list in all_dense_hits for hit in hit_list
+        }
+        bm25_ids = {
+            _get_attr(hit, "chunk_id", "")
+            for hit_list in all_bm25_hits for hit in hit_list
+        }
+        retrieval_source_map = {
+            chunk_id: [source for source, ids in (("dense", dense_ids), ("bm25", bm25_ids)) if chunk_id in ids]
+            for chunk_id in dense_ids | bm25_ids
+        }
+        retrieval_stage_counts["dense_hits"] = sum(map(len, all_dense_hits))
+        retrieval_stage_counts["bm25_hits"] = sum(map(len, all_bm25_hits))
+        retrieval_stage_counts["dense_query_lists"] = len(all_dense_hits)
+        retrieval_stage_counts["bm25_query_lists"] = len(all_bm25_hits)
+        retrieval_stage_counts["dense_unique_chunks"] = len(dense_ids)
+        retrieval_stage_counts["bm25_unique_chunks"] = len(bm25_ids)
         print(f"  Dense lists: {len(all_dense_hits)} | BM25 lists: {len(all_bm25_hits)}")
         print(f"  Embedding: {timings['embedding_ms']}ms | BM25: {timings['bm25_ms']}ms\n")
 
@@ -448,6 +509,7 @@ def run_single_query(
         print("[Step 5] Real RRF fusion...")
         t0 = time.time()
         fused_results = rrf_fuse(all_dense_hits + all_bm25_hits)
+        retrieval_stage_counts["fused_candidates"] = len(fused_results)
         timings["rrf_ms"] = round((time.time() - t0) * 1000, 2)
         print(f"  Fused candidates: {len(fused_results)} | RRF: {timings['rrf_ms']}ms")
         log_chunk_quality(fused_results, label="post_rrf")
@@ -478,6 +540,7 @@ def run_single_query(
         ]
         rerank_n = min(candidate_k, top_k * 2)
         rerank_candidates = candidates_for_rerank[:rerank_n]
+        retrieval_stage_counts["rerank_candidates"] = len(rerank_candidates)
 
         if not allow_ref:
             rerank_candidates = [
@@ -587,8 +650,14 @@ def run_single_query(
         print(f"  Reranked top-{top_k}: {timings['rerank_ms']}ms\n")
 
     # SELF-REFLECTION RETRY LOOP generate
-    pre_rerank_chunks  = [_chunk_to_summary(c, i + 1) for i, c in enumerate(fused_results[:top_k * 2])]
-    post_rerank_chunks = [_chunk_to_summary(c, i + 1) for i, c in enumerate(rerank_candidates[:top_k])]
+    pre_rerank_chunks  = [
+        _chunk_to_summary(c, i + 1, retrieval_source_map)
+        for i, c in enumerate(fused_results[:top_k * 2])
+    ]
+    post_rerank_chunks = [
+        _chunk_to_summary(c, i + 1, retrieval_source_map)
+        for i, c in enumerate(rerank_candidates[:top_k])
+    ]
     if allow_ref:
         print(f"  [REF_POLICY] Query '{query[:50]}... references ALLOWED (citation query)")
         filtered_chunks = [c for c in rerank_candidates if is_quality_chunk(c)]
@@ -614,6 +683,7 @@ def run_single_query(
         max_ref_ratio=MAX_REF_RATIO,
         top_k=top_k,
     )
+    retrieval_stage_counts["final_chunks"] = len(final_chunks_full)
 
     final_selected_ids = {_get_attr(c, "chunk_id", "") for c in final_chunks_full}
     additional_blocked = {
@@ -635,6 +705,7 @@ def run_single_query(
     confidence_engine = ConfidenceEngine()
     print("[Generation] Self-reflection retry loop...")
     retry_count = 0
+    generation_attempts = 0
     allow_all_refs_on_retry = False
     t0_gen = time.time()
 
@@ -658,7 +729,7 @@ def run_single_query(
                 reason="smoke_stop_before_gen",
             )
             break
-        pre_gen_confidence = confidence_engine.calculate_confidence(final_chunks_full)
+        pre_gen_confidence = confidence_engine.calculate_confidence(final_chunks_full, query=query)
         retrieval_confidence = pre_gen_confidence
         if pre_gen_confidence["decision"] == "REJECT":
             print(f" [PRE_GEN_GATE] Confidence REJECT ({pre_gen_confidence['confidence_score']:.3f}) skip LLM call")
@@ -672,6 +743,7 @@ def run_single_query(
             break 
 
         try:
+            generation_attempts += 1
             response = generator.generate(
                 query,
                 final_chunks_full,
@@ -692,7 +764,7 @@ def run_single_query(
             break
         context_texts = [_get_attr(r, "text", "") or "" for r in final_chunks_full]
         confidence_v1 = compute_context_overlap(response.answer, context_texts)
-        retrieval_confidence = confidence_engine.calculate_confidence(final_chunks_full)
+        retrieval_confidence = confidence_engine.calculate_confidence(final_chunks_full, query=query)
 
         if confidence_v1 >= 0.3:
             print(f"  [RETRY] Success at attempt {retry_count + 1} | overlap={confidence_v1}")
@@ -812,12 +884,20 @@ def run_single_query(
         timings.get("generation_ms", 0),
         2,
     )
+    final_abstain_reason = getattr(response, "reason", None)
+    if final_status == "INSUFFICIENT_CONTEXT" and not final_abstain_reason:
+        final_abstain_reason = (
+            "retrieval confidence REJECT"
+            if retrieval_confidence.get("decision") == "REJECT"
+            else error_info.get("reason")
+        )
     # debug_full_chunks ” full score transparency
     debug_source      = final_chunks_full
     debug_full_chunks = [
         {
             "chunk_id": _get_attr(r, "chunk_id", ""),
             "doc_id":   _get_attr(r, "doc_id", ""),
+            "retrieval_sources": retrieval_source_map.get(_get_attr(r, "chunk_id", ""), []),
             "section":  _get_section(r),
             "score":    round(
                         _get_attr(r, "rerank_score", None) or
@@ -901,6 +981,12 @@ def run_single_query(
         "confidence_v1":        confidence_v1,
         "error_decomposition":  error_info,
         "failure_type":         error_info.get("failure_type", "none") if isinstance(error_info, dict) else "none",
+        "abstain_reason":       final_abstain_reason if final_status == "INSUFFICIENT_CONTEXT" else None,
+        "generation_attempts":  generation_attempts,
+        "confidence_decision":  (
+            getattr(response, "post_generation_decision", None)
+            or retrieval_confidence.get("decision")
+        ),
         "retry_triggered":      retry_count > 0,
         "exact_match":          exact_match,
         "ref_ratio":            ref_ratio,
@@ -909,6 +995,9 @@ def run_single_query(
             else f"adaptive_agent_{q_type}_multiquery_hyde_rerank_rrf"
         ),
         "debug_full_chunks":    debug_full_chunks,
+        "qdrant_index":         index_diagnostics,
+        "retrieval_stage_counts": retrieval_stage_counts,
+        "retrieval_sources_by_chunk_id": retrieval_source_map,
         "config": {
             "mode":             mode,
             "top_k":            top_k,
@@ -995,6 +1084,7 @@ def run_single_query(
     trace_path = Path("results/debug/trace.json")
     trace_path.parent.mkdir(parents=True, exist_ok=True)
     trace_entry = {
+        "query_id":        output["query_id"],
         "query":           query,
         "query_type":      q_type,
         "top_k":           top_k,
@@ -1007,6 +1097,9 @@ def run_single_query(
         "exact_match":     exact_match,
         "confidence_v1":   confidence_v1,
         "final_chunks":   debug_full_chunks,
+        "qdrant_index":    index_diagnostics,
+        "retrieval_stage_counts": retrieval_stage_counts,
+        "retrieval_sources_by_chunk_id": retrieval_source_map,
         "timings":         timings,
     }
     existing_trace = []

@@ -47,6 +47,13 @@ STATUS_OVERRIDES = {
     "check_ci_contracts.py": "canonical",
     "check_script_manifest.py": "canonical",
     "measure_reference_impact.py": "canonical",
+    # Phase 1 acceptance. phase1_smoke.py runs the 20-case set and owns the
+    # --check-report gate; phase1_smoke_review.py collects the human annotations
+    # that gate requires. Both were absent here while MANIFEST.json listed them
+    # as canonical, so `--write` silently demoted them to diagnostic and the
+    # requirement that a canonical script be discoverable disappeared with them.
+    "phase1_smoke.py": "canonical",
+    "phase1_smoke_review.py": "canonical",
     # Imported by tests for its metric functions (normalize, exact_match,
     # token_f1). Its CLI entrypoint is dead but the module is not.
     "run_eval_phase2.py": "library",

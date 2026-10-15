@@ -136,6 +136,11 @@
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },
+    "phase1_smoke_review.py": {
+      "status": "canonical",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
     "prepare_stratified_split.py": {
       "status": "diagnostic",
       "read_paths_missing": [],

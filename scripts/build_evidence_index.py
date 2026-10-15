@@ -1,6 +1,7 @@
 """Index results/metrics/ and flag what needs attention.
 
-`results/metrics/` accumulated 126 files for a 14-query dataset. It is the
+`results/metrics/` contains experiment and acceptance evidence across several
+datasets and project phases. It is the
 project's evidence, so nothing is deleted by this script — the point is that a
 reader can tell which file to open, and that duplicates and stale copies are
 visible rather than discovered by accident.
@@ -66,6 +67,7 @@ GROUPS = [
     ("q2", "Q15/Q20 forensics"),
     ("stage", "Stage latency"),
     ("phase_h", "Phase H"),
+    ("phase1_smoke", "Phase 1 — generation and abstention acceptance"),
     ("coverage", "Coverage"),
 ]
 
