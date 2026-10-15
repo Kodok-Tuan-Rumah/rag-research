@@ -1,10 +1,12 @@
 # RAG SYSTEM — ENGINEERING GOALS & PRODUCTION SPEC
 > **Version:** 2.1
 > **Repo:** `rag-research`  
-> **Status:** Phase 1 Active — runtime decision-path alignment is implemented; Phase 1 exit criteria are not all verified
-> **Last Updated:** 2026-10-08
+> **Status:** Phase 1 acceptance passed (2026-10-15); Phase 2 evaluation-infrastructure work is ready to begin
+> **Last Updated:** 2026-10-15
 
 > **Current evidence note:** The K7.10–K7.13 retrieval audits use the 13-query `data/evaluation/retrieval_eval_dataset_v2.json`. This is distinct from the older 14-query `data/evaluation/retrieval_eval_dataset.json` summarized in the historical README baseline. The 13-query K7 set does not satisfy the Phase 2 target of at least 200 labeled samples, and its results do not establish production readiness or confidence calibration.
+
+> **Phase 1 evidence (2026-10-15):** `results/metrics/phase1_smoke.json` records a full-generation run with 20 cases, complete human review, `runtime_pass: true`, `quality_pass: true`, and `phase1_pass: true`; the checker was rerun and returned the same result. This is acceptance evidence for the frozen set, not a production-readiness or confidence-calibration claim. A follow-up spot check was suggested for grounding judgments on `p1_answer_03` and `p1_answer_15_attention`; revise the annotations and re-run the checker if that review finds either judgment incorrect. See [`docs/evaluation_guide.md`](docs/evaluation_guide.md).
 
 ---
 
@@ -366,17 +368,22 @@ This must be implemented as a circuit breaker, not a manual toggle.
 ---
 
 ### Phase 1 — Pipeline Stabilization
-**Status: `ACTIVE`**
+**Status: `PASSED` — acceptance report and checker passed 2026-10-15**
 
 **Goal:** Every query produces either a valid answer or a clean abstain. No crashes, no silent failures, no infinite loops.
 
 **Exit Criteria (all must pass):**
-- [ ] `run_single_query.py --mode full` completes without exception on 20 random queries
-- [ ] Retry loop hard-limited to max 2 iterations — verified in code
-- [ ] Confidence score always in range [0.0, 1.0] — assertion added
-- [ ] Every query produces structured JSON log with all required fields
-- [ ] No `None` or unhandled exception propagates to API layer
-- [ ] `sanity_check_answer()` correctly rejects reference-dump answers on 5 manual test cases
+- [x] The fixed 20-case `data/evaluation/phase1_smoke_set_v1.json` completes via full generation with no unhandled exception. Generation must not be disabled.
+- [x] The set contains 15 answerable cases and 5 `should_abstain` cases; all answerable gold chunks resolve to the frozen canonical corpus and the five abstain cases have no gold answer/chunk.
+- [x] Runtime output for every case has status `ANSWERED` or `INSUFFICIENT_CONTEXT`, confidence finite and within `[0.0, 1.0]`, at most 2 generation attempts, complete §4 JSON log fields, and complete retrieval/generation latency fields.
+- [x] The run verifies the live Qdrant collection/path, exact vector count (796 for the frozen corpus), and a non-empty dense probe. Dense/BM25 source and stage counts are recorded.
+- [x] Runtime/pipeline/provider exceptions are either prevented or explicitly classified and logged; no unhandled exception or `None` failure state escapes to the API.
+- [x] Human review confirms at least 18/20 correct final decisions: answerable cases must be answered correctly and grounded in retrieved evidence; abstain cases must return a reasoned abstention. No wrong or ungrounded answer may have the effective `GENERATE` confidence decision. The current report records 20/20 and zero confident-wrong answers.
+- [x] `sanity_check_answer()` passes its five manual cases: short answer, verbatim copy, high overlap, normal grounded answer, and empty answer.
+
+**Acceptance procedure:** Run `python scripts/phase1_smoke.py`. Before a new run replaces an existing report, the runner archives the prior report under `results/metrics/archive/`. Review answerable rows with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json`; this interactive review can resume partially annotated reports. Mark `answer_correct=yes` only when the answer addresses the question and includes the gold answer's essential facts (paraphrase is acceptable). Mark `grounded=yes` only when every material claim is supported by retrieved chunks; retrieving the gold chunk alone does not establish groundedness. For each answer marked incorrect or ungrounded, select at least one `failure_categories` value (`answer_incorrect`, `unsupported_claim`, `retrieval_miss`, `overly_specific`, `incomplete_answer`, or `other`) and add notes where useful. Then run `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json`. The checker exits successfully only when the runtime, dataset, Qdrant, complete review, failure reasons, 18/20, and zero-confident-wrong gates all pass. Any already-known confident-wrong answer is reported even while other reviews are pending and must be fixed in a fresh acceptance run. A run with `SMOKE_STOP_BEFORE_GEN` is not Phase 1 acceptance evidence.
+
+**Follow-up audit note:** The accepted human review marks all 15 answerable cases correct and grounded. A later advisory review raised questions about whether all claims in `p1_answer_03` and `p1_answer_15_attention` are supported strictly by chunks actually included in the LLM prompt. Re-open those cases with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json` if a stricter grounding audit is desired; update annotations only after reviewer verification, then rerun `--check-report`. This follow-up does not change the recorded checker result unless the review is changed.
 
 ---
 
@@ -827,7 +834,7 @@ necessarily configurable, and two of them changed on that date.
 | `llm_model` | `settings.groq_model` | yes |
 | `confidence_reject_threshold` | `settings.confidence_reject_threshold` | **yes** (was `no` until 2026-10-11) |
 | `confidence_partial_threshold` | `settings.confidence_partial_threshold` | **yes** (was `no` until 2026-10-11) |
-| `api_retrieval_attempts` | `for attempt in range(2)` in `api/main.py` | no |
+| `api_retrieval_attempts` | `MAX_RETRIEVAL_RETRIES + 1` in `api/main.py`; shared retry limit in `controller/agent_state.py` | no |
 | `context_max_chars` | `settings.generation_max_chars` | yes |
 
 ### Changed 2026-10-11 — confidence thresholds are now configurable

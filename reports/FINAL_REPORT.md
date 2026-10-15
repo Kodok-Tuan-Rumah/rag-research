@@ -3,11 +3,18 @@
 > **Maliki Mayzar** · February 2025  
 > *RAG Research Project — 8 Development Phases · 7 ArXiv Papers · 6 Experiments*
 
+> **Historical report:** This documents the pre-Qdrant Ollama/Mistral prototype
+> and its 18-query experiment from February 2025. Its measurements, including
+> the reported zero hallucinations, apply only to that small historical setup;
+> they do not describe or validate the current Groq/Qdrant system or its Phase
+> 1 acceptance status. For current status, see [`PROJECT_GOALS.md`](../PROJECT_GOALS.md)
+> and [`results/metrics/phase1_smoke.json`](../results/metrics/phase1_smoke.json).
+
 ---
 
 ## Abstract
 
-We present a systematic ablation study of a Retrieval-Augmented Generation (RAG) pipeline evaluated across six experimental configurations varying chunk size (256 vs 512 tokens), overlap strategy (0 vs 64 tokens), and retrieval method (Dense, BM25, Hybrid RRF). The system is built on a corpus of 7 ArXiv research papers and uses Mistral LLM for answer generation. Our key finding is that **zero hallucinations** were observed across all 18 evaluated queries, validating the context-grounding approach. Contrary to conventional wisdom, BM25 with small chunks (chunk=256) achieves the highest faithfulness score (1.000), while Hybrid RRF with small chunks performs worst (0.633) — suggesting that RRF fusion is harmful when chunk granularity is too fine. Context relevance plateaus at 0.667 across the top-4 configurations, indicating a retrieval ceiling tied to corpus structure rather than method choice.
+This historical ablation study evaluated six configurations of a Retrieval-Augmented Generation (RAG) prototype, varying chunk size (256 vs 512 tokens), overlap strategy (0 vs 64 tokens), and retrieval method (Dense, BM25, Hybrid RRF). The prototype used seven ArXiv papers and Mistral for answer generation. In this 18-query sample, the report observed no hallucinations under its evaluation procedure; the small sample and legacy setup do not establish a general hallucination rate or validate the current system. BM25 with small chunks (chunk=256) achieved the highest reported faithfulness score (1.000), while Hybrid RRF with small chunks scored 0.633. These results are limited to the configurations and corpus studied here.
 
 ---
 
@@ -93,7 +100,7 @@ Each experiment evaluates 3 queries. Total: **18 query-answer pairs evaluated**.
 | 5 | exp_002 | BM25 | 512 | 0.833 | 0.500 | 0.800 | 327.8 |
 | 6 | exp_006 | Hybrid | 256 | 0.633 | 0.500 | 0.800 | 210.7 |
 
-> **Critical finding: Hallucination rate = 0.000 across ALL experiments.**
+> **Historical observation:** the evaluated 18-query prototype sample reported hallucination rate = 0.000 under the study's rubric. This is not a general guarantee and does not transfer to the current system.
 
 ### 3.2 Effect of Chunk Size
 

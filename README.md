@@ -12,9 +12,17 @@
 
 ## ⚠️ Current State — Read This First
 
+> **Evidence date:** retrieval figures below are historical snapshots, not a
+> production-readiness result. The current Phase 1 report is
+> [`results/metrics/phase1_smoke.json`](results/metrics/phase1_smoke.json): its
+> full-generation 20-case run has complete human review and records
+> `runtime_pass: true`, `quality_pass: true`, and `phase1_pass: true`. A follow-up
+> grounding spot check was suggested for two answerable cases; see the
+> [Phase 1 evaluation guide](docs/evaluation_guide.md) for scope and workflow.
+
 The canonical evaluation is **retrieval-only, no LLM judge**. The RAGAS generation-metric numbers further down are **LEGACY** — retained as audit trail, not current measurements.
 
-| Item | Runtime / evidence snapshot (verified 2026-10-08) | LEGACY (historical) |
+| Item | Recorded snapshot (verified 2026-10-08; re-verify before operational use) | LEGACY (historical) |
 |---|---|---|
 | Corpus | **796 chunks** (`chunks_semantic_v2.json`) | 982 chunks |
 | Embedding | `sentence-transformers/all-MiniLM-L6-v2` (384-dim) | same |
@@ -28,7 +36,7 @@ The canonical evaluation is **retrieval-only, no LLM judge**. The RAGAS generati
 > ⚠️ `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` return **HTTP 404** on the current API key. Use `openai/gpt-oss-20b`.
 > Full drift audit: [`results/metrics/j6_documentation_drift.md`](results/metrics/j6_documentation_drift.md)
 
-### 14-Query Retrieval Baseline — CURRENT (v1)
+### 14-Query Retrieval Baseline — Historical Reference (v1)
 
 Measured on `data/evaluation/retrieval_eval_dataset.json`, top_k=10, rerank=True.
 Confirmed by two independent scripts and stable across repeated runs.
@@ -42,7 +50,8 @@ Confirmed by two independent scripts and stable across repeated runs.
 | Final (filtered) | **0.9286** | 0.8452 |
 
 Full record: [`k1_baseline_freeze.md`](results/metrics/k1_baseline_freeze.md).
-This is the reference for every §14 before/after comparison.
+This is the reference for comparisons made against that 14-query v1 dataset;
+it is not a current Phase 1 generation acceptance result.
 
 > ⚠️ An earlier revision of this table showed `0.8571` for the reranked and final
 > stages. That value is **stale** — it predates commit `50796bf`, which fixed
@@ -53,7 +62,16 @@ This is the reference for every §14 before/after comparison.
 
 > **Historical retrieval-only latency:** the 14-query reranker ablation measured P95 4,065.16 ms with reranking enabled versus 62.96 ms without it. The measured interval covers dense + BM25 + RRF + filtering (and reranking when enabled); it excludes LLM generation, so it is **not end-to-end latency** and cannot establish whether the 3,500 ms end-to-end target was met or missed. See [`fase_f_reranker_ablation.md`](results/metrics/fase_f_reranker_ablation.md). A separate post-fix retrieval profile reports P95 total 4,158.28 ms and reranker-stage P95 4,101.08 ms; see [`latency_budget_analysis.md`](results/metrics/latency_budget_analysis.md). These are historical measurements, not K7.11.
 
-> **Historical retrieval-only latency:** the 14-query reranker ablation measured P95 4,065.16 ms with reranking enabled versus 62.96 ms without it. The measured interval covers dense + BM25 + RRF + filtering (and reranking when enabled); it excludes LLM generation, so it is **not end-to-end latency** and cannot establish whether the 3,500 ms end-to-end target was met or missed. See [`fase_f_reranker_ablation.md`](results/metrics/fase_f_reranker_ablation.md). A separate post-fix retrieval profile reports P95 total 4,158.28 ms and reranker-stage P95 4,101.08 ms; see [`latency_budget_analysis.md`](results/metrics/latency_budget_analysis.md). These are historical measurements, not K7.11.
+### Phase 1 Acceptance
+
+The 20-case generation/abstention acceptance set is separate from both the
+14-query historical baseline and the 13-query K7 retrieval audit. It requires
+full generation and human review; retrieval metrics alone cannot establish
+Phase 1 completion. The checked-in report and checker currently pass the Phase 1
+gate. A follow-up grounding spot check was suggested for `p1_answer_03` and
+`p1_answer_15_attention`; see the [evaluation guide](docs/evaluation_guide.md)
+and the gates in
+[`PROJECT_GOALS.md`](PROJECT_GOALS.md#phase-1--pipeline-stabilization).
 
 ### Retrieval Ranking Mode
 
@@ -157,7 +175,7 @@ PDF/TXT Documents
 | Sparse Retrieval | BM25Okapi (rank-bm25) | Keyword matching |
 | Hybrid Fusion | Weighted + section-boosted RRF, k=60 | Combine dense + BM25 |
 | Reranker | cross-encoder/ms-marco-MiniLM-L-6-v2 | Cross-encoder reranking |
-| LLM | Groq `openai/gpt-oss-20b` | Sub-second generation (reasoning model) |
+| LLM | Groq `openai/gpt-oss-20b` | Generation model; latency depends on provider and prompt |
 | Evaluation | Retrieval-only (Recall@K, MRR@K) | **Canonical** — no LLM judge |
 | Evaluation (opt.) | RAGAS + LangChain | 5 generation metrics, needs API key |
 | Observability | structlog + prometheus-client | JSON logs, latency/abstain metrics |
@@ -270,7 +288,9 @@ bash scripts/bootstrap_env.sh --verify   # check only, install nothing
 > ⚠️ **Run it in the foreground.** A terminal or agent-host restart mid-install
 > leaves a half-built environment — this already happened twice.
 
-`--verify` is the quick health check after an unexpected reset:
+`--verify` is the quick health check after an unexpected reset. The sample
+output below is a dated environment snapshot; rerun the command for current
+dependency/test status:
 
 ```
 ==> Verification
@@ -281,7 +301,7 @@ bash scripts/bootstrap_env.sh --verify   # check only, install nothing
     OK  protobuf upb shim (src/_compat.py, needed on Python 3.14)
 
 ==> Test suite
-    380 passed
+    420 passed (working-tree snapshot; rerun --verify for current results)
 ```
 
 Verify the key and the pipeline:
@@ -332,16 +352,16 @@ go run cmd/server/main.go
 
 ### Script inventory
 
-`scripts/` holds 37 entries and is larger than `src/`. `scripts/MANIFEST.json`
+`scripts/` holds 40 classified scripts and is larger than `src/`. `scripts/MANIFEST.json`
 records what each one is, and `check_script_manifest.py` fails CI when a script
 has no entry, when it reads data that no longer exists, or when a
 canonical/library script is undocumented.
 
 | Status | Meaning | Count |
 |---|---|---:|
-`canonical` | documented entrypoint — the ones below | 6 |
-`library` | imported for its functions, not run as a script | 1 |
-`diagnostic` | single-purpose tooling for one investigation | 30 |
+| `canonical` | documented entrypoint | 8 |
+| `library` | imported for its functions, not run as a script | 1 |
+| `diagnostic` | single-purpose tooling for one investigation | 31 |
 
 `scripts/run_eval_phase2.py` is a library, not dead code: it supplies
 `normalize`, `exact_match` and `token_f1` to `tests/test_em_normalization.py`,
@@ -355,7 +375,7 @@ recorded in `ACKNOWLEDGED_DEAD_PATHS` rather than silently tolerated.
 python3 -m pytest tests/ -q
 ```
 
-Baseline: **380 passed, 0 failed**. No `--ignore` flags are needed.
+Working-tree snapshot: **420 passed** with the `semantic_chunker_rust` extension built (`maturin develop`). An earlier bootstrap snapshot recorded **399 passed, 1 failed**; the failure was `tests/test_ci_contracts.py::test_every_src_module_imports`, which imports `src.ingestion.semantic_chunker` and fails when that extension is missing. Run the test command above to reconfirm.
 
 > **If a test fails with** `ImportError: cannot load module more than once per process` **from `numpy/fft/_pocketfft.py`** — that is a test-harness problem, not a numpy or Python 3.14 defect. `unittest.mock.patch.dict(sys.modules, ...)` snapshots `sys.modules` and restores it wholesale on exit, evicting modules first imported *inside* the block. `numpy.fft._pocketfft_umath` is a C extension, and CPython forbids re-initialising the same extension twice in one process. Fix: pre-import `numpy.fft` above the `patch.dict` block. See `tests/test_qdrant_store.py` and `tests/test_semantic_chunker.py`.
 
@@ -422,8 +442,8 @@ rag-research/
 │   └── api/
 │       ├── main.py                   # FastAPI endpoint
 │       └── config.py                 # Settings (pydantic-settings)
-├── scripts/                          # ~40 diagnostic + eval scripts (6.6k LOC)
-├── tests/                            # pytest suite (380 passed, 0 failed)
+├── scripts/                          # 40 classified scripts (10.6k LOC)
+├── tests/                            # pytest suite (420 passed with rust ext built)
 ├── experiments/                      # Phase 1 ablation (legacy stack)
 ├── archive/
 │   └── legacy_2026_10/               # Zero-import modules + provenance README

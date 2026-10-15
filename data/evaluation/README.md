@@ -1,4 +1,11 @@
-# `data/evaluation/` — Tiga Versi Dataset, Satu yang Canonical
+# `data/evaluation/` — Dataset Retrieval dan Acceptance
+
+> **Purpose distinction:** “canonical” below means canonical for retrieval
+> metric comparisons. Phase 1 has a separate frozen acceptance set for full
+> generation, abstention, runtime contracts, and human review; it is not part
+> of the retrieval dataset family and must not be pooled into retrieval scores.
+> See [`phase1_smoke_set_v1.json`](phase1_smoke_set_v1.json) and
+> [`docs/evaluation_guide.md`](../../docs/evaluation_guide.md).
 
 Read this before pointing an evaluation script at a file here. All five
 datasets validate against the corpus (`scripts/check_ci_contracts.py`), but
