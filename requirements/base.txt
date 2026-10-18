@@ -1,9 +1,5 @@
-# requirements/base.txt — core data + retrieval stack
-# Verified against live runtime (Python 3.14.4). All versions pinned.
-#
-# Canonical retrieval path. Installing ONLY this file is NOT enough:
-# groq and pydantic-settings are required by the canonical pipeline and live
-# in llm.txt / api.txt. Always compose, never install base.txt alone.
+# NOTE: installing ONLY this file is not enough — groq + pydantic-settings
+# live in llm.txt/api.txt. Always compose; never install base.txt alone.
 
 # ── numerics ─────────────────────────────────────────────────────────────────
 numpy==2.5.3
@@ -22,10 +18,3 @@ scikit-learn==1.7.2
 
 # ── eval data (only if running ragas_evaluator.py) ───────────────────────────
 datasets==3.6.0
-
-# REMOVED (verified 0 imports across 92 .py files):
-#   scipy     — unused
-#   pandas    — only reached via ragas `to_pandas()`
-#   faiss-cpu — src/retrieval/embedder.py hard-imports it but is dead code
-#   pypdf     — pymupdf is used instead
-#   tqdm, rich, pyyaml — unused

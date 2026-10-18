@@ -1,22 +1,5 @@
-# requirements/research.txt — analysis & plotting
-# Verified against live runtime (Python 3.14.4). All versions pinned.
-
 # ── installed ─────────────────────────────────────────────────────────────────
 # matplotlib : scripts/visualize.py
 # Needed for Phase 3 "reliability diagram" exit criterion.
 matplotlib==3.11.2
-
-# ── Phase 3 calibration support ──────────────────────────────────────────────
-# joblib : serialize models/confidence_calibrator.pkl
 joblib==1.6.0
-
-# ── OPTIONAL Phase 2 metric (NOT installed) ───────────────────────────────────
-# Semantic F1 target in PROJECT_GOALS.md §2.1 is specified as BERTScore.
-# `transformers` can compute it directly; bert-score is the packaged version.
-#   bert-score==0.3.13
-
-# REMOVED (verified 0 imports across 92 .py files):
-#   seaborn   — unused
-#   mlflow    — unused
-#   jupyter   — unused
-#   notebook  — unused

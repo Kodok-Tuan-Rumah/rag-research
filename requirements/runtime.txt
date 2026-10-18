@@ -1,15 +1,3 @@
-# requirements/runtime.txt — minimal production install
-# Verified against live runtime (Python 3.14.4). All versions pinned.
-#
-# This is the ONLY file needed to run the canonical pipeline:
-#   MasterHybridRetriever -> GroqGenerator -> Agent
-#
-# Compose with api.txt if you need the HTTP server.
-# Compose with research.txt if you need the Phase 3 reliability diagram.
-#
-# Install:
-#   pip install -r requirements/runtime.txt
-
 # ── LLM ──────────────────────────────────────────────────────────────────────
 groq==0.37.1
 python-dotenv==1.0.1
@@ -28,14 +16,11 @@ structlog==26.1.0
 prometheus-client==0.26.0
 
 # ── HTTP (required for the API server) ──────────────────────────────────────
-# The container CMD is `uvicorn src.api.main:app`, so the server stack is not
-# optional in the image anymore (it crashed at exec before these were included):
 fastapi==0.142.2
 uvicorn==0.54.0
 httpx==0.28.1
 python-multipart==0.0.32
 
 # ── NOT included: langgraph ──────────────────────────────────────────────────
-# Declared in requirements.txt / llm.txt only. 0 imports in src/, and it
-# conflicts with PROJECT_GOALS.md §9 Non-Goals. Do not add it to runtime
+# Declared in llm.txt only; conflicts with PROJECT_GOALS.md §9. Do not add
 # without an explicit decision record.
