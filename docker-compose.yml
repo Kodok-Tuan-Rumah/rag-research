@@ -1,64 +1,48 @@
+# rag-research — Mode B (per proyek) untuk rag-api
+#
+# ⚠️ Stack KANONIK = root compose (`make up` di root workspace, container
+#    ws-rag-api). File ini adalah HELPER mode B: menjalankan rag-api STANDALONE
+#    dengan menempel ke jaringan root — ia TIDAK men-definisikan qdrant/ollama
+#    sendiri, jadi root stack harus sudah hidup (alias `qdrant`/`ollama` dari
+#    ws-net yang dipakai ulang).
+#
+# Pemakaian:
+#   cd rag-research
+#   docker compose --env-file ../.env up -d rag-api   # key ikut dari .env root
+#   # sebelum kembali ke Mode A:
+#   docker compose -p rag-research down              # (nama proyek default = folder)
+#   cd .. && make up                                  # restore ws-rag-api
+#
+# JANGAN jalankan Mode B saat Mode A aktif — bentrok port 8000 & alias
+# `rag-api` di jaringan bersama (lihat docs/ops-postmortem.md S-5 + README).
+
 services:
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: rag-qdrant
-    ports:
-      - "6333:6333"  
-      - "6334:6334"  
-    volumes:
-      - qdrant_data:/qdrant/storage
-    networks:
-      - rag-network
-    restart: unless-stopped
-
-  # Ollama LLM Service
-  ollama:
-    image: ollama/ollama:latest
-    container_name: rag-ollama
-    ports:
-      - "11435:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - rag-network
-    restart: unless-stopped
-    command: >
-      sh -c "ollama serve & 
-             sleep 5 && 
-             ollama pull mistral && 
-             wait"
-
-  # RAG API Service
   rag-api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: rag-api
     ports:
       - "8000:8000"
-    depends_on:
-      - qdrant
-
     environment:
-      - QDRANT_URL=http://qdrant:6333
-      - GROQ_MODEL=openai/gpt-oss-20b
-      - PYTHONPATH=/app
-    volumes:
-      - ./data:/app/data
-      - ./src:/app/src
-      - ./.env:/app/.env
-    networks:
-      - rag-network
-    restart: unless-stopped
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_HOST: http://ollama:11434
+      GROQ_MODEL: openai/gpt-oss-20b
+      # WAJIB jalankan dengan --env-file ../.env bila ingin key terisi.
+      # Default kosong disengaja: generator akan ber-fallback lokal.
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=10)"]
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 120s
+    networks:
+      - ws-net
 
 networks:
-  rag-network:
-    driver: bridge
-
-volumes:
-  qdrant_data:
-  ollama_data:
+  ws-net:
+    external: true
+    name: ai-infra-workspace_ws-net

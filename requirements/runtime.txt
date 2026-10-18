@@ -27,12 +27,13 @@ numpy==2.5.3
 structlog==26.1.0
 prometheus-client==0.26.0
 
-# ── HTTP (optional) ──────────────────────────────────────────────────────────
-# Uncomment for the API server:
-#   fastapi==0.142.2
-#   uvicorn==0.54.0
-#   httpx==0.28.1
-#   python-multipart==0.0.32
+# ── HTTP (required for the API server) ──────────────────────────────────────
+# The container CMD is `uvicorn src.api.main:app`, so the server stack is not
+# optional in the image anymore (it crashed at exec before these were included):
+fastapi==0.142.2
+uvicorn==0.54.0
+httpx==0.28.1
+python-multipart==0.0.32
 
 # ── NOT included: langgraph ──────────────────────────────────────────────────
 # Declared in requirements.txt / llm.txt only. 0 imports in src/, and it
