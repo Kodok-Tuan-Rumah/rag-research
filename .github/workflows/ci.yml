@@ -16,6 +16,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -98,3 +99,15 @@ jobs:
         #    calls it without try/except. Without this third check the gate
         #    passed datasets that abort the whole evaluation run.
         run: python scripts/check_ci_contracts.py
+
+  secrets-scan:
+    name: Secrets scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No real Groq keys in tracked files
+        run: |
+          if grep -rqE 'gsk_[A-Za-z0-9]{30,}' --exclude-dir=.git .; then
+            echo "::error::Real-looking Groq key found in tracked files!"; exit 1
+          fi
+          echo "clean ✓"
