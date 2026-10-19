@@ -6,7 +6,7 @@ import os
 import re
 import uuid
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, List, Optional
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -49,7 +49,16 @@ class QdrantVectorStore:
         qdrant_url: Optional[str] = None,
         qdrant_api_key: Optional[str] = None,
         vector_dim: int = VECTOR_DIM,
+        embedder: Optional[Any] = None,
+        client: Optional[Any] = None,
     ):
+        """Buat store.
+
+        ``embedder`` dan ``client`` dapat di-inject oleh pemanggil (mis. test
+        double) sehingga pemuatan model dan storage nyata dilewati sepenuhnya.
+        Bila None, perilaku default (ModelRegistry + Qdrant lokal/remote)
+        dipertahankan.
+        """
         self.collection_name = os.getenv("QDRANT_COLLECTION", collection_name)
         self.vector_dim = vector_dim
 
@@ -58,7 +67,14 @@ class QdrantVectorStore:
         qdrant_path = os.getenv("QDRANT_PATH", qdrant_path or QDRANT_PATH)
 
         # ── Qdrant client ──────────────────────────────────────────
-        if qdrant_url:
+        if client is not None:
+            # Klien di-inject (test double): lifecycle dimiliki pemanggil,
+            # jangan sentuh path lokal maupun jaringan.
+            self.backend = "injected"
+            self.storage_path = None
+            self.endpoint = None
+            self.client = client
+        elif qdrant_url:
             self.backend = "remote"
             self.storage_path = None
             parsed_url = urlsplit(qdrant_url)
@@ -76,10 +92,14 @@ class QdrantVectorStore:
             resolved_path.mkdir(parents=True, exist_ok=True)
             self.client = QdrantClient(path=str(resolved_path))
 
-        # ── Embedder dari registry — tidak reload ──────────────────
-        from src.retrieval.model_registry import ModelRegistry
-        self.embedder = ModelRegistry.get().embedder
-        print(f"[QdrantStore] Embedder reused from ModelRegistry")
+        # ── Embedder: injectable agar test offline tidak memuat model ──
+        if embedder is not None:
+            self.embedder = embedder
+            print("[QdrantStore] Using injected embedder")
+        else:
+            from src.retrieval.model_registry import ModelRegistry
+            self.embedder = ModelRegistry.get().embedder
+            print(f"[QdrantStore] Embedder reused from ModelRegistry")
 
         self._ensure_collection()
 

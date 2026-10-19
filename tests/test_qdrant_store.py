@@ -1,111 +1,86 @@
+"""Unit tests untuk QdrantVectorStore dengan client + embedder ter-inject.
+
+Store menerima override ``client`` dan ``embedder`` sehingga test ini tidak
+pernah meng-import ``sentence_transformers`` (aman offline, tanpa cache model)
+dan tidak pernah menyentuh storage Qdrant nyata.
+
+Revisi sebelumnya menambal ``sys.modules`` secara borongan, dan tambalan itu
+hanya menutupi *import* modul: ``ModelRegistry`` asli tetap di-import malas saat
+method dipanggil, sehingga SentenceTransformer ikut dimuat (~14 detik) di dalam
+test. Injeksi menghapus seluruh mekanisme tambalan tersebut.
+"""
+
 import os
 import sys
-import types
-from unittest import mock
+from types import SimpleNamespace
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import importlib
+from src.retrieval.qdrant_store import VECTOR_DIM, QdrantVectorStore
 
-# Pre-warm numpy.fft BEFORE the mock.patch.dict(sys.modules, ...) block below.
-# mock.patch.dict snapshots sys.modules and restores it wholesale on exit, so any
-# module first imported *inside* the block gets evicted. numpy.fft's
-# _pocketfft_umath is a C extension, and CPython forbids re-initialising the same
-# extension twice in one process -> "ImportError: cannot load module more than once
-# per process". Loading it up-front puts it in the snapshot, so it survives.
-import numpy.fft  # noqa: F401
 
-# Dummy registry + embedder for safe module import
 class DummyEmbedder:
     def encode(self, texts, batch_size=None, show_progress_bar=False):
-        return [[0.1] * 384 for _ in texts]
+        return [[0.1] * VECTOR_DIM for _ in texts]
 
-class DummyModelRegistry:
-    @staticmethod
-    def get():
-        return mock.Mock(embedder=DummyEmbedder())
 
 class DummyClient:
     def __init__(self, *args, **kwargs):
-        self._collections = []
-        self.created = False
+        self.collections = []
         self.upserts = []
 
     def get_collections(self):
-        return mock.Mock(collections=self._collections)
+        return SimpleNamespace(
+            collections=[SimpleNamespace(name=name) for name in self.collections]
+        )
 
-    def create_collection(self, *args, **kwargs):
-        self.created = True
+    def create_collection(self, collection_name=None, **kwargs):
+        self.collections.append(collection_name)
 
-    def count(self, collection_name):
-        return mock.Mock(count=0)
+    def count(self, collection_name, exact=False):
+        return SimpleNamespace(count=0)
 
     def upsert(self, collection_name, points):
         self.upserts.extend(points)
 
     def query_points(self, collection_name, query, limit, query_filter=None):
-        point = mock.Mock()
-        point.payload = {
-            'chunk_id': 'c1',
-            'doc_id': 'doc1',
-            'text': 'dummy',
-        }
-        point.score = 0.85
-        return mock.Mock(points=[point])
+        return SimpleNamespace(points=[SimpleNamespace(
+            payload={"chunk_id": "c1", "doc_id": "doc1", "text": "dummy"},
+            score=0.85,
+        )])
 
     def close(self):
         pass
 
-qdrant_client_module = types.ModuleType('qdrant_client')
-qdrant_client_module.QdrantClient = DummyClient
 
-qdrant_models_module = types.ModuleType('qdrant_client.models')
-qdrant_models_module.Distance = mock.Mock()
-qdrant_models_module.VectorParams = mock.Mock()
-qdrant_models_module.PointStruct = mock.Mock()
-qdrant_models_module.Filter = mock.Mock()
-qdrant_models_module.FieldCondition = mock.Mock()
-qdrant_models_module.MatchValue = mock.Mock()
-
-model_registry_module = types.ModuleType('src.retrieval.model_registry')
-model_registry_module.ModelRegistry = DummyModelRegistry
-
-with mock.patch.dict(sys.modules, {
-    'qdrant_client': qdrant_client_module,
-    'qdrant_client.models': qdrant_models_module,
-    'src.retrieval.model_registry': model_registry_module,
-}):
-    if 'src.retrieval.qdrant_store' in sys.modules:
-        del sys.modules['src.retrieval.qdrant_store']
-    qdrant_store = importlib.import_module('src.retrieval.qdrant_store')
+def _make_store() -> QdrantVectorStore:
+    os.environ["QDRANT_PATH"] = "tmp/qdrant_test"
+    os.environ["QDRANT_COLLECTION"] = "test_collection"
+    os.environ.pop("QDRANT_URL", None)
+    os.environ.pop("QDRANT_API_KEY", None)
+    return QdrantVectorStore(client=DummyClient(), embedder=DummyEmbedder())
 
 
 def test_qdrant_store_env_overrides():
-    os.environ['QDRANT_PATH'] = 'tmp/qdrant_test'
-    os.environ['QDRANT_COLLECTION'] = 'test_collection'
-    os.environ.pop('QDRANT_URL', None)
-    os.environ.pop('QDRANT_API_KEY', None)
-
-    store = qdrant_store.QdrantVectorStore()
-    assert store.collection_name == 'test_collection'
-    # Assert against the module constant rather than a literal. The embedder changed
-    # from BAAI/bge-base-en-v1.5 (768-dim) to all-MiniLM-L6-v2 (384-dim) and this
-    # assertion silently went stale. qdrant_store is the single source of truth.
-    assert store.vector_dim == qdrant_store.VECTOR_DIM
+    store = _make_store()
+    assert store.collection_name == "test_collection"
+    # Assert terhadap konstanta modul, bukan literal. Embedder berubah dari
+    # BAAI/bge-base-en-v1.5 (768-dim) ke all-MiniLM-L6-v2 (384-dim) dan asersi
+    # literal ini dulu ikut basi diam-diam. qdrant_store = sumber kebenaran.
+    assert store.vector_dim == VECTOR_DIM
     store.close()
 
 
 def test_qdrant_store_search_returns_results():
-    os.environ['QDRANT_PATH'] = 'tmp/qdrant_test'
-    os.environ['QDRANT_COLLECTION'] = 'test_collection'
-    store = qdrant_store.QdrantVectorStore()
-    results = store.search('hello world', k=1)
+    store = _make_store()
+    results = store.search("hello world", k=1)
     assert len(results) == 1
-    assert results[0].chunk_id == 'c1'
+    assert results[0].chunk_id == "c1"
     assert results[0].score == 0.85
     store.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_qdrant_store_env_overrides()
     test_qdrant_store_search_returns_results()
-    print('OK')
+    print("OK")
