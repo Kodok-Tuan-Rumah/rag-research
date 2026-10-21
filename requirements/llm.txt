@@ -10,6 +10,11 @@ langchain-core==1.6.6
 langchain-groq==1.1.3
 langchain-huggingface==1.2.2
 
+# ── ragas evaluation framework ──────────────────────────────────────────────
+# Required for RAG evaluation metrics (faithfulness, answer relevancy, etc)
+# Pinned to 0.2.15 as it's tested with langchain-community 0.4.1
+ragas==0.2.15
+
 # ── ORCHESTRATION (declared, NOT wired) ──────────────────────────────────────
 # ⚠️ 0 imports in src/; conflicts with PROJECT_GOALS.md §9 Non-Goals.
 # Do not wire LangGraph without an explicit decision record.

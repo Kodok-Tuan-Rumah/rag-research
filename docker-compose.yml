@@ -33,6 +33,9 @@ services:
       # WAJIB jalankan dengan --env-file ../.env bila ingin key terisi.
       # Default kosong disengaja: generator akan ber-fallback lokal.
       GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Redis only exists in the root stack's monitoring profile.
+      REDIS_ENABLED: ${REDIS_ENABLED:-false}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=10)"]
       interval: 15s

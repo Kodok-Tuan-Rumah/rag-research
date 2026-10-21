@@ -13,11 +13,41 @@ from src.api.config import settings
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# --- IMPORT RUST ENGINE ---
+# --- IMPORT RUST ENGINE WITH PYTHON FALLBACK ---
 try:
     import semantic_chunker_rust
 except ImportError:
-    raise ImportError("Library 'semantic_chunker_rust' tidak ditemukan. Jalankan 'maturin develop' di folder rust dulu!")
+    class SemanticChunkerRustMock:
+        @staticmethod
+        def split_sentences_rs(text: str) -> List[str]:
+            raw = re.split(r'(?<=[.?!])\s+', text)
+            return [s.strip() for s in raw if s.strip()]
+
+        @staticmethod
+        def find_breakpoints_rs(similarities, threshold: float) -> List[int]:
+            breakpoints = []
+            # similarities is a 1D or 2D array of adjacent similarities
+            sim_list = np.diag(similarities, k=1) if isinstance(similarities, np.ndarray) and similarities.ndim == 2 else similarities
+            for i, sim in enumerate(sim_list):
+                if sim < threshold:
+                    breakpoints.append(i + 1)
+            return breakpoints
+
+        @staticmethod
+        def assemble_chunks_rs(sentences: List[str], breakpoints: List[int], overlap: int) -> List[List[str]]:
+            if not sentences:
+                return []
+            chunks = []
+            start = 0
+            for bp in breakpoints:
+                if bp > start and bp <= len(sentences):
+                    chunks.append(sentences[start:bp])
+                    start = max(0, bp - overlap)
+            if start < len(sentences):
+                chunks.append(sentences[start:])
+            return chunks
+
+    semantic_chunker_rust = SemanticChunkerRustMock()
 
 # Config
 # Single source of truth: src/api/config.py. This constant previously duplicated

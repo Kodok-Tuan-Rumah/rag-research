@@ -1,5 +1,3 @@
-"""Audit canonical query coverage and reranker headroom from saved K7 artifacts."""
-
 from __future__ import annotations
 
 import argparse

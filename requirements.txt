@@ -95,11 +95,13 @@ httpx==0.28.1
 python-multipart==0.0.32
 
 
-# ── OBSERVABILITY ────────────────────────────────────────────────────────────
+# ── OBSERVABILITY / CACHE ────────────────────────────────────────────────────
 # structlog        : structured JSON logging (Phase 1 exit criteria)
 # prometheus-client: latency / abstain-rate metrics for the 3500ms P95 budget
+# redis            : src/api/cache.py (response cache; optional at runtime)
 structlog==26.1.0
 prometheus-client==0.26.0
+redis==5.2.1
 
 
 # ── EVALUATION (opsional — requires API key) ─────────────────────────────────

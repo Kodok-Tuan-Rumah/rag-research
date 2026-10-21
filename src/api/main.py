@@ -5,11 +5,13 @@ import logging
 import uuid
 import json
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from dotenv import load_dotenv
 from src.api.config import settings
+from src.api.cache import cache
 from src.controller.policy_engine import PolicyEngine
 from src.controller.agent_state import MAX_RETRIEVAL_RETRIES
 from src.generation.generator import PARTIAL_TRUST_CHUNK_LIMIT, apply_partial_trust_policy
@@ -26,6 +28,30 @@ logging.basicConfig(
     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s'
 )
 logger = logging.getLogger("rag.api")
+
+# Prometheus Metrics
+RAG_REQUESTS_TOTAL = Counter(
+    "rag_requests_total",
+    "Total count of RAG generation requests",
+    ["backend", "decision", "failure_type"]
+)
+RAG_LATENCY_SECONDS = Histogram(
+    "rag_latency_seconds",
+    "End-to-end RAG latency in seconds",
+    ["backend", "decision"],
+    buckets=(0.1, 0.5, 1.0, 2.0, 3.5, 5.0, 10.0, float("inf"))
+)
+RAG_CONFIDENCE_SCORE = Histogram(
+    "rag_confidence_score",
+    "Confidence score of RAG results",
+    ["backend", "decision"],
+    buckets=(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+)
+RAG_ABSTAIN_TOTAL = Counter(
+    "rag_abstain_total",
+    "Total count of RAG abstentions",
+    ["backend", "failure_type"]
+)
 
 # Lazy globals 
 store = None
@@ -57,10 +83,44 @@ async def lifespan(app: FastAPI):
             # flags now travel with the search call instead.
         )
 
-        index_info = store.require_nonempty_index(
-            expected_corpus_chunks=len(retriever.chunks),
-            consumer="FastAPI startup",
-        )
+        try:
+            index_info = store.require_nonempty_index(
+                expected_corpus_chunks=len(retriever.chunks),
+                consumer="FastAPI startup",
+            )
+        except Exception:
+            logger.warning("[STARTUP] Qdrant index is empty or missing. Attempting auto-seed...")
+            import subprocess
+            import sys
+            from pathlib import Path
+
+            # `-m` keeps the repository root on sys.path so the ingestion modules
+            # can `import src...`. Running them by script path (the previous
+            # implementation) put only src/<subdir> on sys.path and failed with
+            # ModuleNotFoundError on the first boot with an empty Qdrant volume.
+            repo_root = str(Path(__file__).resolve().parents[2])
+            subprocess.run(
+                [sys.executable, "-m", "src.ingestion.document_loader"],
+                check=True, cwd=repo_root,
+            )
+            subprocess.run(
+                [sys.executable, "-m", "src.ingestion.semantic_chunker"],
+                check=True, cwd=repo_root,
+            )
+            subprocess.run(
+                [sys.executable, "-m", "src.retrieval.qdrant_store"],
+                check=True, cwd=repo_root,
+            )
+
+            retriever = MasterHybridRetriever(
+                vector_store=store,
+                bm25_chunks_path=settings.bm25_chunks_path,
+                rrf_k=settings.hybrid_rrf_k,
+            )
+            index_info = store.require_nonempty_index(
+                expected_corpus_chunks=len(retriever.chunks),
+                consumer="FastAPI startup (after auto-seed)",
+            )
         logger.info("[STARTUP] Qdrant index: %s", json.dumps(index_info, sort_keys=True))
 
         generator = GroqGenerator(model=settings.groq_model)
@@ -224,12 +284,27 @@ async def health():
         "reranker": reranker_model_loaded,  # deprecated: gunakan reranker_model_loaded
     }
 
+def _record_metrics(decision: str, failure_type: str, latency_ms: float, confidence: float):
+    backend = "research_rag"
+    RAG_REQUESTS_TOTAL.labels(backend=backend, decision=decision, failure_type=failure_type).inc()
+    RAG_LATENCY_SECONDS.labels(backend=backend, decision=decision).observe(latency_ms / 1000.0)
+    RAG_CONFIDENCE_SCORE.labels(backend=backend, decision=decision).observe(confidence)
+    if decision == "REJECT" or failure_type != "none":
+        RAG_ABSTAIN_TOTAL.labels(backend=backend, failure_type=failure_type).inc()
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_answer(req: GenerateRequest):
     if not all([retriever, generator, confidence_engine]):
         raise HTTPException(status_code=503, detail="Engine not ready")
     rid = str(uuid.uuid4())[:8]
     t_api_start = time.time()
+
+    cache_key = f"rag:gen:{req.query}:{req.top_k}:{req.use_reranker}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        logger.info(f"[{rid}] CACHE HIT for query: {req.query}")
+        return GenerateResponse(**cached_data)
+
     retry_triggered = False
     rerank_ms = 0.0
     query_type = "unknown"
@@ -310,6 +385,7 @@ async def generate_answer(req: GenerateRequest):
                 retry_triggered=retry_triggered,
                 latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": 0.0, "total": result.latency_total_ms},
             )
+            _record_metrics(decision="REJECT", failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=0.0)
             return result
 
         # REJECT
@@ -339,6 +415,7 @@ async def generate_answer(req: GenerateRequest):
                 retry_triggered=retry_triggered,
                 latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": 0.0, "total": result.latency_total_ms},
             )
+            _record_metrics(decision="REJECT", failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=confidence)
             return result
         
         if decision == "PARTIAL_TRUST":
@@ -428,6 +505,7 @@ async def generate_answer(req: GenerateRequest):
                 retry_triggered=retry_triggered,
                 latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": result.latency_total_ms},
             )
+            _record_metrics(decision=decision, failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=confidence)
             return result
 
         # GENERATE 
@@ -510,6 +588,8 @@ async def generate_answer(req: GenerateRequest):
             retry_triggered=retry_triggered,
             latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": latency_total_ms},
         )
+        cache.set(cache_key, result.model_dump(), ttl_seconds=600)
+        _record_metrics(decision=decision, failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=confidence)
         return result
     
     except Exception as e:
@@ -533,6 +613,7 @@ async def generate_answer(req: GenerateRequest):
             retry_triggered=retry_triggered,
             latency_ms={"retrieval": 0.0, "reranker": 0.0, "generation": 0.0, "total": result.latency_total_ms},
         )
+        _record_metrics(decision="REJECT", failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=0.0)
         return result
 
 
@@ -540,19 +621,7 @@ async def generate_answer(req: GenerateRequest):
 async def metrics():
     if not store:
         raise HTTPException(status_code=503, detail="Service not ready")
-    count = store.client.count(store.collection_name).count
-    return {
-        "vectors_indexed": count,
-        "engine_version": "1.0.0-baseline",
-        "phase": "PHASE_1",
-        "retrieval_stack": ["Qdrant", "BM25"],
-        "reranker": settings.reranker_model,
-        "multi_query": settings.use_multi_query,
-        "hyde": settings.use_hyde,
-        "governor": "ConfidenceEngine_v1",
-        "llm_provider": "Groq",
-        "llm_model": settings.groq_model,
-    }
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 if __name__ == "__main__":
     import uvicorn

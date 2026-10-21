@@ -42,7 +42,7 @@ OUTPUT_MD    = OUTPUT_DIR / "coverage_report.md"
 HARD_GAP_THRESHOLD       = 0.0   
 RETRIEVAL_FAIL_THRESHOLD = 0.2  
 FAITHFULNESS_THRESHOLD   = 0.5   
-DEFAULT_API_URL          = "http://localhost:8003"
+DEFAULT_API_URL          = "http://localhost:8000"
 DEFAULT_MAX_WORKERS      = 3
 
 ABSTENTION_PHRASES = [
@@ -370,7 +370,7 @@ def run_live(queries: list[str], api_url: str, max_workers: int = DEFAULT_MAX_WO
         logger.info("API health OK — vectors=%s", status.get("vectors", "?"))
     except Exception as e:
         logger.error("API unreachable at %s: %s", api_url, e)
-        logger.error("Start API: uvicorn src.api.main:app --host 0.0.0.0 --port 8003")
+        logger.error("Start API: uvicorn src.api.main:app --host 0.0.0.0 --port 8000")
         sys.exit(1)
 
     logger.info("Live run: %d queries | max_workers=%d", len(queries), max_workers)

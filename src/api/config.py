@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # the environment remains the single source for the values that moved.
 
     api_host: str = "0.0.0.0"
-    api_port: int = 8003
+    api_port: int = 8000
     bm25_chunks_path: str = "data/processed/chunks_semantic_v2.json"
     candidate_k: int = 50
     hybrid_rrf_k: int = 60
