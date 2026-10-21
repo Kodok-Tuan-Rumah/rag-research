@@ -28,6 +28,23 @@ def _is_noise_chunk(text: str) -> bool:
     """Return True jika chunk tidak layak di-index ke Qdrant."""
     return _is_noise_chunk_text(text)
 
+
+class IndexIntegrityError(RuntimeError):
+    """The configured retrieval index cannot safely serve the corpus."""
+
+    def __init__(self, message: str, *, diagnostics: Optional[dict] = None):
+        super().__init__(message)
+        self.diagnostics = diagnostics or {}
+
+
+class IndexEmptyError(IndexIntegrityError):
+    """The collection exists but contains no vectors."""
+
+
+class IndexCountMismatchError(IndexIntegrityError):
+    """A non-empty collection does not match the canonical corpus count."""
+
+
 @dataclass
 class RetrievalResult:
     chunk_id: str
@@ -142,31 +159,64 @@ class QdrantVectorStore:
         consumer: str,
         query_probe: Optional[str] = None,
     ) -> dict:
-        """Fail clearly when a configured retrieval corpus has no dense index."""
+        """Reject an empty or drifted index without taking ownership of the store.
+
+        Startup may recover from an empty collection by indexing the canonical
+        corpus. A non-empty collection with the wrong count is different: it may
+        contain a partial rebuild or another corpus, so the caller must stop and
+        inspect it rather than silently resetting it.
+        """
         diagnostics = self.index_diagnostics()
-        probe_hits = self.search(query_probe, k=5) if query_probe else None
+        expected = int(expected_corpus_chunks or 0)
+        actual = int(diagnostics["vector_count"])
+        diagnostics["expected_vector_count"] = expected
+        diagnostics["count_matches_expected"] = expected <= 0 or actual == expected
+
+        # A dense probe on an empty collection is not useful diagnostic evidence
+        # and some Qdrant client versions reject it. Probe only when there is an
+        # index to probe.
+        probe_hits = (
+            self.search(query_probe, k=5)
+            if query_probe and actual > 0
+            else None
+        )
         diagnostics["probe_hit_count"] = len(probe_hits) if probe_hits is not None else None
         diagnostics["probe_chunk_ids"] = (
             [hit.chunk_id for hit in probe_hits] if probe_hits is not None else []
         )
-        if expected_corpus_chunks > 0 and diagnostics["vector_count"] == 0:
-            location = (
-                diagnostics["storage_path"]
-                if diagnostics["backend"] == "local"
-                else diagnostics["endpoint"]
-            )
+
+        location = (
+            diagnostics["storage_path"]
+            if diagnostics["backend"] == "local"
+            else diagnostics["endpoint"]
+        )
+        if expected > 0 and actual == 0:
             message = (
                 f"Qdrant index is empty for {consumer}: collection="
                 f"'{diagnostics['collection']}', backend={diagnostics['backend']}, "
                 f"location={location}, exact_vector_count=0, "
                 f"dense_probe_hits={diagnostics['probe_hit_count']}, "
-                f"BM25 corpus chunks={expected_corpus_chunks}. "
+                f"BM25 corpus chunks={expected}. "
                 "Dense retrieval cannot run against this empty index. Verify "
                 "QDRANT_URL/QDRANT_PATH/QDRANT_COLLECTION, then index the canonical "
                 "chunks before starting the query service."
             )
-            self.close()
-            raise RuntimeError(message)
+            raise IndexEmptyError(message, diagnostics=diagnostics)
+
+        if expected > 0 and actual != expected:
+            message = (
+                f"Qdrant index count mismatch for {consumer}: collection="
+                f"'{diagnostics['collection']}', backend={diagnostics['backend']}, "
+                f"location={location}, expected_vector_count={expected}, "
+                f"actual_vector_count={actual}, "
+                f"dense_probe_hits={diagnostics['probe_hit_count']}, "
+                f"BM25 corpus chunks={expected}. Refusing to reset a non-empty "
+                "collection automatically. Inspect the collection and either "
+                "re-index the canonical corpus explicitly or choose a new "
+                "collection name."
+            )
+            raise IndexCountMismatchError(message, diagnostics=diagnostics)
+
         return diagnostics
 
     def index_chunks(self, chunks: List[dict], reset: bool = False) -> None:

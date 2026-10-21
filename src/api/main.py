@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import time
-import logging
-import uuid
+import hashlib
 import json
+import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
@@ -28,6 +30,124 @@ logging.basicConfig(
     format='%(asctime)s | %(levelname)s | %(name)s | %(message)s'
 )
 logger = logging.getLogger("rag.api")
+
+# The canonical processed corpus is an immutable startup input. Rebuilding it
+# from data/raw belongs to an explicit offline ingestion job, not to API
+# startup: the runtime image has no raw PDFs/PyMuPDF and the chunker has a
+# non-identical pure-Python fallback. Keep the count and fingerprint explicit so
+# a corpus change is a deliberate version bump, not an accidental auto-seed.
+CANONICAL_CORPUS_CHUNKS = 796
+CANONICAL_CORPUS_SHA256 = (
+    "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6"
+)
+
+
+def _resolve_corpus_path(corpus_path: str | Path) -> Path:
+    path = Path(corpus_path)
+    if path.is_absolute():
+        return path
+    return Path(__file__).resolve().parents[2] / path
+
+
+def _load_canonical_corpus(
+    corpus_path: str | Path = settings.bm25_chunks_path,
+    *,
+    expected_count: int | None = CANONICAL_CORPUS_CHUNKS,
+    expected_sha256: str | None = CANONICAL_CORPUS_SHA256,
+) -> list[dict]:
+    """Load and validate the processed corpus that startup may index.
+
+    This deliberately refuses to fall back to ``document_loader`` or
+    ``semantic_chunker``. An empty index may be seeded only from this exact
+    artifact; a missing or changed corpus is a deployment error.
+    """
+    path = _resolve_corpus_path(corpus_path)
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Canonical corpus not found at {path}. API startup will not run "
+            "the ingestion pipeline; restore the processed corpus before starting."
+        )
+
+    raw = path.read_bytes()
+    actual_sha256 = hashlib.sha256(raw).hexdigest()
+    if expected_sha256 and actual_sha256 != expected_sha256:
+        raise ValueError(
+            f"Canonical corpus fingerprint mismatch at {path}: expected "
+            f"{expected_sha256}, got {actual_sha256}. Refusing to auto-seed an "
+            "unexpected corpus."
+        )
+
+    chunks = json.loads(raw.decode("utf-8"))
+    if not isinstance(chunks, list) or not chunks:
+        raise ValueError(f"Canonical corpus at {path} must be a non-empty JSON list.")
+    if expected_count is not None and len(chunks) != expected_count:
+        raise ValueError(
+            f"Canonical corpus at {path} has {len(chunks)} chunks; "
+            f"expected {expected_count}."
+        )
+
+    required_fields = {"chunk_id", "doc_id", "text"}
+    malformed = [
+        index for index, chunk in enumerate(chunks)
+        if not isinstance(chunk, dict) or not required_fields.issubset(chunk)
+    ]
+    if malformed:
+        raise ValueError(
+            f"Canonical corpus at {path} has malformed chunks at indexes "
+            f"{malformed[:5]}."
+        )
+
+    chunk_ids = [chunk["chunk_id"] for chunk in chunks]
+    if len(chunk_ids) != len(set(chunk_ids)):
+        raise ValueError(f"Canonical corpus at {path} contains duplicate chunk_id values.")
+
+    return chunks
+
+
+def _seed_canonical_index(
+    store,
+    canonical_chunks: list[dict],
+    *,
+    expected_count: int,
+    consumer: str = "FastAPI startup",
+) -> dict:
+    logger.warning(
+        "[STARTUP] Qdrant index is empty; seeding %d canonical chunks into '%s' "
+        "without running ingestion.",
+        expected_count,
+        store.collection_name,
+    )
+    # reset=False is intentional. Startup may fill an empty collection, but it
+    # must never delete a non-empty collection that might contain another corpus.
+    store.index_chunks(canonical_chunks, reset=False)
+    return store.require_nonempty_index(
+        expected_corpus_chunks=expected_count,
+        consumer=f"{consumer} (after canonical seed)",
+    )
+
+
+def _ensure_startup_index(
+    store,
+    canonical_chunks: list[dict],
+    *,
+    expected_count: int,
+    consumer: str = "FastAPI startup",
+) -> dict:
+    """Require the canonical index, seeding only when the collection is empty."""
+    from src.retrieval.qdrant_store import IndexEmptyError
+
+    try:
+        return store.require_nonempty_index(
+            expected_corpus_chunks=expected_count,
+            consumer=consumer,
+        )
+    except IndexEmptyError:
+        return _seed_canonical_index(
+            store,
+            canonical_chunks,
+            expected_count=expected_count,
+            consumer=consumer,
+        )
 
 # Prometheus Metrics
 RAG_REQUESTS_TOTAL = Counter(
@@ -70,6 +190,11 @@ async def lifespan(app: FastAPI):
         from src.retrieval.hybrid_retriever import MasterHybridRetriever
         from src.generation.generator import GroqGenerator
 
+        # Validate the canonical processed corpus before constructing the
+        # retriever. MasterHybridRetriever silently disables BM25 when the file
+        # is missing, so a deferred check could start a degraded service.
+        canonical_chunks = _load_canonical_corpus(settings.bm25_chunks_path)
+
         confidence_engine = ConfidenceEngine()
         store = QdrantVectorStore()
         retriever = MasterHybridRetriever(
@@ -83,44 +208,12 @@ async def lifespan(app: FastAPI):
             # flags now travel with the search call instead.
         )
 
-        try:
-            index_info = store.require_nonempty_index(
-                expected_corpus_chunks=len(retriever.chunks),
-                consumer="FastAPI startup",
-            )
-        except Exception:
-            logger.warning("[STARTUP] Qdrant index is empty or missing. Attempting auto-seed...")
-            import subprocess
-            import sys
-            from pathlib import Path
-
-            # `-m` keeps the repository root on sys.path so the ingestion modules
-            # can `import src...`. Running them by script path (the previous
-            # implementation) put only src/<subdir> on sys.path and failed with
-            # ModuleNotFoundError on the first boot with an empty Qdrant volume.
-            repo_root = str(Path(__file__).resolve().parents[2])
-            subprocess.run(
-                [sys.executable, "-m", "src.ingestion.document_loader"],
-                check=True, cwd=repo_root,
-            )
-            subprocess.run(
-                [sys.executable, "-m", "src.ingestion.semantic_chunker"],
-                check=True, cwd=repo_root,
-            )
-            subprocess.run(
-                [sys.executable, "-m", "src.retrieval.qdrant_store"],
-                check=True, cwd=repo_root,
-            )
-
-            retriever = MasterHybridRetriever(
-                vector_store=store,
-                bm25_chunks_path=settings.bm25_chunks_path,
-                rrf_k=settings.hybrid_rrf_k,
-            )
-            index_info = store.require_nonempty_index(
-                expected_corpus_chunks=len(retriever.chunks),
-                consumer="FastAPI startup (after auto-seed)",
-            )
+        index_info = _ensure_startup_index(
+            store,
+            canonical_chunks,
+            expected_count=len(canonical_chunks),
+            consumer="FastAPI startup",
+        )
         logger.info("[STARTUP] Qdrant index: %s", json.dumps(index_info, sort_keys=True))
 
         generator = GroqGenerator(model=settings.groq_model)
@@ -302,8 +395,70 @@ async def generate_answer(req: GenerateRequest):
     cache_key = f"rag:gen:{req.query}:{req.top_k}:{req.use_reranker}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        logger.info(f"[{rid}] CACHE HIT for query: {req.query}")
-        return GenerateResponse(**cached_data)
+        try:
+            cached_result = GenerateResponse(**cached_data)
+        except Exception as e:
+            logger.warning(
+                f"[{rid}] CACHE INVALID for query: {req.query} | {type(e).__name__}: {e}"
+            )
+            cache.delete(cache_key)
+        else:
+            cached_abstained = (
+                cached_result.decision == "REJECT"
+                or cached_result.failure_type != "none"
+                or cached_result.generator_status == "INSUFFICIENT_CONTEXT"
+            )
+            if cached_abstained:
+                # Older entries could contain an abstention. Do not serve it
+                # from cache: an abstention must be re-evaluated against the
+                # current corpus/provider state.
+                logger.info(f"[{rid}] CACHE HIT ignored abstention for query: {req.query}")
+                cache.delete(cache_key)
+            else:
+                cache_latency_ms = round((time.time() - t_api_start) * 1000, 2)
+                cached_result = cached_result.model_copy(
+                    update={
+                        "latency_retrieval_ms": 0.0,
+                        "latency_generation_ms": 0.0,
+                        "latency_total_ms": cache_latency_ms,
+                    }
+                )
+                logger.info(f"[{rid}] CACHE HIT for query: {req.query}")
+                _record_metrics(
+                    decision=cached_result.decision,
+                    failure_type=cached_result.failure_type,
+                    latency_ms=cache_latency_ms,
+                    confidence=cached_result.confidence,
+                )
+                _log_query_event(
+                    query_id=rid,
+                    query=req.query,
+                    query_type="cache_hit",
+                    answer_status="answered",
+                    failure_type=cached_result.failure_type,
+                    abstain_reason=cached_result.abstain_reason,
+                    confidence_score=cached_result.confidence,
+                    retrieval_scores=[],
+                    reranker_scores=[],
+                    chunks_used=(
+                        cached_result.context_chunk_ids
+                        or cached_result.generation_chunk_ids
+                    ),
+                    generator_status=cached_result.generator_status,
+                    generator_confidence=cached_result.generator_confidence,
+                    llm_confidence=cached_result.llm_confidence,
+                    generation_chunk_ids=cached_result.generation_chunk_ids,
+                    context_chunk_ids=cached_result.context_chunk_ids,
+                    retry_triggered=False,
+                    latency_ms={
+                        "retrieval": 0.0,
+                        "reranker": 0.0,
+                        "generation": 0.0,
+                        "total": cache_latency_ms,
+                    },
+                    cache_hit=True,
+                )
+                return cached_result
 
     retry_triggered = False
     rerank_ms = 0.0
@@ -588,7 +743,14 @@ async def generate_answer(req: GenerateRequest):
             retry_triggered=retry_triggered,
             latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": latency_total_ms},
         )
-        cache.set(cache_key, result.model_dump(), ttl_seconds=600)
+        # Only cache successful answers. Caching an abstention would keep
+        # serving a transient provider/retrieval failure for the whole TTL.
+        if (
+            decision in {"GENERATE", "PARTIAL_TRUST"}
+            and not generation_abstained
+            and result.failure_type == "none"
+        ):
+            cache.set(cache_key, result.model_dump(), ttl_seconds=600)
         _record_metrics(decision=decision, failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=confidence)
         return result
     

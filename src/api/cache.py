@@ -5,6 +5,8 @@ import json
 import logging
 from typing import Any, Optional
 
+from dotenv import load_dotenv
+
 logger = logging.getLogger("rag.cache")
 
 try:
@@ -16,9 +18,13 @@ except ImportError:
 
 class RedisCache:
     def __init__(self):
+        # `main.py` imports this module before calling load_dotenv(), so loading
+        # here is required for REDIS_ENABLED/REDIS_URL from a local .env to take
+        # effect. Existing process environment variables still win.
+        load_dotenv()
         self.client = None
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        enabled = os.getenv("REDIS_ENABLED", "true").lower() == "true"
+        enabled = os.getenv("REDIS_ENABLED", "false").strip().lower() == "true"
 
         if REDIS_AVAILABLE and enabled:
             try:
@@ -49,6 +55,14 @@ class RedisCache:
             self.client.setex(key, ttl_seconds, json.dumps(value, default=str))
         except Exception as e:
             logger.debug("[CACHE] Redis SET error for key %s: %s", key, e)
+
+    def delete(self, key: str) -> None:
+        if not self.client:
+            return
+        try:
+            self.client.delete(key)
+        except Exception as e:
+            logger.debug("[CACHE] Redis DELETE error for key %s: %s", key, e)
 
 
 # Global cache instance

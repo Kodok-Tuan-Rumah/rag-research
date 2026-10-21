@@ -48,6 +48,22 @@ class FakeGenerator:
         })()
 
 
+class FakeCache:
+    def __init__(self, data=None):
+        self.data = data
+        self.set_calls = []
+        self.delete_calls = []
+
+    def get(self, key):
+        return self.data
+
+    def set(self, key, value, ttl_seconds=300):
+        self.set_calls.append((key, value, ttl_seconds))
+
+    def delete(self, key):
+        self.delete_calls.append(key)
+
+
 async def _run_inline(func, *args, **kwargs):
     """Keep endpoint tests deterministic; threadpool behavior is FastAPI-owned."""
     return func(*args, **kwargs)
@@ -691,3 +707,112 @@ def test_api_abstain_event_still_carries_full_log_schema(monkeypatch):
     assert event["chunks_used"] == []
     assert event["retrieval_scores"] == []
     assert event["reranker_scores"] == []
+
+
+def test_redis_cache_is_disabled_by_default(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("REDIS_ENABLED", raising=False)
+    monkeypatch.delenv("REDIS_URL", raising=False)
+
+    from src.api.cache import RedisCache
+
+    assert RedisCache().client is None
+
+
+def test_cache_hit_records_metrics_and_query_log(monkeypatch):
+    cached = main.GenerateResponse(
+        query="test query",
+        answer="cached answer",
+        retrieved_chunks=[],
+        retrieval_method="cache",
+        latency_retrieval_ms=12.0,
+        latency_generation_ms=34.0,
+        latency_total_ms=46.0,
+        model="test-model",
+        confidence=0.8,
+        decision="GENERATE",
+        generator_status="ANSWERED",
+    ).model_dump()
+
+    fake_cache = FakeCache(cached)
+    retriever = FakeRetriever([])
+    monkeypatch.setattr(main, "cache", fake_cache)
+    monkeypatch.setattr(main, "retriever", retriever)
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(main, "confidence_engine", FakeConfidenceEngine([]))
+
+    metrics = []
+    events = []
+    monkeypatch.setattr(main, "_record_metrics", lambda **event: metrics.append(event))
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: events.append(event))
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.answer == "cached answer"
+    assert response.latency_retrieval_ms == 0.0
+    assert response.latency_generation_ms == 0.0
+    assert retriever.calls == []
+    assert metrics[0]["decision"] == "GENERATE"
+    assert metrics[0]["failure_type"] == "none"
+    assert events[0]["cache_hit"] is True
+    assert events[0]["query_type"] == "cache_hit"
+    assert events[0]["answer_status"] == "answered"
+    assert fake_cache.set_calls == []
+
+
+def test_abstention_is_not_cached(monkeypatch):
+    class AbstainingGenerator(FakeGenerator):
+        def generate(self, query, chunks, **kwargs):
+            return type("Response", (), {
+                "answer": "INSUFFICIENT_CONTEXT",
+                "retrieval_method": "abstained",
+                "model": "test-model",
+                "status": "INSUFFICIENT_CONTEXT",
+                "confidence_score": 0.0,
+                "reason": "sanity rejection",
+                "retrieved_chunks": chunks,
+                "context_chunk_ids": [],
+            })()
+
+    fake_cache = FakeCache()
+    monkeypatch.setattr(main, "cache", fake_cache)
+    monkeypatch.setattr(main, "retriever", FakeRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", AbstainingGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.generator_status == "INSUFFICIENT_CONTEXT"
+    assert fake_cache.set_calls == []
+    assert fake_cache.delete_calls == []
+
+
+def test_successful_answer_is_cached(monkeypatch):
+    fake_cache = FakeCache()
+    monkeypatch.setattr(main, "cache", fake_cache)
+    monkeypatch.setattr(main, "retriever", FakeRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.decision == "GENERATE"
+    assert len(fake_cache.set_calls) == 1
+    assert fake_cache.set_calls[0][2] == 600
+    assert fake_cache.delete_calls == []
