@@ -238,7 +238,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="RAG Research Master Engine",
-    description="Production-ready RAG (PHASE 1 - Simplified Baseline)",
+    description=(
+        "Single-turn research RAG QA. The frozen Phase 1 acceptance set passes; "
+        "confidence remains heuristic and is not calibrated."
+    ),
     version="1.0.0-baseline",
     lifespan=lifespan,
 )
@@ -271,6 +274,10 @@ class GenerateResponse(BaseModel):
     post_generation_confidence: float | None = None
     post_generation_decision: str | None = None
     retry_triggered: bool = False
+    # Complete ordered retrieval IDs, including abstentions whose user-facing
+    # `retrieved_chunks` list is intentionally shortened. This keeps evaluation
+    # metrics tied to the same retrieval call without a second search.
+    retrieval_chunk_ids: list[str] = Field(default_factory=list)
     # Category of the failure, e.g. retrieval_miss / low_confidence /
     # insufficient_context / pipeline_error.
     failure_type: str = "none"
@@ -344,6 +351,7 @@ def _abstain_response(
         query=query,
         answer="The available information is not sufficient to provide a reliable answer.",
         retrieved_chunks=_format_chunks(chunks, limit=2),
+        retrieval_chunk_ids=_chunk_ids(chunks),
         retrieval_method=retrieval_method,
         latency_retrieval_ms=latency_retrieval_ms,
         latency_generation_ms=0.0,
@@ -469,7 +477,8 @@ async def generate_answer(req: GenerateRequest):
         plan = policy_engine.initial_plan(req.query)
         query_type = plan.query_type
         top_k = req.top_k if req.top_k is not None else plan.top_k_hint
-        # Shared with Agent: initial retrieval plus the configured retry limit.
+        # Keep retry behavior aligned with Agent: one retry may widen top_k,
+        # shift ranking weight toward BM25, and retry unstable retrieval.
         t_retrieval_start = time.time()
         chunks = []
         conf_eval = {"confidence_score": 0.0, "decision": "REJECT", "signals": {}}
@@ -485,7 +494,12 @@ async def generate_answer(req: GenerateRequest):
             }
             if attempt > 0:
                 retry_triggered = True
-                search_kwargs.update({"dense_weight": 0.3, "bm25_weight": 0.7})
+                search_kwargs.update({
+                    "top_k": min(max(top_k + 1, int(top_k * 1.5)), 30),
+                    "dense_weight": 0.3,
+                    "bm25_weight": 0.7,
+                    "min_score_threshold": -0.1,
+                })
 
             # search_with_trace is the same canonical retrieval as search() but
             # also returns the per-stage trace, which is the only way this
@@ -505,7 +519,13 @@ async def generate_answer(req: GenerateRequest):
                 query_type=query_type,
                 query=req.query,
             )
-            if chunks and conf_eval["decision"] != "REJECT":
+            signals = conf_eval.get("signals", {})
+            unstable_retrieval = bool(signals.get("unstable_retrieval"))
+            if (
+                chunks
+                and conf_eval["decision"] != "REJECT"
+                and not unstable_retrieval
+            ):
                 break
 
         latency_retrieval_ms = round((time.time() - t_retrieval_start) * 1000, 2)
@@ -541,6 +561,39 @@ async def generate_answer(req: GenerateRequest):
                 latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": 0.0, "total": result.latency_total_ms},
             )
             _record_metrics(decision="REJECT", failure_type=result.failure_type, latency_ms=result.latency_total_ms, confidence=0.0)
+            return result
+
+        # Agent.run abstains when the one permitted retry still reports an
+        # unstable retrieval signal. Keep the API adapter on the same contract
+        # instead of generating from a pool it has already classified unstable.
+        if conf_eval.get("signals", {}).get("unstable_retrieval"):
+            result = _abstain_response(
+                query=req.query, chunks=chunks,
+                retrieval_method="rejected_unstable_retrieval",
+                latency_retrieval_ms=latency_retrieval_ms,
+                latency_total_ms=round((time.time() - t_api_start) * 1000, 2),
+                confidence=confidence, retry_triggered=retry_triggered,
+                failure_type="low_confidence",
+                abstain_reason="retrieval remained unstable after the permitted retry",
+            )
+            _log_query_event(
+                query_id=rid, query=req.query,
+                query_type=query_type,
+                answer_status="abstained",
+                failure_type=result.failure_type,
+                abstain_reason=result.abstain_reason,
+                confidence_score=confidence,
+                retrieval_scores=_chunk_scores(chunks, "retrieval_score"),
+                reranker_scores=_chunk_scores(chunks, "rerank_score"),
+                chunks_used=[],
+                retry_triggered=retry_triggered,
+                latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms,
+                            "generation": 0.0, "total": result.latency_total_ms},
+            )
+            _record_metrics(
+                decision="REJECT", failure_type=result.failure_type,
+                latency_ms=result.latency_total_ms, confidence=confidence,
+            )
             return result
 
         # REJECT
@@ -620,6 +673,7 @@ async def generate_answer(req: GenerateRequest):
                 ),
                 post_generation_decision=getattr(response, "post_generation_decision", None),
                 retry_triggered=retry_triggered,
+                retrieval_chunk_ids=_chunk_ids(chunks),
                 generator_status=getattr(response, "status", "UNKNOWN"),
                 generator_confidence=getattr(
                     response,
@@ -701,6 +755,7 @@ async def generate_answer(req: GenerateRequest):
             ),
             post_generation_decision=getattr(response, "post_generation_decision", None),
             retry_triggered=retry_triggered,
+            retrieval_chunk_ids=_chunk_ids(chunks),
             generator_status=getattr(response, "status", "UNKNOWN"),
             generator_confidence=getattr(
                 response,

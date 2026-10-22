@@ -2,9 +2,9 @@
 #
 # ⚠️ Stack KANONIK = root compose (`make up` di root workspace, container
 #    ws-rag-api). File ini adalah HELPER mode B: menjalankan rag-api STANDALONE
-#    dengan menempel ke jaringan root — ia TIDAK men-definisikan qdrant/ollama
-#    sendiri, jadi root stack harus sudah hidup (alias `qdrant`/`ollama` dari
-#    ws-net yang dipakai ulang).
+#    dengan menempel ke jaringan root — ia TIDAK men-definisikan Qdrant
+#    sendiri, jadi root stack harus sudah hidup (alias `qdrant` dari ws-net
+#    yang dipakai ulang). RAG runtime saat ini tidak memakai Ollama.
 #
 # Pemakaian:
 #   cd rag-research
@@ -28,11 +28,10 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       QDRANT_URL: http://qdrant:6333
-      OLLAMA_HOST: http://ollama:11434
       GROQ_MODEL: openai/gpt-oss-20b
-      # WAJIB jalankan dengan --env-file ../.env bila ingin key terisi.
-      # Default kosong disengaja: generator akan ber-fallback lokal.
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # GroqGenerator requires this key during API startup; there is no local
+      # Ollama fallback in the current runtime.
+      GROQ_API_KEY: ${GROQ_API_KEY:?Set GROQ_API_KEY in ../.env or the shell environment}
       # Redis only exists in the root stack's monitoring profile.
       REDIS_ENABLED: ${REDIS_ENABLED:-false}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}

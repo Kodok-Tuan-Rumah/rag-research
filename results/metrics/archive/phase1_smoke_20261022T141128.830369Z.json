@@ -1,0 +1,1151 @@
+{
+  "report_version": "phase1-smoke-report-v1",
+  "dataset_version": "phase1-smoke-v1",
+  "dataset_sha256": "780781baf9d3e5eb80af49bc182f3f811795934717571d6a605624ea7ec2d7d6",
+  "mode": "full",
+  "generation_enabled": true,
+  "quality_review_required": true,
+  "acceptance": {
+    "case_count": 20,
+    "answerable_count": 15,
+    "abstain_count": 5,
+    "minimum_correct_cases": 18,
+    "maximum_confident_wrong": 0
+  },
+  "records": [
+    {
+      "index": 1,
+      "query_id": "p1_answer_01",
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "should_abstain": false,
+      "gold_answer": "The Gwets AC1/2 statistic was used to measure inter-rater reliability, and its score (Gwets AC2) varies between 0.37 and 0.55 on the 7-point Likert sc",
+      "gold_chunk_id": "tier3_llama2_rs_0086",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_01",
+        "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 2,
+      "query_id": "p1_answer_02",
+      "query": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "should_abstain": false,
+      "gold_answer": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0023",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How are FEVER class labels mapped for training in the context of RAG models?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_02",
+        "query": "How are FEVER class labels mapped for training in the context of RAG models?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 3,
+      "query_id": "p1_answer_03",
+      "query": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "should_abstain": false,
+      "gold_answer": "RAG is ideal for precise information retrieval tasks, while FT is suitable for scenarios requiring replication of specific structures, styles, or patt",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0028",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_03",
+        "query": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 4,
+      "query_id": "p1_answer_04",
+      "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "should_abstain": false,
+      "gold_answer": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0027",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_04",
+        "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 5,
+      "query_id": "p1_answer_05",
+      "query": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "should_abstain": false,
+      "gold_answer": "RAG was more factual in 42.7% of cases.",
+      "gold_chunk_id": "tier1_rag_lewis2020_rs_0026",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_05",
+        "query": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 6,
+      "query_id": "p1_answer_06",
+      "query": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "should_abstain": false,
+      "gold_answer": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences, and are often used in conjuncti",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0008",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_06",
+        "query": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 7,
+      "query_id": "p1_answer_07",
+      "query": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "should_abstain": false,
+      "gold_answer": "The margin component can improve Helpfulness reward model accuracy especially on samples where two responses are more separable.",
+      "gold_chunk_id": "tier3_llama2_rs_0043",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How does the margin component affect the Helpfulness reward model accuracy?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_07",
+        "query": "How does the margin component affect the Helpfulness reward model accuracy?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 8,
+      "query_id": "p1_answer_08",
+      "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "should_abstain": false,
+      "gold_answer": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the",
+      "gold_chunk_id": "tier3_llama2_rs_0007",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_08",
+        "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 9,
+      "query_id": "p1_answer_09",
+      "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "should_abstain": false,
+      "gold_answer": "The HateBERT classifier scores each line of a document separately and averages them to assign a document score.",
+      "gold_chunk_id": "tier3_llama2_rs_0098",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_09",
+        "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 10,
+      "query_id": "p1_answer_10",
+      "query": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "should_abstain": false,
+      "gold_answer": "The inter-rater reliability (IRR) is measured using Gwets AC1/2 statistic, and the average IRR score for Llama 2-Chat annotations is 0.92 according to",
+      "gold_chunk_id": "tier3_llama2_rs_0152",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_10",
+        "query": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 11,
+      "query_id": "p1_answer_11",
+      "query": "How many parameters does the LLM used in the experiments have?",
+      "should_abstain": false,
+      "gold_answer": "540 billion parameters",
+      "gold_chunk_id": "tier2_large_language_models_rs_0042",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "How many parameters does the LLM used in the experiments have?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_11",
+        "query": "How many parameters does the LLM used in the experiments have?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 12,
+      "query_id": "p1_answer_12",
+      "query": "What BLEU score did the Transformer model achieve on the WMT 2014 English-to-French translation task?",
+      "should_abstain": false,
+      "gold_answer": "41.8",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0002",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What BLEU score did the Transformer model achieve on the WMT 2014 English-to-French translation task?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_12",
+        "query": "What BLEU score did the Transformer model achieve on the WMT 2014 English-to-French translation task?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 13,
+      "query_id": "p1_answer_13",
+      "query": "What component is directly substituted to generate relevant documents according to a query?",
+      "should_abstain": false,
+      "gold_answer": "retriever module",
+      "gold_chunk_id": "tier1_advanced_rag_survey_rs_0053",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What component is directly substituted to generate relevant documents according to a query?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_13",
+        "query": "What component is directly substituted to generate relevant documents according to a query?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 14,
+      "query_id": "p1_answer_14",
+      "query": "What method reduces the dependency on manual mapping from model prediction to label by using a model’s own embeddings?",
+      "should_abstain": false,
+      "gold_answer": "STAR",
+      "gold_chunk_id": "tier2_self_instruct_rs_0054",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What method reduces the dependency on manual mapping from model prediction to label by using a model’s own embeddings?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_14",
+        "query": "What method reduces the dependency on manual mapping from model prediction to label by using a model’s own embeddings?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 15,
+      "query_id": "p1_answer_15_attention",
+      "query": "What is attention mechanism in transformer models?",
+      "should_abstain": false,
+      "gold_answer": "Self-attention relates different positions in a single sequence to compute a representation of that sequence.",
+      "gold_chunk_id": "tier3_attention_all_you_need_rs_0010",
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What is attention mechanism in transformer models?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_answer_15_attention",
+        "query": "What is attention mechanism in transformer models?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 16,
+      "query_id": "p1_abstain_01",
+      "query": "What is the training cost in dollars for GPT-4?",
+      "should_abstain": true,
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What is the training cost in dollars for GPT-4?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_abstain_01",
+        "query": "What is the training cost in dollars for GPT-4?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 17,
+      "query_id": "p1_abstain_02",
+      "query": "Who won the 2024 Nobel Prize in Physics?",
+      "should_abstain": true,
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "Who won the 2024 Nobel Prize in Physics?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_abstain_02",
+        "query": "Who won the 2024 Nobel Prize in Physics?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 18,
+      "query_id": "p1_abstain_03",
+      "query": "What are the contradictions between RAG and fine-tuning approaches?",
+      "should_abstain": true,
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What are the contradictions between RAG and fine-tuning approaches?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_abstain_03",
+        "query": "What are the contradictions between RAG and fine-tuning approaches?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 19,
+      "query_id": "p1_abstain_04",
+      "query": "What does the paper say about performance?",
+      "should_abstain": true,
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What does the paper say about performance?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_abstain_04",
+        "query": "What does the paper say about performance?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    },
+    {
+      "index": 20,
+      "query_id": "p1_abstain_05_manual",
+      "query": "What was the closing price of Bitcoin in Indonesian rupiah on 15 October 2026?",
+      "should_abstain": true,
+      "gold_answer": null,
+      "gold_chunk_id": null,
+      "exception": "ResponseHandlingException: [Errno -2] Name or service not known",
+      "human_review": {
+        "answer_correct": null,
+        "grounded": null,
+        "reviewer": null,
+        "notes": null,
+        "failure_categories": []
+      },
+      "traceback": "Traceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 101, in map_httpcore_exceptions\n    yield\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 250, in handle_request\n    resp = self._pool.handle_request(req)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 256, in handle_request\n    raise exc from None\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py\", line 236, in handle_request\n    response = connection.handle_request(\n        pool_request.request\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 101, in handle_request\n    raise exc\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 78, in handle_request\n    stream = self._connect(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_sync/connection.py\", line 124, in _connect\n    stream = self._network_backend.connect_tcp(**kwargs)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_backends/sync.py\", line 207, in connect_tcp\n    with map_exceptions(exc_map):\n         ~~~~~~~~~~~~~~^^^^^^^^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    raise to_exc(exc) from exc\nhttpcore.ConnectError: [Errno -2] Name or service not known\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 137, in send_inner\n    response = self._client.send(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 914, in send\n    response = self._send_handling_auth(\n        request,\n    ...<2 lines>...\n        history=[],\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 942, in _send_handling_auth\n    response = self._send_handling_redirects(\n        request,\n        follow_redirects=follow_redirects,\n        history=history,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 979, in _send_handling_redirects\n    response = self._send_single_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_client.py\", line 1014, in _send_single_request\n    response = transport.handle_request(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 249, in handle_request\n    with map_httpcore_exceptions():\n         ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/contextlib.py\", line 162, in __exit__\n    self.gen.throw(value)\n    ~~~~~~~~~~~~~~^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/httpx/_transports/default.py\", line 118, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\nhttpx.ConnectError: [Errno -2] Name or service not known\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/phase1_smoke.py\", line 146, in run_smoke\n    result = runner.run_single_query(\n        query=case[\"question\"],\n    ...<3 lines>...\n        save_output=False,\n    )\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/scripts/run_single_query.py\", line 308, in run_single_query\n    store      = QdrantVectorStore()\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 121, in __init__\n    self._ensure_collection()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/rag-research/src/retrieval/qdrant_store.py\", line 124, in _ensure_collection\n    existing = [c.name for c in self.client.get_collections().collections]\n                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_client.py\", line 1577, in get_collections\n    return self._client.get_collections(**kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/qdrant_remote.py\", line 1909, in get_collections\n    self.http.collections_api.get_collections().result\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 527, in get_collections\n    return self._build_for_get_collections()\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api/collections_api.py\", line 232, in _build_for_get_collections\n    return self.api_client.request(\n           ~~~~~~~~~~~~~~~~~~~~~~~^\n        type_=m.InlineResponse2006,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n        headers=headers if headers else None,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 98, in request\n    return self.send(request, type_)\n           ~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 115, in send\n    response = self.middleware(request, self.send_inner)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 152, in new_middleware\n    return middleware(request, inner_send)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/context_headers.py\", line 39, in rest_headers_middleware\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 150, in inner_send\n    return current_middleware(request, call_next)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 255, in __call__\n    return call_next(request)\n  File \"/home/malikimayzar/projects/ai-infra-workspace/venv/lib/python3.14/site-packages/qdrant_client/http/api_client.py\", line 139, in send_inner\n    raise ResponseHandlingException(e)\nqdrant_client.http.exceptions.ResponseHandlingException: [Errno -2] Name or service not known\n",
+      "result": {
+        "query": "What was the closing price of Bitcoin in Indonesian rupiah on 15 October 2026?",
+        "status": "FAILED",
+        "answer_status": "failed",
+        "failure_type": "pipeline_error",
+        "confidence_score": 0.0,
+        "retry_triggered": false,
+        "generation_attempts": 0,
+        "answer": "",
+        "abstain_reason": "ResponseHandlingException: [Errno -2] Name or service not known"
+      },
+      "structured_log": {
+        "query_id": "p1_abstain_05_manual",
+        "query": "What was the closing price of Bitcoin in Indonesian rupiah on 15 October 2026?",
+        "query_type": null,
+        "retrieval_scores": [],
+        "reranker_scores": [],
+        "chunks_used": [],
+        "confidence_score": 0.0,
+        "failure_type": "pipeline_error",
+        "answer_status": "failed",
+        "latency_ms": {
+          "total": null,
+          "generation": null,
+          "retrieval": null,
+          "reranker": null
+        },
+        "retry_triggered": false
+      },
+      "runtime_checks": {
+        "valid_status": false,
+        "confidence_in_range": true,
+        "retry_within_limit": true,
+        "log_schema_complete": true,
+        "log_latency_complete": true,
+        "qdrant_count_matches": false,
+        "dense_probe_nonempty": false
+      }
+    }
+  ],
+  "summary": {
+    "total": 20,
+    "runtime_pass": false,
+    "runtime_failed_query_ids": [
+      "p1_answer_01",
+      "p1_answer_02",
+      "p1_answer_03",
+      "p1_answer_04",
+      "p1_answer_05",
+      "p1_answer_06",
+      "p1_answer_07",
+      "p1_answer_08",
+      "p1_answer_09",
+      "p1_answer_10",
+      "p1_answer_11",
+      "p1_answer_12",
+      "p1_answer_13",
+      "p1_answer_14",
+      "p1_answer_15_attention",
+      "p1_abstain_01",
+      "p1_abstain_02",
+      "p1_abstain_03",
+      "p1_abstain_04",
+      "p1_abstain_05_manual"
+    ],
+    "human_review_complete": false,
+    "failure_reasons_complete": true,
+    "correct_final_decisions": null,
+    "minimum_correct_final_decisions": 18,
+    "confident_wrong_answers": 0,
+    "quality_pass": false,
+    "phase1_pass": false
+  },
+  "previous_report_archive": "results/metrics/archive/phase1_smoke_20261022T140146.324573Z.json"
+}

@@ -10,6 +10,8 @@ or human review.
 |---|---|---|---|
 | Retrieval benchmark | `data/evaluation/retrieval_eval_dataset_v2.json` | Retrieval ranking against labeled gold chunks (13-query K7 benchmark) | `python scripts/run_retrieval_eval.py` |
 | Phase 1 acceptance | `data/evaluation/phase1_smoke_set_v1.json` | Full runtime contract, answer/abstention decisions, and reviewed grounding (20 cases: 15 answerable, 5 abstain) | `python scripts/phase1_smoke.py` |
+| Phase 2 pipeline metrics | `data/evaluation/retrieval_eval_dataset_v4.json` | Same-run answer, retrieval, abstention, and failure metrics; v4 is currently an incomplete expansion candidate | `python scripts/run_eval_phase2.py` |
+| Optional answer-quality judge | A pipeline report produced by `run_eval.py` | RAGAS metrics; separate from the deterministic Phase 2 gate | `python scripts/run_eval.py` |
 
 The Phase 1 set is versioned independently. Do not merge its outcomes into
 retrieval metrics or change its labels to make a run pass. If its content needs
@@ -62,17 +64,53 @@ dataset provenance.
 
 ## Current recorded status
 
-The checked-in `results/metrics/phase1_smoke.json` contains 20 cases, full
-generation, complete human review, and records `runtime_pass: true`,
-`quality_pass: true`, and `phase1_pass: true`. The checker was rerun and returned
-the same passing result on 2026-10-15. This passes the frozen Phase 1 acceptance
-gate; it does not establish production readiness or confidence calibration.
-A follow-up spot check was suggested for grounding judgments on
-`p1_answer_03` and `p1_answer_15_attention`, because some answer claims may be
-broader than evidence included in the prompt. If review changes either
-annotation, rerun `--check-report` and update the recorded status from its output.
-Re-run and complete acceptance after any code or corpus change that could affect
-runtime outputs.
+The archived 2026-10-15 report passed the frozen Phase 1 acceptance gate; it
+does not establish production readiness or confidence calibration. A new
+full-generation run was completed on 2026-10-22 against the same dataset and
+corpus fingerprints. Its 20 runtime rows pass, including the live Qdrant
+collection/vector-count checks, but human review is pending, so the current
+report records `quality_pass: false` and `phase1_pass: false`. Review all 15
+answerable cases before treating this run as accepted.
+
+Pay particular attention to `p1_answer_03` and `p1_answer_15_attention`. The
+archived review notes cite full-corpus text; verify each material claim against
+the chunks actually supplied to generation. After completing review, rerun
+`--check-report` and update this status from its output. Re-run and complete
+acceptance after any code or corpus change that could affect runtime outputs.
+
+## Phase 2 evaluation workflow
+
+The deterministic Phase 2 evaluator is `scripts/run_eval_phase2.py`. It reads
+versioned dataset envelopes through `dataset_records()`, validates labels
+against the selected corpus before model calls, and calculates retrieval scores
+from the chunk IDs returned by the same FastAPI `/generate` request used to
+produce the answer. Runtime errors remain per-query report rows and count against
+decision accuracy; they are not silently dropped. The optional LLM-judge path
+in `scripts/run_eval.py` is separate.
+
+Inspect the dataset and corpus without loading model clients or calling an LLM:
+
+```bash
+python scripts/run_eval_phase2.py --validate-only
+```
+
+Run a small API sample to inspect the report shape (requires the runtime
+dependencies, Qdrant, and Groq credentials; requests may incur provider cost):
+
+```bash
+python scripts/run_eval_phase2.py --limit 3
+```
+
+Run the complete Phase 2 evaluation only after the dataset meets the size,
+category, label, and category-balance gates:
+
+```bash
+python scripts/run_eval_phase2.py --require-phase2-gate
+```
+
+The checked-in v4 dataset currently has 112 rows and is missing the multihop
+category and the 20% category floor. It is therefore useful for schema/data
+validation and incremental work, but it is not yet eligible for a Phase 2 pass.
 
 ## Phase 2 entry
 

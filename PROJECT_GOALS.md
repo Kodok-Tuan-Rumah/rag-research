@@ -1,12 +1,12 @@
 # RAG SYSTEM — ENGINEERING GOALS & PRODUCTION SPEC
 > **Version:** 2.1
 > **Repo:** `rag-research`  
-> **Status:** Phase 1 acceptance passed (2026-10-15); Phase 2 evaluation-infrastructure work is ready to begin
-> **Last Updated:** 2026-10-15
+> **Status:** Phase 1 passed on the 2026-10-15 snapshot. A current-runtime run completed on 2026-10-22 and passed runtime gates; answer review and quality acceptance are pending. Phase 2 evaluator work is in progress.
+> **Last Updated:** 2026-10-22
 
 > **Current evidence note:** The K7.10–K7.13 retrieval audits use the 13-query `data/evaluation/retrieval_eval_dataset_v2.json`. This is distinct from the older 14-query `data/evaluation/retrieval_eval_dataset.json` summarized in the historical README baseline. The 13-query K7 set does not satisfy the Phase 2 target of at least 200 labeled samples, and its results do not establish production readiness or confidence calibration.
 
-> **Phase 1 evidence (2026-10-15):** `results/metrics/phase1_smoke.json` records a full-generation run with 20 cases, complete human review, `runtime_pass: true`, `quality_pass: true`, and `phase1_pass: true`; the checker was rerun and returned the same result. This is acceptance evidence for the frozen set, not a production-readiness or confidence-calibration claim. A follow-up spot check was suggested for grounding judgments on `p1_answer_03` and `p1_answer_15_attention`; revise the annotations and re-run the checker if that review finds either judgment incorrect. See [`docs/evaluation_guide.md`](docs/evaluation_guide.md).
+> **Phase 1 evidence:** The archived 2026-10-15 report records a passed acceptance for the frozen set. The current report at `results/metrics/phase1_smoke.json` was generated on 2026-10-22 against the same dataset and corpus fingerprints; all 20 runtime rows passed against the 796-vector Qdrant collection, but human review is incomplete, so `phase1_pass` is still false. Review the 15 answerable rows, with extra attention to `p1_answer_03` and `p1_answer_15_attention`, then rerun the checker. See [`docs/evaluation_guide.md`](docs/evaluation_guide.md).
 
 ---
 
@@ -214,22 +214,29 @@ The retrieval score threshold is configured in `src/api/config.py`; the content 
 **This is not an infinite loop. It is a single bounded retry.**
 
 ```
-Attempt 1: Standard retrieval → generate
+Attempt 1: Standard retrieval → confidence decision
   │
-  └── IF (confidence < threshold OR grounding_score < 0.5):
+  └── IF (decision = REJECT OR retrieval is unstable):
         Attempt 2 (ONE retry only):
-          - candidate_k *= 1.5 (round up)
-          - BM25 weight += 0.2
-          - Filtering relaxed (min_score: 0.0 → -0.1)
+          - requested top_k grows by 1.5x (integer truncation, at least +1,
+            capped at 30)
+          - dense/BM25 weights change from 0.5/0.5 to 0.3/0.7
+          - pass min_score_threshold = -0.1
+            (currently inert on the RRF score scale; see correction below)
           │
-          └── IF still low confidence → ABSTAIN (do not retry again)
+          └── If still rejected/unstable → abstain; never retry again
 ```
+
+The retry occurs before generation. It does not retry a generated answer after
+the post-generation evidence check. The API and Agent both allow one retry and
+use the same retrieval adjustments; the retry is triggered by REJECT or an
+`unstable_retrieval` signal.
 
 **Hard constraints on retry:**
 - Max iterations: **2** (initial + 1 retry)
 - Max additional LLM calls from retry: **1**
 - Max latency addition from retry: **2.0s**
-- If retry produces same confidence as attempt 1: **ABSTAIN immediately**
+- If the second attempt remains rejected or unstable: **ABSTAIN**
 
 ### 3.5 Context Control
 
@@ -368,7 +375,7 @@ This must be implemented as a circuit breaker, not a manual toggle.
 ---
 
 ### Phase 1 — Pipeline Stabilization
-**Status: `PASSED` — acceptance report and checker passed 2026-10-15**
+**Status: `PASSED` for the 2026-10-15 snapshot; current-runtime quality acceptance pending**
 
 **Goal:** Every query produces either a valid answer or a clean abstain. No crashes, no silent failures, no infinite loops.
 
@@ -383,22 +390,23 @@ This must be implemented as a circuit breaker, not a manual toggle.
 
 **Acceptance procedure:** Run `python scripts/phase1_smoke.py`. Before a new run replaces an existing report, the runner archives the prior report under `results/metrics/archive/`. Review answerable rows with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json`; this interactive review can resume partially annotated reports. Mark `answer_correct=yes` only when the answer addresses the question and includes the gold answer's essential facts (paraphrase is acceptable). Mark `grounded=yes` only when every material claim is supported by retrieved chunks; retrieving the gold chunk alone does not establish groundedness. For each answer marked incorrect or ungrounded, select at least one `failure_categories` value (`answer_incorrect`, `unsupported_claim`, `retrieval_miss`, `overly_specific`, `incomplete_answer`, or `other`) and add notes where useful. Then run `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json`. The checker exits successfully only when the runtime, dataset, Qdrant, complete review, failure reasons, 18/20, and zero-confident-wrong gates all pass. Any already-known confident-wrong answer is reported even while other reviews are pending and must be fixed in a fresh acceptance run. A run with `SMOKE_STOP_BEFORE_GEN` is not Phase 1 acceptance evidence.
 
-**Follow-up audit note:** The accepted human review marks all 15 answerable cases correct and grounded. A later advisory review raised questions about whether all claims in `p1_answer_03` and `p1_answer_15_attention` are supported strictly by chunks actually included in the LLM prompt. Re-open those cases with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json` if a stricter grounding audit is desired; update annotations only after reviewer verification, then rerun `--check-report`. This follow-up does not change the recorded checker result unless the review is changed.
+**Current re-acceptance (2026-10-22):** The full-generation run completed with `runtime_pass: true` and zero runtime failures against Qdrant collection `rag_research` (796 vectors). The checker currently reports `human_review_complete: false`, `quality_pass: false`, and `phase1_pass: false`; the 15 answerable cases still need review. In the archived 2026-10-15 report, `p1_answer_03` and `p1_answer_15_attention` were marked grounded using a review note that cites full-corpus text. Reassess their material claims against the chunks supplied to generation before carrying those judgments forward.
 
 ---
 
 ### Phase 2 — Evaluation Infrastructure
-**Status: `TODO`**
+**Status: `IN PROGRESS` — evaluator/data-contract work; acceptance gates remain open**
 
 **Goal:** Automated evaluation loop that gives a reliable signal on system quality.
 
 **Exit Criteria (all must pass):**
-- [ ] Versioned retrieval evaluation dataset(s) contain ≥ 200 labeled samples across all 4 query categories (lexical, paraphrase, multihop, adversarial)
-- [ ] Each sample has: `query`, `gold_answer`, `gold_chunk_id`, `should_abstain` label
-- [ ] `run_eval.py` runs end-to-end without manual intervention
-- [ ] `run_eval.py` outputs: EM, Recall@10, MRR@10, abstain accuracy, false abstain rate, failure type distribution
+- [ ] Versioned evaluation dataset contains ≥ 200 labeled samples across all 4 query categories (lexical, paraphrase, multihop, adversarial), with no query category below the 20% floor in §10.3
+- [ ] Every row has a unique `query_id`, `question`, boolean `should_abstain`, category, provenance, and `verification_status` (`human_verified` or `span_verified`); answerable rows have a gold answer and exactly one supported gold-chunk field (`gold_chunk_id` or `gold_chunk_ids`), while abstain rows have no gold answer/chunk
+- [ ] `scripts/run_eval_phase2.py` reads the versioned dataset schema and runs the chosen RAG execution path once per query; RAGAS remains a separate optional evaluator in `scripts/run_eval.py`
+- [ ] Phase 2 report outputs EM, token F1, Recall@10, MRR@10, abstain accuracy, false abstain rate, false answer rate, pipeline error rate, and failure distribution, with denominators and per-category summaries
+- [ ] No query category falls below 20% of the dataset; question category and difficulty labels are tracked as distinct fields
 - [ ] EM normalization function unit-tested with ≥ 10 edge cases
-- [ ] Eval results versioned and stored (JSON + timestamp)
+- [ ] Eval results are versioned and stored (JSON + timestamp), including dataset and corpus fingerprints, code revision/dirty state, runtime configuration, and per-query records
 
 ---
 
@@ -898,10 +906,11 @@ falls through to `retrieval_score` and uses `settings.min_score_threshold`,
 which is 0.0 on the RRF scale. One threshold variable compared against two
 incompatible distributions.
 
-Consequence for §3.4: of the three retry actions, two are effective (widening
-`k`, shifting BM25 weight) and one is inert **in both the Agent and the API**.
-§3.4 should be corrected before the adapters are aligned to it; see
-`results/metrics/k5_behaviour_changes.md`.
+Consequence for §3.4: the score-floor change is inert in both the Agent and API.
+The retry contract records it for traceability, but only widening requested
+`top_k` and shifting BM25 weight currently change retrieval behavior. Do not
+describe the score-floor adjustment as improved recall or relaxed filtering;
+see `results/metrics/k5_behaviour_changes.md`.
 
 ### Correction — §3.5 context control
 

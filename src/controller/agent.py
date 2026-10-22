@@ -151,7 +151,9 @@ class Agent:
             # P95 budget is already missed. The retry path now follows the
             # contract exactly; plan.allow_multi_query still governs the value,
             # and it defaults to False via settings.
-            params["k"] = min(int(plan.top_k_hint * 1.5), 30)
+            params["k"] = min(
+                max(plan.top_k_hint + 1, int(plan.top_k_hint * 1.5)), 30
+            )
             params["dense_weight"] = 0.3
             params["bm25_weight"] = 0.7
             params["min_score_threshold"] = -0.1
