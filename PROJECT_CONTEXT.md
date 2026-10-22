@@ -1,7 +1,7 @@
 # PROJECT: RAG Research System
 
 > **Project direction:** failure-aware, single-turn research QA. Prioritize evidence quality, grounded answers, explicit abstention, and reproducible evaluation over model or pipeline complexity.
-> **Runtime snapshot:** 2026-10-15. This file describes current source behavior; `PROJECT_GOALS.md` defines targets and phase gates. Evaluation status is evidence-backed in `results/metrics/phase1_smoke.json` and is not inferred from this architecture summary.
+> **Runtime snapshot:** 2026-10-22. This file describes source behavior at the snapshot date; `PROJECT_GOALS.md` defines targets and phase gates. Evaluation status is evidence-backed in `results/metrics/phase1_smoke.json` and is not inferred from this architecture summary.
 
 ## GOAL
 
