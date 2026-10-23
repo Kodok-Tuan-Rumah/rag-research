@@ -37,9 +37,7 @@ FROM ${PYTHON_IMAGE} AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/opt/venv/bin:${PATH}" \
-    HF_HOME=/app/hf-hub \
-    HF_HUB_OFFLINE=1
+    PATH="/opt/venv/bin:${PATH}"
 
 COPY --from=builder /opt/venv /opt/venv
 
@@ -47,8 +45,17 @@ WORKDIR /app
 COPY src/ /app/src/
 COPY data/processed/ /app/data/processed/
 
-# Baked HF cache (all-MiniLM-L6-v2) — embedder boot tanpa retry/download Hub.
-COPY hf-cache/ /app/hf-hub/
+# Download the models into the image so a fresh clone needs no host cache.
+# The reranker is included because `use_reranker=true` is a documented feature.
+ENV HF_HOME=/app/hf-hub \
+    HF_HUB_OFFLINE=0
+RUN python - <<'PY'
+from sentence_transformers import SentenceTransformer, CrossEncoder
+
+SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+PY
+ENV HF_HUB_OFFLINE=1
 
 RUN mkdir -p /app/data/cache
 
