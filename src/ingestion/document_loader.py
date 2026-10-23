@@ -162,40 +162,83 @@ def load_documents(input_path: str) -> list[Document]:
     return docs
 
 def extract_sections(text: str) -> list[dict]:
-    # Pattern lebih kuat buat Arxiv
-    patterns = [
-        r'^(Abstract)$',
-        r'^([0-9]+\.?\s+[A-Z\s]{3,})$',   # 1 INTRODUCTION atau 1. INTRODUCTION
-        r'^((?:I|V|X)+\.\s+[A-Z\s]{3,})$', # I. INTRODUCTION
-        r'^(References|REFERENCES|Bibliography)$',
-        r'^(Conclusion|CONCLUSION|Conclusions)$',
-        r'^(Methodology|METHODS|Proposed Method)$'
-    ]
-    
     lines = text.split('\n')
     sections = []
-    current_section = "Abstract" # Start with Abstract for Arxiv
+    current_section = "body"
     current_content = []
 
-    for line in lines:
+    exact_headings = {
+        "abstract", "introduction", "background", "related work", "conclusion",
+        "conclusions", "references", "bibliography", "methodology", "methods",
+        "proposed method", "experiments", "results", "discussion", "safety",
+        "pretraining", "fine-tuning", "appendix", "limitations", "acknowledgments",
+        "acknowledgements", "data", "evaluation", "model architecture",
+    }
+
+    def candidate_heading(value: str) -> Optional[str]:
+        value = re.sub(r'\s+', ' ', value.strip())
+        if not value or len(value) > 90 or value.endswith(('.', '?', '!')):
+            return None
+        value = re.sub(r'\s*\.\.\.\s*\d+\s*$', '', value).strip()
+        # Only a short, explicit numbered heading qualifies. Numbered prose,
+        # examples, and list entries are common throughout these PDFs.
+        numbered = re.match(r'^(?:[1-9]\d?(?:\.[1-9]\d?)*|[IVX]{1,5})\.?\s+([A-Z][^.!?]{1,65})$', value)
+        title = numbered.group(1).strip() if numbered else value
+        normalized = title.casefold().strip()
+        if normalized in exact_headings:
+            return title.upper()
+        words = title.split()
+        minor_words = {"and", "or", "of", "for", "in", "on", "to", "with", "the", "a", "an"}
+        title_case = all(
+            word[:1].isupper() or word.casefold() in minor_words
+            for word in words
+        )
+        if numbered and len(words) <= 6 and title_case:
+            return title.upper()
+        return None
+
+    def next_content_line(index: int) -> str:
+        parts = []
+        for following in lines[index + 1:index + 5]:
+            candidate = following.strip()
+            if candidate:
+                parts.append(candidate)
+            if sum(len(part) for part in parts) >= 80:
+                break
+        return ' '.join(parts)
+
+    for index, line in enumerate(lines):
         clean_line = line.strip()
-        is_header = False
-        
-        for p in patterns:
-            if re.match(p, clean_line, re.IGNORECASE):
-                # Save previous section if it has content
+        heading = candidate_heading(clean_line)
+        if heading:
+            next_line = next((item.strip() for item in lines[index + 1:] if item.strip()), "")
+            following = next_content_line(index)
+            # Table-of-contents entries are followed by another short heading,
+            # page number, or dot leaders rather than body prose.
+            following_is_heading = candidate_heading(next_line) is not None
+            looks_like_toc = bool(
+                re.search(r'\.{3,}\s*\d+\s*$', clean_line)
+                or re.search(r'\.{3,}\s*\d+\s*$', next_line)
+                or re.fullmatch(r'(?:\d+(?:\.\d+)*|[A-Z])', next_line)
+            )
+            is_body_header = (
+                len(next_line) >= 35
+                and len(next_line.split()) >= 6
+                and len(following) >= 45
+                and not following_is_heading
+                and not looks_like_toc
+                and not re.search(r'\.{3,}', next_line)
+                and not re.match(r'^(?:\d+(?:\.\d+)*|[A-Z])\s*$', following)
+            )
+            if is_body_header:
                 content_str = "\n".join(current_content).strip()
                 if content_str:
                     sections.append({"section_name": current_section, "text": content_str})
-                
-                current_section = clean_line.upper() # Standardize headers
+                current_section = heading
                 current_content = []
-                is_header = True
-                break
-        
-        if not is_header:
-            current_content.append(line)
-            
+                continue
+        current_content.append(line)
+
     sections.append({"section_name": current_section, "text": "\n".join(current_content).strip()})
     return [s for s in sections if len(s["text"]) > 20]
 

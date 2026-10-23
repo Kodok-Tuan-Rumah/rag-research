@@ -13,11 +13,15 @@
 ## ⚠️ Current State — Read This First
 
 > **Evidence date:** retrieval figures below are historical snapshots, not a
-> production-readiness result. The current Phase 1 report is
-> [`results/metrics/phase1_smoke.json`](results/metrics/phase1_smoke.json): its
-> full-generation 20-case run has complete human review and records
-> `runtime_pass: true`, `quality_pass: true`, and `phase1_pass: true`. A follow-up
-> grounding spot check was suggested for two answerable cases; see the
+> production-readiness result. The current working-tree Phase 1 report is
+> [`results/metrics/phase1_smoke_v3.json`](results/metrics/phase1_smoke_v3.json):
+> its full-generation 20-case runtime completed, but four rows are provider
+> errors after the Groq token quota was exhausted. Human review is pending
+> (`human_review_complete: false`), so `quality_pass: false` and
+> `phase1_pass: false`; this is not a completed acceptance run. A gold-blind
+> review pack is at
+> [`results/metrics/phase1_blind_review_v3.json`](results/metrics/phase1_blind_review_v3.json).
+> Rerun after quota reset, then review the fresh report. See the
 > [Phase 1 evaluation guide](docs/evaluation_guide.md) for scope and workflow.
 
 The canonical evaluation is **retrieval-only, no LLM judge**. The RAGAS generation-metric numbers further down are **LEGACY** — retained as audit trail, not current measurements.
@@ -67,10 +71,12 @@ it is not a current Phase 1 generation acceptance result.
 The 20-case generation/abstention acceptance set is separate from both the
 14-query historical baseline and the 13-query K7 retrieval audit. It requires
 full generation and human review; retrieval metrics alone cannot establish
-Phase 1 completion. The checked-in report and checker currently pass the Phase 1
-gate. A follow-up grounding spot check was suggested for `p1_answer_03` and
-`p1_answer_15_attention`; see the [evaluation guide](docs/evaluation_guide.md)
-and the gates in
+Phase 1 completion. The current v3 runtime completed, but four cases were
+provider errors after Groq's token quota was exhausted, and the 15 answerable
+cases have not received human review. Thus `quality_pass: false` and
+`phase1_pass: false`; no quality score should be inferred from this run. Rerun
+after quota reset, review the fresh report, then run the checker. See the
+[evaluation guide](docs/evaluation_guide.md) and the gates in
 [`PROJECT_GOALS.md`](PROJECT_GOALS.md#phase-1--pipeline-stabilization).
 
 ### Retrieval Ranking Mode
@@ -82,7 +88,7 @@ chunks = retriever.search(query, top_k=10)  # RRF-only
 reranked_chunks = retriever.search(query, top_k=10, rerank=True)
 ```
 
-The API request uses `use_reranker: false` by default; set it to `true` to opt in. `RetrievalTools.search_hybrid()` likewise accepts `rerank=True`. Returned chunks and search traces identify the selected mode as `ranking_mode: "rrf_only"` or `"rrf_reranker"`. Evaluation scripts that measure reranking pass the option explicitly so their stage remains enabled regardless of the runtime default.
+The API request uses `use_reranker: false` by default; set it to `true` to opt in. `RetrievalTools.search_hybrid()` likewise accepts `rerank=True`. Returned chunks and search traces identify the selected mode as `ranking_mode: "rrf_only"` or `"rrf_reranker"`. Evaluation scripts that measure reranking pass the option explicitly. However, the current Phase 1 report records `use_reranker: true` while every `reranker_scores` value across all 20 records is `null` and reranker latency is sub-millisecond (for example, 0.05 ms); that report does not demonstrate effective reranking, so do not treat the `_rerank_rrf` method label as evidence that the stage ran.
 
 ### K7.10–K7.13 Evidence (13-Query v2 Dataset)
 
@@ -301,7 +307,7 @@ dependency/test status:
     OK  protobuf upb shim (src/_compat.py, needed on Python 3.14)
 
 ==> Test suite
-    420 passed (working-tree snapshot; rerun --verify for current results)
+    449 passed (working-tree snapshot; rerun --verify for current results)
 ```
 
 Verify the key and the pipeline:
@@ -375,7 +381,7 @@ recorded in `ACKNOWLEDGED_DEAD_PATHS` rather than silently tolerated.
 python3 -m pytest tests/ -q
 ```
 
-Working-tree snapshot: **420 passed** with the `semantic_chunker_rust` extension built (`maturin develop`). An earlier bootstrap snapshot recorded **399 passed, 1 failed**; the failure was `tests/test_ci_contracts.py::test_every_src_module_imports`, which imports `src.ingestion.semantic_chunker` and fails when that extension is missing. Run the test command above to reconfirm.
+Working-tree snapshot: **449 passed** with the `semantic_chunker_rust` extension built (`maturin develop`). An earlier bootstrap snapshot recorded **399 passed, 1 failed**; the failure was `tests/test_ci_contracts.py::test_every_src_module_imports`, which imports `src.ingestion.semantic_chunker` and fails when that extension is missing. Run the test command above to reconfirm.
 
 > **If a test fails with** `ImportError: cannot load module more than once per process` **from `numpy/fft/_pocketfft.py`** — that is a test-harness problem, not a numpy or Python 3.14 defect. `unittest.mock.patch.dict(sys.modules, ...)` snapshots `sys.modules` and restores it wholesale on exit, evicting modules first imported *inside* the block. `numpy.fft._pocketfft_umath` is a C extension, and CPython forbids re-initialising the same extension twice in one process. Fix: pre-import `numpy.fft` above the `patch.dict` block. See `tests/test_qdrant_store.py` and `tests/test_semantic_chunker.py`.
 
@@ -443,7 +449,7 @@ rag-research/
 │       ├── main.py                   # FastAPI endpoint
 │       └── config.py                 # Settings (pydantic-settings)
 ├── scripts/                          # 40 classified scripts (10.6k LOC)
-├── tests/                            # pytest suite (420 passed with rust ext built)
+├── tests/                            # pytest suite (449 passed with rust ext built)
 ├── experiments/                      # Phase 1 ablation (legacy stack)
 ├── archive/
 │   └── legacy_2026_10/               # Zero-import modules + provenance README
@@ -463,7 +469,7 @@ rag-research/
 │   ├── debug/failure_analysis.json   # Failure mode breakdown
 │   └── qdrant_storage/               # Local Qdrant persistent (796 vectors)
 ├── results/
-│   ├── metrics/                      # 132 artifacts + INDEX.md (see results/metrics/INDEX.md)
+│   ├── metrics/                      # 135 artifacts + INDEX.md (see results/metrics/INDEX.md)
 │   ├── debug/
 │   └── logs/
 ├── cmd/server/main.go                # Go dashboard server

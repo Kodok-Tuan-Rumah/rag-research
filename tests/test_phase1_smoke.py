@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.phase1_smoke import archive_existing_report, load_cases, summarize
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+V3_DATASET = REPO_ROOT / "data/evaluation/phase1_smoke_set_v3.json"
+V3_CORPUS = REPO_ROOT / "data/processed/chunks_semantic_v3.json"
+
+
+def _v3_corpus() -> dict[str, dict]:
+    rows = json.loads(V3_CORPUS.read_text(encoding="utf-8"))
+    return {row["chunk_id"]: row for row in rows}
 
 
 def _passing_report() -> dict:
@@ -44,13 +54,49 @@ def _passing_report() -> dict:
 
 
 def test_phase1_acceptance_set_is_frozen_and_balanced():
-    dataset = load_cases()
+    dataset = load_cases(V3_DATASET)
 
-    assert dataset["dataset_version"] == "phase1-smoke-v1"
+    assert dataset["dataset_version"] == "phase1-smoke-v3"
     assert len(dataset["records"]) == 20
     assert sum(row["should_abstain"] is False for row in dataset["records"]) == 15
     assert sum(row["should_abstain"] is True for row in dataset["records"]) == 5
+    assert dataset["expected_qdrant_vectors"] == 642
     assert dataset["records"][-6]["query_id"] == "p1_answer_15_attention"
+
+
+def test_phase1_v3_answerable_gold_ids_exist_in_corpus():
+    dataset = load_cases(V3_DATASET)
+    corpus = _v3_corpus()
+
+    referenced = set()
+    for row in dataset["records"]:
+        if row["should_abstain"]:
+            continue
+        referenced.add(row["gold_chunk_id"])
+        referenced.update(row.get("gold_evidence_chunk_ids", []))
+
+    assert referenced <= set(corpus)
+
+
+def test_phase1_v3_pins_corrected_self_instruct_and_attention_golds():
+    records = {row["query_id"]: row for row in load_cases(V3_DATASET)["records"]}
+    corpus = _v3_corpus()
+
+    self_instruct = records["p1_answer_14"]
+    assert self_instruct["gold_answer"] == "NPPrompt"
+    self_instruct_text = corpus[self_instruct["gold_chunk_id"]]["text"]
+    assert "NPPrompt" in self_instruct_text
+    assert "reduces the dependency" in self_instruct_text
+
+    attention = records["p1_answer_15_attention"]
+    assert attention["question"] == (
+        "In “Attention Is All You Need,” what is self-attention also called, "
+        "and how does it relate positions within a sequence?"
+    )
+    assert attention["gold_chunk_id"] == "tier3_attention_all_you_need_rs_0008"
+    attention_text = corpus[attention["gold_chunk_id"]]["text"]
+    assert "Self-attention" in attention_text
+    assert "relating different positions" in attention_text
 
 
 def test_phase1_review_gate_passes_only_with_runtime_and_quality_evidence():

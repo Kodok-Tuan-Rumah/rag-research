@@ -160,6 +160,7 @@ class SemanticChunker:
             chunk_groups = semantic_chunker_rust.assemble_chunks_rs(
                 sentences, breakpoints, self.overlap_sentences
             )
+            chunk_groups = self._merge_short_groups(chunk_groups)
 
             for group_sentences in chunk_groups:
                 sub_chunks = self._enforce_max_tokens(group_sentences)
@@ -168,13 +169,13 @@ class SemanticChunker:
                     meta = {**doc.get("metadata", {}), "section": sec_name}
                     chunk = self._make_chunk(doc_id, sub_sentences, 0, 0, chunk_idx, meta)
                     
-                    if chunk.token_count >= self.min_chunk_tokens:
-                        # Filter noise sebelum masuk ke final_chunks
-                        if _is_noise_chunk(chunk.text):
-                            print(f"  [NOISE_SKIP] '{chunk.text[:80]}'")
-                            continue
-                        final_chunks.append(chunk)
-                        chunk_idx += 1
+                    # Keep every non-noise semantic fragment. Dropping short
+                    # tails silently discarded text between adjacent chunks.
+                    if _is_noise_chunk(chunk.text):
+                        print(f"  [NOISE_SKIP] '{chunk.text[:80]}'")
+                        continue
+                    final_chunks.append(chunk)
+                    chunk_idx += 1
                         
         return final_chunks
 
@@ -187,14 +188,48 @@ class SemanticChunker:
             sent_tokens = _estimate_tokens(sent)
             if current_tokens + sent_tokens > self.max_chunk_tokens and current:
                 result.append(current)
-                current = [sent]
-                current_tokens = sent_tokens
+                overlap = current[-self.overlap_sentences:] if self.overlap_sentences else []
+                overlap_tokens = sum(_estimate_tokens(item) for item in overlap)
+                # Keep overlap only when it leaves room for the next sentence.
+                if overlap_tokens + sent_tokens > self.max_chunk_tokens:
+                    overlap = []
+                    overlap_tokens = 0
+                current = [*overlap, sent]
+                current_tokens = overlap_tokens + sent_tokens
             else:
                 current.append(sent)
                 current_tokens += sent_tokens
         if current:
             result.append(current)
         return result
+
+    def _merge_short_groups(self, groups: List[List[str]]) -> List[List[str]]:
+        """Keep short semantic fragments attached to a neighboring passage."""
+        merged = [list(group) for group in groups if group]
+        index = 0
+        while index < len(merged) and len(merged) > 1:
+            group_tokens = _estimate_tokens(" ".join(merged[index]))
+            if group_tokens >= self.min_chunk_tokens:
+                index += 1
+                continue
+
+            if index > 0:
+                candidate = merged[index - 1] + merged[index]
+                if _estimate_tokens(" ".join(candidate)) <= self.max_chunk_tokens:
+                    merged[index - 1] = candidate
+                    del merged[index]
+                    index = max(index - 1, 0)
+                    continue
+
+            if index + 1 < len(merged):
+                candidate = merged[index] + merged[index + 1]
+                if _estimate_tokens(" ".join(candidate)) <= self.max_chunk_tokens:
+                    merged[index] = candidate
+                    del merged[index + 1]
+                    continue
+            # Keep a short group rather than silently dropping its text.
+            index += 1
+        return merged
 
     def _make_chunk(
         self, doc_id: str, sentences: List[str],
@@ -236,23 +271,23 @@ def save_chunks(chunks: List[SemanticChunk], output_path: str) -> None:
 
 # CLI 
 if __name__ == "__main__":
-    import sys, shutil
+    import argparse
     docs_path = Path("data/processed/documents.json")
     if not docs_path.exists():
         print(f"[ERROR] {docs_path} tidak ditemukan.")
-        sys.exit(1)
+        raise SystemExit(1)
+
+    parser = argparse.ArgumentParser(description="Build a versioned semantic chunk corpus.")
+    parser.add_argument(
+        "--output",
+        default="data/processed/chunks_semantic_v3.json",
+        help="Output path. Defaults to a new v3 file and never overwrites the frozen v2 corpus.",
+    )
+    args = parser.parse_args()
 
     with open(docs_path, "r", encoding="utf-8") as f:
         documents = json.load(f)
 
     chunker = SemanticChunker()
     chunks = chunker.chunk_all_documents(documents)
-
-    output_path = "data/processed/chunks_semantic.json"
-    save_chunks(chunks, output_path)
-
-    # Buat alias chunks_semantic_v2.json yang dibutuhkan BM25 di MasterHybridRetriever
-    # (config.py: bm25_chunks_path = "data/processed/chunks_semantic_v2.json")
-    v2_path = "data/processed/chunks_semantic_v2.json"
-    shutil.copy(output_path, v2_path)
-    print(f"[Alias] {v2_path} diperbarui ({len(chunks)} chunks) — BM25 siap digunakan")
+    save_chunks(chunks, args.output)

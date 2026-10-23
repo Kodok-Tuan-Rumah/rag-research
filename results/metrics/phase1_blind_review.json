@@ -1,0 +1,733 @@
+{
+  "review_type": "phase1_independent_blind_review",
+  "source_report": "/home/malikimayzar/projects/ai-infra-workspace/rag-research/results/metrics/phase1_smoke.json",
+  "gold_and_prior_reviews_excluded": true,
+  "review_guidance": "Judge answer correctness/completeness against the paper context and whether each material answer claim is supported by the exact retrieved/generation context. The expected answer and prior review labels are intentionally omitted.",
+  "records": [
+    {
+      "query_id": "p1_answer_01",
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "The inter‑rater reliability was measured using Gwet’s AC1/2 statistic (specifically AC2). On the 7‑point Likert‑scale helpfulness task, the AC2 score ranged from 0.37 to 0.55.",
+      "retrieval_confidence": {
+        "confidence_score": 0.6696,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0328,
+          "gap": 0.0161,
+          "mean_top3": 0.0321,
+          "score_level": 0.979,
+          "entropy": 0.9876,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 0.875,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_llama2_rs_0086",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0328,
+          "length": 924,
+          "text": "High IRR scores (closer to 1.0) are typically seen as better from a data quality perspective, however, context is important. Highly subjective tasks like evaluating the overall helpfulness of LLM generations will usually have lower IRR scores than more objective labelling There are relatively few pu"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0152",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0323,
+          "length": 2075,
+          "text": "We then asked raters to judge models for safety violations on a five-point Likert scale with the following definitions: • 5 - No safety violations and very helpful • 4 - No safety violations and only minor non-safety issues • 3 - No safety violations but not helpful or other major non-safety issues "
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0085",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0312,
+          "length": 630,
+          "text": "equivalently sized Vicuna-33B and Falcon 40B models. across ~4,000 helpfulness prompts with three raters per prompt. The largest Llama 2-Chat model is competitive with ChatGPT. Llama 2-Chat 70B model has a win rate of 36% and a tie rate of 31.5% relative to ChatGPT. Llama 2-Chat 70B model outperform"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0078",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0306,
+          "length": 1400,
+          "text": "system message during the conversation by integrating such data during fine-tuning. RLHF Results Model-Based Evaluation Evaluating LLMs is a challenging open-research problem. Human evaluation, while a gold standard, can be complicated by various HCI considerations (Clark et al., 2021; Gehrmann et a"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0151",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0296,
+          "length": 449,
+          "text": "rate model over model. Safety Evaluation of Llama 2-Chat Safety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according to the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0053",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "conclusion",
+          "score": 0.0154,
+          "length": 272,
+          "text": "More detailed analysis on this tension between safety and helpfulness can be found in Appendix A.4.1. When we group the scores by preference rating in “significantly better” test set and degrades gradually as comparison pairs become more similar (e.g., “slightly better”)."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0007",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "conclusion",
+          "score": 0.0152,
+          "length": 287,
+          "text": "More details in Section 3.4.2. While reviewing these results, it is important to note that human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the inherent difficulty of comparing generations."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0039",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0152,
+          "length": 1198,
+          "text": "prompts, while dialogue-style prompts are usually shorter. Compared to existing open-source datasets, our preference data features more conversation turns, and are longer, on average. Reward Modeling The reward model takes a model response and its corresponding prompt (including contexts from previo"
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_05",
+      "question": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "42.7%",
+      "retrieval_confidence": {
+        "confidence_score": 0.6269,
+        "decision": "PARTIAL_TRUST",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0328,
+          "gap": 0.0161,
+          "mean_top3": 0.0314,
+          "score_level": 0.9581,
+          "entropy": 0.9988,
+          "agreement": 0.75,
+          "context_overlap": null,
+          "evidence_relevance": 0.7778,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0026",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0328,
+          "length": 977,
+          "text": "points and 2.6 Rouge-L points. RAG approaches state-of-the-art model performance, which is impressive given that (i) those models access gold passages with specific information required to generate the reference answer , (ii) many questions are unanswerable without the gold passages, and (iii) not a"
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0027",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0323,
+          "length": 412,
+          "text": "BART were factual in a further 17% of cases, clearly demonstrating the effectiveness of RAG on the task over a state-of-the-art generation model. Evaluators also find RAG generations to be more specific by a large margin. Jeopardy questions often contain two separate pieces of information, and RAG-T"
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0004",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "i. introduction",
+          "score": 0.0292,
+          "length": 624,
+          "text": "providing better information for LLMs to answer more complex and knowledge-intensive tasks during the inference stage, leading to rapid development in RAG studies. As research progressed, the enhancement of RAG was no longer limited to the inference stage but began to incorporate more with LLM fine-"
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0047",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0289,
+          "length": 330,
+          "text": "found that people prefer RAG’s generation over purely parametric BART, finding RAG more factual and specific. We conducted an thorough investigation of the learned retrieval component, validating its effectiveness, and we illustrated how the retrieval index can be hot-swapped to update the model wit"
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0049",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0281,
+          "length": 747,
+          "text": "RAG could be employed in a wide variety of scenarios with direct benefit to society, for example by endowing it with a medical index and asking it open-domain questions on that topic, or by helping people be more effective at their jobs. With these advantages also come potential downsides: Wikipedia"
+        },
+        {
+          "chunk_id": "tier1_test_intro_rs_0002",
+          "doc_id": "tier1_test_intro",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 0.028,
+          "length": 696,
+          "text": "The RAG pipeline consists of three main components: A document store or vector database that indexes text chunks as dense embeddings. A retriever that, given a query, searches the document store for the most relevant chunks using semantic similarity or keyword matching. A generator (LLM) that takes "
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0039",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0279,
+          "length": 670,
+          "text": "Section 4.3 shows that RAG models are more factual and specific than BART for Jeopardy question generation. Following recent work on diversity-promoting decoding [33, 59, 39], we also investigate generation diversity by calculating the ratio of distinct ngrams to total ngrams generated by different "
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0025",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0252,
+          "length": 333,
+          "text": "49.8* 49.9* to more effective marginalization over documents. Furthermore, RAG can generate correct answers even when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such cases for NQ, where an extractive model would score 0%. Abstractive Question Answering As shown "
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_09",
+      "question": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "The HateBERT classifier, fine‑tuned on the ToxiGen dataset, scores each line of a document individually and then averages those line scores to produce a single toxicity likelihood for the entire document. Documents with an average score of 0.5 or higher are considered toxic.",
+      "retrieval_confidence": {
+        "confidence_score": 0.6719,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0328,
+          "gap": 0.0239,
+          "mean_top3": 0.0321,
+          "score_level": 0.9789,
+          "entropy": 0.988,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 1.0,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_llama2_rs_0098",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0328,
+          "length": 1105,
+          "text": "transgender (b) The percentage listed below each demographic axis represents the percentage of all documents that mention any of the descriptor terms in this axis. The percentage listed for each demographic descriptor represents, among the documents that mention a descriptor in the given demographic"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0099",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.032,
+          "length": 454,
+          "text": "likelihood score of 0.5 or higher, meaning there is a small amount of toxicity in our pretraining data. Language Identification. While our pretraining data is mostly English, it also includes text from a small number of other languages. found in more than 0.005% of the documents. Our analysis uses t"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0316",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "5. they continue to recruit new investors to provide the funds needed to pay the promised",
+          "score": 0.0315,
+          "length": 458,
+          "text": "We then use the default ToxiGen classifier tuned on RoBERTa (Liu et al., 2019) to measure the toxicity of generations of each of the LLMs. To study the sentiment in model generations that may vary with demographic attributes, we choose BOLD (Dhamala et al., 2021), a large-scale bias benchmark that c"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0104",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0311,
+          "length": 636,
+          "text": "BOLD prompts. More detailed results split by different demographic groups can be found in Appendix A.4.8. Llama 2 does not outperform other models on toxicity metrics, and we speculate that this may be because we refrained from aggressively filtering the pretraining data. Recall that leaving pretrai"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0103",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0306,
+          "length": 553,
+          "text": "Some have postulated the existence of a relationship between pretraining dataset size and downstream model toxicity or bias (Bender et al., 2021b), but empirical work to validate this claim is still ongoing (Dodge et al., 2021; Smith and Williams, 2021; Tal et al., 2022), and further evidence from u"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0091",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0295,
+          "length": 479,
+          "text": "We also share a model card in the Appendix, in Safety in Pretraining It is important to understand what is in the pretraining data both to increase transparency and to shed light on root causes of potential downstream issues, such as potential biases. This can inform what, if any, downstream mitigat"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0101",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "conclusion",
+          "score": 0.0152,
+          "length": 339,
+          "text": "We choose ToxiGen (Hartvigsen et al., 2022) to measure the amount of generation of toxic language and hate speech across different groups. Bias, defined as how model generations reproduce existing stereotypical social biases. BOLD (Dhamala et al., 2021) to study how the sentiment in model generation"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0128",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0152,
+          "length": 559,
+          "text": "we define false refusal as the model incorrectly refusing to answer legitimate user prompts due to irrelevant safety concerns. Refusing due to reasonable causes exceeding the model’s capability, e.g., “I am not capable of participating in video calls” and “2024 is beyond my knowledge cut-off date,” "
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0100",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "conclusion",
+          "score": 0.0147,
+          "length": 819,
+          "text": "A training corpus with a majority in English means that the model may not be suitable for use in other languages. meaning that Llama 2 will perform best for English-language use cases. The large unknown category is partially made up of programming code data. Safety Benchmarks for Pretrained Models. "
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0155",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0145,
+          "length": 646,
+          "text": "disclaimer (e.g., “I am not a professional”) at times. For the other two categories, Llama 2-Chat achieves comparable or lower violation percentage consistently regardless of model sizes. Truthfulness, Toxicity, and Bias. the pretrained Llama 2 in terms of truthfulness (50.18 →64.14 for 70B) and tox"
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_10",
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "Inter‑rater reliability for safety assessments is measured using Gwet’s AC1/2 statistic. The average IRR score for Llama 2‑Chat annotations is 0.92.",
+      "retrieval_confidence": {
+        "confidence_score": 0.6704,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0325,
+          "gap": 0.0079,
+          "mean_top3": 0.0323,
+          "score_level": 0.992,
+          "entropy": 0.9986,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 0.8571,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_llama2_rs_0152",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0325,
+          "length": 2075,
+          "text": "We then asked raters to judge models for safety violations on a five-point Likert scale with the following definitions: • 5 - No safety violations and very helpful • 4 - No safety violations and only minor non-safety issues • 3 - No safety violations but not helpful or other major non-safety issues "
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0086",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0323,
+          "length": 924,
+          "text": "High IRR scores (closer to 1.0) are typically seen as better from a data quality perspective, however, context is important. Highly subjective tasks like evaluating the overall helpfulness of LLM generations will usually have lower IRR scores than more objective labelling There are relatively few pu"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0085",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.032,
+          "length": 630,
+          "text": "equivalently sized Vicuna-33B and Falcon 40B models. across ~4,000 helpfulness prompts with three raters per prompt. The largest Llama 2-Chat model is competitive with ChatGPT. Llama 2-Chat 70B model has a win rate of 36% and a tie rate of 31.5% relative to ChatGPT. Llama 2-Chat 70B model outperform"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0036",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0288,
+          "length": 844,
+          "text": "In order to maximize the diversity, the two responses to a given prompt are sampled from two different model variants, and varying the temperature hyper-parameter. In addition to giving participants a forced choice, we also ask annotators to label the degree to which they prefer their chosen respons"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0113",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0284,
+          "length": 805,
+          "text": "the model to exhibit unsafe behavior, i.e., perform red teaming, as defined by the guidelines. Subsequently, annotators are tasked with crafting a safe and helpful response that the model should produce. Safety RLHF We observe early in the development of Llama 2-Chat that it is able to generalize fr"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0082",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0278,
+          "length": 482,
+          "text": "Llama 2-Chat is less pronounced, although obtaining more than a 60% win-rate for our latest Llama 2-Chat. The prompts correspond to a validation set of 1, 586 and 584 prompts for safety and helpfulness, respectively. Human Evaluation Human evaluation is often considered the gold standard for judging"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0151",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0277,
+          "length": 449,
+          "text": "rate model over model. Safety Evaluation of Llama 2-Chat Safety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according to the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0155",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.0273,
+          "length": 646,
+          "text": "disclaimer (e.g., “I am not a professional”) at times. For the other two categories, Llama 2-Chat achieves comparable or lower violation percentage consistently regardless of model sizes. Truthfulness, Toxicity, and Bias. the pretrained Llama 2 in terms of truthfulness (50.18 →64.14 for 70B) and tox"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0116",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 0.026,
+          "length": 302,
+          "text": "We investigate the impact of Safety RLHF by taking two intermediate Llama 2-Chat checkpoints—one without adversarial prompts in the RLHF stage and one with them—and score their responses on our test sets using our safety and helpfulness reward of the helpfulness RM on the helpfulness test set (right"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0319",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "5. they continue to recruit new investors to provide the funds needed to pay the promised",
+          "score": 0.0243,
+          "length": 1099,
+          "text": "percentage of informativeness, and percentage of both truthfulness and informativeness across generations. Most of the models show a >90% informativeness in the model generations. the truthfulness percentage is relatively low for pretrained models, around 30% to 40% for Falcon, MPT, and the 7B Llama"
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_15_attention",
+      "question": "What is attention mechanism in transformer models?",
+      "should_abstain": false,
+      "system_status": "INSUFFICIENT_CONTEXT",
+      "system_answer": "INSUFFICIENT_CONTEXT",
+      "retrieval_confidence": {
+        "confidence_score": 0.6702,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 7.7611,
+          "gap": 0.0045,
+          "mean_top3": 6.0883,
+          "score_level": 0.9964,
+          "entropy": 0.9961,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 1.0,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "cross_encoder"
+        }
+      },
+      "generation_attempts": 2,
+      "retry_triggered": true,
+      "abstain_reason": "insufficient_evidence: answer statement(s) lack chunk support: 'Unlike traditional recurrent or convolutional approaches, Transformers rely enti' (0.31)",
+      "generation_contexts": [],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0008",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 7.7611,
+          "length": 610,
+          "text": "The fundamental constraint of sequential computation, however, remains. Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences [2, "
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0035",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "conclusion",
+          "score": 5.3166,
+          "length": 773,
+          "text": "multi-headed self-attention. For translation tasks, the Transformer can be trained significantly faster than architectures based on recurrent or convolutional layers. On both WMT 2014 English-to-German and WMT 2014 English-to-French translation tasks, we achieve a new state of the art. In the former"
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0011",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 5.1872,
+          "length": 731,
+          "text": "of a single sequence in order to compute a representation of the sequence. Self-attention has been used successfully in a variety of tasks including reading comprehension, abstractive summarization, textual entailment and learning task-independent sentence representations [4, 27, 28, 22]. End-to-end"
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0018",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 3.6308,
+          "length": 1002,
+          "text": "subspaces at different positions. With a single attention head, averaging inhibits this. MultiHead(Q, K, V ) = Concat(head1, ..., headh)W O where headi = Attention(QW Q Where the projections are parameter matrices W Q ∈Rdmodel×dk, W K ∈Rdmodel×dk, W V ∈Rdmodel×dv and W O ∈Rhdv×dmodel. In this work w"
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0009",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 3.4123,
+          "length": 221,
+          "text": "In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as"
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0012",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "abstract",
+          "score": 2.7671,
+          "length": 984,
+          "text": "entirely on self-attention to compute representations of its input and output without using sequencealigned RNNs or convolution. In the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as [17, 18] and [9]. Model Architecture Mo"
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0004",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 1.9949,
+          "length": 775,
+          "text": "the effort to evaluate this idea. Ashish, with Illia, designed and implemented the first Transformer models and has been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head attention and the parameter-free position representation and became the oth"
+        },
+        {
+          "chunk_id": "tier3_attention_all_you_need_rs_0010",
+          "doc_id": "tier3_attention_all_you_need",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 0.2197,
+          "length": 225,
+          "text": "to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section 3.2. Self-attention, sometimes called intra-attention is an attention mechanism relating different positions"
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    }
+  ]
+}

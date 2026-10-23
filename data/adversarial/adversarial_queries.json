@@ -31,13 +31,13 @@
   },
   {
     "query": "What are the contradictions between RAG and fine-tuning approaches?",
-    "type": "contradiction_seeking",
-    "expected_behavior": "partial_context",
+    "type": "false_premise",
+    "expected_behavior": "correct_false_premise",
     "difficulty": "hard",
     "query_id": "adv04",
     "question": "What are the contradictions between RAG and fine-tuning approaches?",
-    "should_abstain": true,
-    "evaluation_type": "abstain"
+    "should_abstain": false,
+    "evaluation_type": "partial"
   },
   {
     "query": "chunking",
@@ -58,5 +58,85 @@
     "question": "What does the paper say about performance?",
     "should_abstain": true,
     "evaluation_type": "abstain"
+  },
+  {
+    "query": "What was the total number of parameters in GPT-4?",
+    "type": "out_of_corpus",
+    "expected_behavior": "honest_abstention",
+    "difficulty": "easy",
+    "query_id": "adv07",
+    "question": "What was the total number of parameters in GPT-4?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
+  },
+  {
+    "query": "What is the context-window limit of Claude 3 Opus?",
+    "type": "out_of_corpus",
+    "expected_behavior": "honest_abstention",
+    "difficulty": "easy",
+    "query_id": "adv08",
+    "question": "What is the context-window limit of Claude 3 Opus?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
+  },
+  {
+    "query": "How much electricity did training the Transformer paper’s model consume?",
+    "type": "out_of_corpus",
+    "expected_behavior": "honest_abstention",
+    "difficulty": "medium",
+    "query_id": "adv09",
+    "question": "How much electricity did training the Transformer paper’s model consume?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
+  },
+  {
+    "query": "What exact GPU model and number of GPUs were used to train GPT-4?",
+    "type": "out_of_corpus",
+    "expected_behavior": "honest_abstention",
+    "difficulty": "medium",
+    "query_id": "adv10",
+    "question": "What exact GPU model and number of GPUs were used to train GPT-4?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
+  },
+  {
+    "query": "What was the 2025 benchmark score of the latest Llama model?",
+    "type": "out_of_corpus",
+    "expected_behavior": "honest_abstention",
+    "difficulty": "medium",
+    "query_id": "adv11",
+    "question": "What was the 2025 benchmark score of the latest Llama model?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
+  },
+  {
+    "query": "What is the current API price per million input tokens for GPT-4o?",
+    "type": "out_of_corpus",
+    "expected_behavior": "honest_abstention",
+    "difficulty": "easy",
+    "query_id": "adv12",
+    "question": "What is the current API price per million input tokens for GPT-4o?",
+    "should_abstain": true,
+    "evaluation_type": "abstain"
+  },
+  {
+    "query": "Which dataset and metric were used to evaluate instruction following in SELF-INSTRUCT?",
+    "type": "answerable_in_corpus",
+    "expected_behavior": "grounded_answer",
+    "difficulty": "medium",
+    "query_id": "adv13",
+    "question": "Which dataset and metric were used to evaluate instruction following in SELF-INSTRUCT?",
+    "should_abstain": false,
+    "evaluation_type": "answerable"
+  },
+  {
+    "query": "What is the average IRR score reported for Llama 2-Chat safety annotations?",
+    "type": "answerable_in_corpus",
+    "expected_behavior": "grounded_answer",
+    "difficulty": "medium",
+    "query_id": "adv14",
+    "question": "What is the average IRR score reported for Llama 2-Chat safety annotations?",
+    "should_abstain": false,
+    "evaluation_type": "answerable"
   }
 ]

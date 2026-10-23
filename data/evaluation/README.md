@@ -4,7 +4,9 @@
 > metric comparisons. Phase 1 has a separate frozen acceptance set for full
 > generation, abstention, runtime contracts, and human review; it is not part
 > of the retrieval dataset family and must not be pooled into retrieval scores.
-> See [`phase1_smoke_set_v1.json`](phase1_smoke_set_v1.json) and
+> The current candidate is [`phase1_smoke_set_v3.json`](phase1_smoke_set_v3.json),
+> mapped to the 642-chunk semantic v3 corpus; v1 and v2 are preserved as
+> historical evidence. See
 > [`docs/evaluation_guide.md`](../../docs/evaluation_guide.md).
 
 Read this before pointing an evaluation script at a file here. All five
@@ -83,16 +85,24 @@ denominator, so a labelling mistake can neither lower nor raise a score.
 `should_abstain` and no reference answers. It is used by
 `run_retrieval_eval.py --include-adversarial`. It is **not** a labeled dataset
 and cannot be fed to RAGAS — the previous CI job did exactly that and could
-never pass.
+never pass. It now contains 9 expected-abstain cases and 5 answerable,
+partial-context, or false-premise controls. The added out-of-corpus questions should be checked
+against the active index before they are treated as a quality gate.
 
 ## Corpus dependency
 
-All five datasets were labeled against `data/processed/chunks_semantic_v2.json`
-(796 chunks, ids `{doc_id}_rs_0000`). That file is produced by
+All five retrieval datasets were labeled against
+`data/processed/chunks_semantic_v2.json` (796 chunks, ids
+`{doc_id}_rs_0000`). That file is produced by
 `src/ingestion/semantic_chunker.py`. The legacy `src/ingestion/chunker.py`
 produces a **different** corpus (582 chunks, ids `{doc_id}_s0000`, references
 stripped) and writes to `chunks_legacy_chunker.json`. Do not point anything here
 at that file.
+
+The Phase 1 acceptance set is separate from those retrieval datasets. Its v3
+candidate is mapped to `data/processed/chunks_semantic_v3.json` (642 chunks);
+it must not be scored against the v2 corpus. Phase 1 v1 and v2 remain frozen
+against the 796-chunk v2 corpus.
 
 ---
 

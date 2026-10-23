@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Run and review the fixed, full-generation Phase 1 acceptance set.
 
-Run the 20 cases (15 answerable, 5 should-abstain) with the real Groq path:
-    python scripts/phase1_smoke.py
+Run the 20 cases (15 answerable, 5 should-abstain) with the real Groq path.
+The v3 acceptance corpus must be selected explicitly so Qdrant and BM25 read
+the same 642-chunk snapshot:
+    QDRANT_COLLECTION=rag_research_phase1_v3 \
+    BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json \
+    python scripts/phase1_smoke.py \
+        --dataset data/evaluation/phase1_smoke_set_v3.json \
+        --output results/metrics/phase1_smoke_v3.json
 
 After reviewing answers in the report, fill `human_review` for answerable
 cases, then evaluate the complete Phase 1 gate:
-    python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json
-    python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json
+    python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json
+    python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json
 """
 
 from __future__ import annotations
@@ -29,12 +35,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import run_single_query as runner
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DATASET = REPO_ROOT / "data/evaluation/phase1_smoke_set_v1.json"
-DEFAULT_OUTPUT = REPO_ROOT / "results/metrics/phase1_smoke.json"
+DEFAULT_DATASET = REPO_ROOT / "data/evaluation/phase1_smoke_set_v3.json"
+DEFAULT_OUTPUT = REPO_ROOT / "results/metrics/phase1_smoke_v3.json"
 VALID_STATUSES = {"ANSWERED", "INSUFFICIENT_CONTEXT"}
 REQUIRED_LOG_FIELDS = {
     "query_id", "query", "query_type", "retrieval_scores", "reranker_scores",
-    "chunks_used", "confidence_score", "failure_type", "answer_status",
+    "chunks_used", "prompt_chunk_ids", "confidence_score", "failure_type", "answer_status",
     "latency_ms", "retry_triggered",
 }
 REQUIRED_LATENCY_FIELDS = {"retrieval", "reranker", "generation", "total"}
@@ -45,6 +51,9 @@ REVIEW_FAILURE_CATEGORIES = {
     "retrieval_miss",
     "overly_specific",
     "incomplete_answer",
+    "false_abstention",
+    "provider_error",
+    "incorrect_gold",
     "other",
 }
 
@@ -54,7 +63,9 @@ def load_cases(dataset_path: Path = DEFAULT_DATASET) -> dict[str, Any]:
     cases = payload.get("records") if isinstance(payload, dict) else None
     if not isinstance(cases, list) or any(not isinstance(row, dict) for row in cases):
         raise ValueError("Phase 1 dataset must contain a records array")
-    if payload.get("dataset_version") != "phase1-smoke-v1":
+    if payload.get("dataset_version") not in {
+        "phase1-smoke-v1", "phase1-smoke-v2", "phase1-smoke-v3"
+    }:
         raise ValueError("Unsupported Phase 1 smoke dataset version")
     if len(cases) != 20 or payload.get("expected_cases") != 20:
         raise ValueError("Phase 1 acceptance requires exactly 20 frozen cases")
@@ -75,7 +86,9 @@ def load_cases(dataset_path: Path = DEFAULT_DATASET) -> dict[str, Any]:
         elif row.get("gold_answer") not in (None, "") or row.get("gold_chunk_id") not in (None, ""):
             raise ValueError(f"{row['query_id']}: abstain case must not declare a gold answer/chunk")
 
-    corpus_path = REPO_ROOT / "data/processed/chunks_semantic_v2.json"
+    corpus_path = REPO_ROOT / payload.get(
+        "canonical_chunks_path", "data/processed/chunks_semantic_v2.json"
+    )
     actual_hash = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
     if actual_hash != payload.get("canonical_chunks_sha256"):
         raise ValueError(
@@ -85,7 +98,13 @@ def load_cases(dataset_path: Path = DEFAULT_DATASET) -> dict[str, Any]:
     corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
     corpus_ids = {chunk.get("chunk_id") for chunk in corpus if isinstance(chunk, dict)}
     missing_gold = [
-        row["query_id"] for row in answerable if row["gold_chunk_id"] not in corpus_ids
+        row["query_id"]
+        for row in answerable
+        if row["gold_chunk_id"] not in corpus_ids
+        or any(
+            evidence_id not in corpus_ids
+            for evidence_id in row.get("gold_evidence_chunk_ids", [row["gold_chunk_id"]])
+        )
     ]
     if missing_gold:
         raise ValueError(f"Gold chunks missing from canonical corpus: {', '.join(missing_gold)}")
@@ -104,6 +123,16 @@ def _valid_failure_categories(value: object) -> bool:
     )
 
 
+def _is_provider_error(result: dict[str, Any]) -> bool:
+    reason = str(result.get("abstain_reason") or result.get("error") or "").casefold()
+    return any(marker in reason for marker in (
+        "provider rejected", "response_format", "provider error", "api error",
+        "provider_error", "generation_exception", "generation failed",
+        "authentication error", "rate limit", "rate_limit_exceeded", "429",
+        "timed out",
+    ))
+
+
 def _make_event(query_id: str, result: dict[str, Any]) -> dict[str, Any]:
     latency = result.get("latency_ms") or {}
     return {
@@ -113,6 +142,7 @@ def _make_event(query_id: str, result: dict[str, Any]) -> dict[str, Any]:
         "retrieval_scores": result.get("retrieval_scores", []),
         "reranker_scores": result.get("reranker_scores", []),
         "chunks_used": result.get("chunks_used", []),
+        "prompt_chunk_ids": result.get("prompt_chunk_ids", []),
         "confidence_score": result.get("confidence_score"),
         "failure_type": result.get("failure_type", "none"),
         "answer_status": result.get("answer_status", "failed"),
@@ -124,6 +154,11 @@ def _make_event(query_id: str, result: dict[str, Any]) -> dict[str, Any]:
 def run_smoke(dataset: dict[str, Any]) -> dict[str, Any]:
     # Acceptance runs must always exercise the real generation path.
     os.environ.pop("SMOKE_STOP_BEFORE_GEN", None)
+    corpus_path = REPO_ROOT / dataset.get(
+        "canonical_chunks_path", "data/processed/chunks_semantic_v2.json"
+    )
+    corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+    corpus_by_id = {chunk["chunk_id"]: chunk for chunk in corpus}
     records = []
     for index, case in enumerate(dataset["records"], 1):
         entry: dict[str, Any] = {
@@ -133,6 +168,18 @@ def run_smoke(dataset: dict[str, Any]) -> dict[str, Any]:
             "should_abstain": case["should_abstain"],
             "gold_answer": case.get("gold_answer"),
             "gold_chunk_id": case.get("gold_chunk_id"),
+            "gold_evidence_chunks": [
+                {
+                    "chunk_id": chunk_id,
+                    "doc_id": corpus_by_id[chunk_id].get("doc_id"),
+                    "section": (corpus_by_id[chunk_id].get("metadata") or {}).get("section"),
+                    "text": corpus_by_id[chunk_id].get("text", ""),
+                }
+                for chunk_id in case.get(
+                    "gold_evidence_chunk_ids", [case.get("gold_chunk_id")]
+                )
+                if chunk_id in corpus_by_id
+            ],
             "exception": None,
             "human_review": {
                 "answer_correct": None,
@@ -147,7 +194,6 @@ def run_smoke(dataset: dict[str, Any]) -> dict[str, Any]:
                 query=case["question"],
                 mode="full",
                 ground_truth=case.get("gold_answer"),
-                source_chunk_id=case.get("gold_chunk_id"),
                 save_output=False,
             )
             entry["result"] = result
@@ -233,14 +279,18 @@ def summarize(report: dict[str, Any]) -> dict[str, Any]:
     failure_reasons_complete = True
     correct = 0
     confident_wrong = 0
+    provider_errors = 0
     decision_results = []
     for row in records:
         result = row.get("result", {})
         review = row.get("human_review") or {}
+        provider_error = _is_provider_error(result)
+        provider_errors += int(provider_error)
         if row.get("should_abstain") is True:
             decision_correct = (
                 result.get("status") == "INSUFFICIENT_CONTEXT"
                 and bool(result.get("abstain_reason"))
+                and not provider_error
             )
         else:
             answer_correct = review.get("answer_correct")
@@ -255,7 +305,11 @@ def summarize(report: dict[str, Any]) -> dict[str, Any]:
                 reviewed = False
                 decision_correct = False
             else:
-                failed_review = not answer_correct or not grounded
+                failed_review = (
+                    not answer_correct
+                    or not grounded
+                    or result.get("status") != "ANSWERED"
+                )
                 categories = review.get("failure_categories")
                 if failed_review and not _valid_failure_categories(categories):
                     failure_reasons_complete = False
@@ -276,6 +330,7 @@ def summarize(report: dict[str, Any]) -> dict[str, Any]:
         and failure_reasons_complete
         and correct >= MIN_CORRECT_CASES
         and confident_wrong == 0
+        and provider_errors == 0
     )
     return {
         "total": len(records),
@@ -287,6 +342,7 @@ def summarize(report: dict[str, Any]) -> dict[str, Any]:
         "minimum_correct_final_decisions": MIN_CORRECT_CASES,
         # Surface known violations even while other rows remain unreviewed.
         "confident_wrong_answers": confident_wrong,
+        "provider_errors": provider_errors,
         "quality_pass": quality_pass,
         "phase1_pass": runtime_pass and quality_pass,
     }
@@ -358,7 +414,9 @@ def review_report(
             and bool(review.get("reviewer", "").strip())
         )
         has_failure = labels_present and (
-            review["answer_correct"] is False or review["grounded"] is False
+            review["answer_correct"] is False
+            or review["grounded"] is False
+            or (row.get("result") or {}).get("status") != "ANSWERED"
         )
         has_failure_categories = _valid_failure_categories(review.get("failure_categories"))
         if not labels_present or (has_failure and not has_failure_categories):
@@ -376,11 +434,11 @@ def review_report(
             reviewer = input_fn("Nama reviewer manusia: ").strip()
 
     output_fn(
-        "Rubrik: answer_correct=yes jika jawaban menjawab pertanyaan dan memuat semua fakta "
+        "Rubrik: answer_correct=yes hanya jika sistem menjawab pertanyaan dan memuat semua fakta "
         "penting dari gold answer (parafrasa boleh); grounded=yes hanya jika setiap klaim "
-        "material didukung chunk yang benar-benar dipakai. Chunk gold yang terambil saja "
-        "tidak otomatis membuat jawaban grounded. Jika jawaban tidak lengkap, pilih "
-        "answer_correct=no dan kategori incomplete_answer."
+        "material didukung konteks yang benar-benar dikirim ke generator. Chunk gold yang "
+        "terambil tetapi tidak masuk prompt tidak membuktikan groundedness. Jika pertanyaan "
+        "answerable tetapi sistem abstain, pilih answer_correct=no dan kategori false_abstention."
     )
 
     for row in pending:
@@ -389,24 +447,43 @@ def review_report(
         output_fn("\n" + "=" * 78)
         output_fn(f"Review {position}/15 | {row.get('query_id')}")
         output_fn(f"Question: {row.get('query')}")
-        output_fn(f"Expected answer: {row.get('gold_answer')}")
+        output_fn(f"Expected answer (full): {row.get('gold_answer')}")
         output_fn(f"Gold chunk: {row.get('gold_chunk_id')}")
-        output_fn(f"System status: {result.get('status')} | confidence: {result.get('confidence_score')}")
+        for gold_chunk in row.get("gold_evidence_chunks") or []:
+            output_fn(
+                f"Gold evidence (full): {gold_chunk.get('chunk_id')} | "
+                f"{gold_chunk.get('doc_id')} | {gold_chunk.get('section')}\n"
+                f"{gold_chunk.get('text', '')}"
+            )
+        retrieval_confidence = result.get("retrieval_confidence") or {}
+        output_fn(
+            f"System status: {result.get('status')} | answer confidence: "
+            f"{result.get('confidence_score')} | retrieval confidence: "
+            f"{retrieval_confidence.get('confidence_score')} "
+            f"({retrieval_confidence.get('decision')})"
+        )
+        output_fn(
+            f"Generation attempts: {result.get('generation_attempts')} | "
+            f"retry: {result.get('retry_triggered')} | abstain reason: "
+            f"{result.get('abstain_reason')}"
+        )
         output_fn(f"System answer: {result.get('answer')}")
 
-        chunks = result.get("debug_full_chunks") or result.get("reranked_chunks") or []
-        if chunks:
-            output_fn("Evidence chunks:")
-            for chunk in chunks:
-                if not isinstance(chunk, dict):
-                    continue
-                marker = " [GOLD]" if chunk.get("chunk_id") == row.get("gold_chunk_id") else ""
+        contexts = result.get("generation_contexts") or []
+        if contexts:
+            for attempt in contexts:
                 output_fn(
-                    f"- {chunk.get('chunk_id')} | {chunk.get('doc_id')} | "
-                    f"{chunk.get('section')}{marker}\n  {chunk.get('text', '')}"
+                    f"Exact generation context, attempt {attempt.get('attempt')} "
+                    f"(chunk IDs: {attempt.get('prompt_chunk_ids')}):\n"
+                    f"{attempt.get('context', '')}"
                 )
         else:
-            output_fn("Evidence chunks are missing from this report; review with the report's trace.")
+            output_fn("No generation prompt was sent. Retrieved evidence chunks:")
+            for chunk in result.get("debug_full_chunks") or []:
+                output_fn(
+                    f"- {chunk.get('chunk_id')} | {chunk.get('doc_id')} | "
+                    f"{chunk.get('section')}\n{chunk.get('text', '')}"
+                )
 
         review = row.setdefault("human_review", {})
         labels_present = (
@@ -422,18 +499,31 @@ def review_report(
             )
             review["reviewer"] = reviewer
 
-        failed_review = not review["answer_correct"] or not review["grounded"]
+        failed_review = (
+            not review["answer_correct"]
+            or not review["grounded"]
+            or result.get("status") != "ANSWERED"
+        )
         if failed_review and not review.get("failure_categories"):
             review["failure_categories"] = _ask_failure_categories(input_fn, output_fn)
         elif not failed_review:
             review["failure_categories"] = []
 
         previous_notes = review.get("notes") or ""
-        note_prompt = "Review notes (Enter to keep existing/skip): "
-        entered_notes = input_fn(note_prompt).strip()
-        if entered_notes:
+        while True:
+            entered_notes = input_fn(
+                "Review notes (min 8 chars; Enter to keep existing/skip): "
+            ).strip()
+            if not entered_notes:
+                break
+            if entered_notes.casefold() in {"y", "yes", "n", "no"} or len(entered_notes) < 8:
+                output_fn(
+                    "Catatan terlalu pendek atau hanya jawaban y/n; tulis alasan yang jelas atau Enter."
+                )
+                continue
             review["notes"] = entered_notes
-        elif not previous_notes:
+            break
+        if not entered_notes and not previous_notes:
             review["notes"] = None
 
         # Save after every case so an interrupted terminal session preserves

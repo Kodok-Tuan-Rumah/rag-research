@@ -9,7 +9,7 @@ or human review.
 | Track | Dataset | What it measures | Main entrypoint |
 |---|---|---|---|
 | Retrieval benchmark | `data/evaluation/retrieval_eval_dataset_v2.json` | Retrieval ranking against labeled gold chunks (13-query K7 benchmark) | `python scripts/run_retrieval_eval.py` |
-| Phase 1 acceptance | `data/evaluation/phase1_smoke_set_v1.json` | Full runtime contract, answer/abstention decisions, and reviewed grounding (20 cases: 15 answerable, 5 abstain) | `python scripts/phase1_smoke.py` |
+| Phase 1 acceptance | `data/evaluation/phase1_smoke_set_v3.json` | Full runtime contract, answer/abstention decisions, and reviewed grounding (20 cases: 15 answerable, 5 abstain) | `python scripts/phase1_smoke.py --dataset data/evaluation/phase1_smoke_set_v3.json` |
 | Phase 2 pipeline metrics | `data/evaluation/retrieval_eval_dataset_v4.json` | Same-run answer, retrieval, abstention, and failure metrics; v4 is currently an incomplete expansion candidate | `python scripts/run_eval_phase2.py` |
 | Optional answer-quality judge | A pipeline report produced by `run_eval.py` | RAGAS metrics; separate from the deterministic Phase 2 gate | `python scripts/run_eval.py` |
 
@@ -22,10 +22,17 @@ dataset provenance.
 
 1. Ensure Qdrant is reachable with the intended collection and corpus, and
    provide the Groq API credential through the project's configured environment.
+   For v3, both retrieval paths must read the same snapshot:
+   `QDRANT_COLLECTION=rag_research_phase1_v3` and
+   `BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json` (642 chunks).
 2. Run the complete acceptance set with generation enabled:
 
    ```bash
-   python scripts/phase1_smoke.py
+   QDRANT_COLLECTION=rag_research_phase1_v3 \
+   BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json \
+   python scripts/phase1_smoke.py \
+     --dataset data/evaluation/phase1_smoke_set_v3.json \
+     --output results/metrics/phase1_smoke_v3.json
    ```
 
    The runner archives an existing report before replacing it. The report
@@ -33,7 +40,7 @@ dataset provenance.
 3. Review every answerable case interactively:
 
    ```bash
-   python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json
+   python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json
    ```
 
    Review may be resumed. Mark `answer_correct=yes` only when the answer
@@ -46,7 +53,7 @@ dataset provenance.
 4. Check the complete report:
 
    ```bash
-   python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json
+   python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json
    ```
 
    Phase 1 passes only when all runtime/dataset/Qdrant gates pass, all required
@@ -59,24 +66,43 @@ dataset provenance.
    verbatim chunk copy, high overlap, normal grounded answer, and empty answer)
    through the project's test suite when verifying implementation changes.
    These focused checks supplement the acceptance report and do not replace it.
-6. Update `PROJECT_GOALS.md` and the status summaries only after the report
-   records `phase1_pass: true`. Preserve the report and dataset fingerprint.
+6. Update `PROJECT_GOALS.md` and the status summaries from the checker output,
+   whether it passes or fails. Claim a pass only when the report records
+   `phase1_pass: true`. Preserve the report and dataset fingerprint.
 
 ## Current recorded status
 
-The archived 2026-10-15 report passed the frozen Phase 1 acceptance gate; it
-does not establish production readiness or confidence calibration. A new
-full-generation run was completed on 2026-10-22 against the same dataset and
-corpus fingerprints. Its 20 runtime rows pass, including the live Qdrant
-collection/vector-count checks, but human review is pending, so the current
-report records `quality_pass: false` and `phase1_pass: false`. Review all 15
-answerable cases before treating this run as accepted.
+### v3 candidate target — not yet accepted
 
-Pay particular attention to `p1_answer_03` and `p1_answer_15_attention`. The
-archived review notes cite full-corpus text; verify each material claim against
-the chunks actually supplied to generation. After completing review, rerun
-`--check-report` and update this status from its output. Re-run and complete
-acceptance after any code or corpus change that could affect runtime outputs.
+The Phase 1 runner and `make phase1-check` now target the v3 dataset and the
+642-chunk semantic v3 corpus. `results/metrics/phase1_smoke_v3.json` has not
+been produced yet, so there is no v3 acceptance evidence. Do not claim a Phase 1
+pass until the 20-case run is complete, all 15 answerable cases are reviewed,
+and `--check-report` exits `0` with `phase1_pass: true`.
+
+### Historical v1 report (2026-10-22)
+
+The archived 2026-10-15 report passed the frozen v1 acceptance gate; it does
+not establish production readiness or confidence calibration. A later v1
+full-generation run was completed on 2026-10-22 against the v1 dataset and the
+796-chunk v2 corpus fingerprints. Its 20 runtime rows pass, including the live
+Qdrant collection/vector-count checks, and review of all 15 answerable cases is
+complete (`human_review_complete: true`). The reviewed result is
+`correct_final_decisions: 18/20` with `confident_wrong_answers: 1` against
+`maximum_confident_wrong: 0`, so that report records `quality_pass: false` and
+`phase1_pass: false`.
+
+The v1 answerable failures are `p1_answer_14` (`answer_correct: false`,
+`grounded: false`, categories `answer_incorrect` and `unsupported_claim`; the
+reviewer notes the original gold may be wrong) and `p1_answer_15_attention`
+(`answer_correct: false`, category `false_abstention`, result status
+`INSUFFICIENT_CONTEXT`). `p1_answer_03` is currently reviewed as correct. The
+v1 report also records `use_reranker: true` while every `reranker_scores` value
+across all 20 records is null and reranker latency is sub-millisecond; do not
+claim the reranker stage was effectively exercised. This v1 report is
+uncommitted and remains historical evidence for the v1 dataset; it is not the
+v3 acceptance result. Re-run and complete acceptance after any code or corpus
+change that could affect runtime outputs.
 
 ## Phase 2 evaluation workflow
 

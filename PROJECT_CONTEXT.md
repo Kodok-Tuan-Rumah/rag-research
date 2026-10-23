@@ -1,7 +1,7 @@
 # PROJECT: RAG Research System
 
 > **Project direction:** failure-aware, single-turn research QA. Prioritize evidence quality, grounded answers, explicit abstention, and reproducible evaluation over model or pipeline complexity.
-> **Runtime snapshot:** 2026-10-22. This file describes source behavior at the snapshot date; `PROJECT_GOALS.md` defines targets and phase gates. Evaluation status is evidence-backed in `results/metrics/phase1_smoke.json` and is not inferred from this architecture summary.
+> **Runtime snapshot:** 2026-10-23. This file describes source behavior at the snapshot date; `PROJECT_GOALS.md` defines targets and phase gates. Current Phase 1 evidence is `results/metrics/phase1_smoke_v3.json` and is not inferred from this architecture summary.
 
 ## GOAL
 
@@ -51,9 +51,9 @@ K7.11's local CPU retrieval measurements (three interleaved repetitions, `max_le
 
 ## PHASE 1 ACCEPTANCE STATUS
 
-The checked-in `results/metrics/phase1_smoke.json` records a full-generation 20-case run with complete human review, `runtime_pass: true`, `quality_pass: true`, and `phase1_pass: true`; `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json` reproduces that passing summary. Phase 1 acceptance is passed for this frozen set. An advisory follow-up spot check was suggested for grounding judgments on `p1_answer_03` and `p1_answer_15_attention`; see [`PROJECT_GOALS.md`](PROJECT_GOALS.md#phase-1--pipeline-stabilization). This acceptance result does not establish production readiness or calibrated confidence.
+The current working-tree `results/metrics/phase1_smoke_v3.json` records a full-generation 20-case run with `runtime_pass: true`. Four rows are provider errors after the Groq token quota was exhausted, and human review is pending (`human_review_complete: false`). Therefore `quality_pass: false` and `phase1_pass: false`; this run gives no final quality score. Rerun after quota reset and review the resulting report. This result does not establish production readiness or calibrated confidence. See [`PROJECT_GOALS.md`](PROJECT_GOALS.md#phase-1--pipeline-stabilization).
 
-The acceptance set (`data/evaluation/phase1_smoke_set_v1.json`) is a frozen
+The current acceptance candidate (`data/evaluation/phase1_smoke_set_v3.json`) is a frozen
 generation and abstention contract. It is distinct from retrieval benchmark
 datasets; see [`data/evaluation/README.md`](data/evaluation/README.md).
 

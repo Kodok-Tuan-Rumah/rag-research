@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     groq_model_fast: str = "openai/gpt-oss-20b"
     generation_max_tokens: int = 768
     generation_temperature: float = 0.1
-    generation_max_chars: int = 3000
+    generation_max_chars: int = 6000
     use_multi_query: bool = False
     use_hyde: bool = False
 

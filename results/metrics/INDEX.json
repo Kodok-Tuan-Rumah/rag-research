@@ -1,5 +1,5 @@
 {
-  "total_files": 129,
+  "total_files": 132,
   "by_group": {
     "Ablations": [
       {
@@ -342,9 +342,15 @@
     "Phase 1 — generation and abstention acceptance": [
       {
         "name": "phase1_smoke.json",
-        "bytes": 650117,
+        "bytes": 641433,
         "ext": "json",
-        "sha256_12": "58fb9c54acf2"
+        "sha256_12": "497a7eaa7892"
+      },
+      {
+        "name": "phase1_smoke_v3.json",
+        "bytes": 1029551,
+        "ext": "json",
+        "sha256_12": "fa9d02888110"
       }
     ],
     "Phase F — reranker ablation": [
@@ -801,6 +807,18 @@
         "sha256_12": "5c8ad41d7a88"
       },
       {
+        "name": "phase1_blind_review.json",
+        "bytes": 34132,
+        "ext": "json",
+        "sha256_12": "efca43f2b8af"
+      },
+      {
+        "name": "phase1_blind_review_v3.json",
+        "bytes": 102306,
+        "ext": "json",
+        "sha256_12": "eb691a2af8cc"
+      },
+      {
         "name": "query_leakage_report.json",
         "bytes": 46123,
         "ext": "json",
@@ -847,7 +865,10 @@
     "gold_data_audit_v4.json",
     "k1_baseline_freeze_v1_14q.json",
     "k1_baseline_freeze_v2_verify.json",
+    "phase1_blind_review.json",
+    "phase1_blind_review_v3.json",
     "phase1_smoke.json",
+    "phase1_smoke_v3.json",
     "query_leakage_report.json",
     "ragas_phase2_postfix.json",
     "ragas_phase2_postfix_8b.json",

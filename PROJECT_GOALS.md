@@ -1,12 +1,12 @@
 # RAG SYSTEM — ENGINEERING GOALS & PRODUCTION SPEC
 > **Version:** 2.1
 > **Repo:** `rag-research`  
-> **Status:** Phase 1 passed on the 2026-10-15 snapshot. A current-runtime run completed on 2026-10-22 and passed runtime gates; answer review and quality acceptance are pending. Phase 2 evaluator work is in progress.
-> **Last Updated:** 2026-10-22
+> **Status:** Historical Phase 1 snapshot passed on 2026-10-15. The v3 current-runtime run completed on 2026-10-23 and passed runtime gates, but has four provider errors due to exhausted Groq quota and has not had human review (`quality_pass: false`, `phase1_pass: false`). Phase 1 remains open; Phase 2 work is not an acceptance substitute.
+> **Last Updated:** 2026-10-23
 
 > **Current evidence note:** The K7.10–K7.13 retrieval audits use the 13-query `data/evaluation/retrieval_eval_dataset_v2.json`. This is distinct from the older 14-query `data/evaluation/retrieval_eval_dataset.json` summarized in the historical README baseline. The 13-query K7 set does not satisfy the Phase 2 target of at least 200 labeled samples, and its results do not establish production readiness or confidence calibration.
 
-> **Phase 1 evidence:** The archived 2026-10-15 report records a passed acceptance for the frozen set. The current report at `results/metrics/phase1_smoke.json` was generated on 2026-10-22 against the same dataset and corpus fingerprints; all 20 runtime rows passed against the 796-vector Qdrant collection, but human review is incomplete, so `phase1_pass` is still false. Review the 15 answerable rows, with extra attention to `p1_answer_03` and `p1_answer_15_attention`, then rerun the checker. See [`docs/evaluation_guide.md`](docs/evaluation_guide.md).
+> **Phase 1 evidence:** The archived 2026-10-15 report records a passed acceptance for the older frozen set. The current candidate is `data/evaluation/phase1_smoke_set_v3.json` against the 642-chunk v3 corpus and isolated Qdrant collection. The working-tree report `results/metrics/phase1_smoke_v3.json` completed all 20 runtime rows (`runtime_pass: true`), but four rows are provider errors following Groq token-quota exhaustion. Human review is pending (`human_review_complete: false`), so no final quality score is available and `quality_pass`/`phase1_pass` are false. See [`docs/evaluation_guide.md`](docs/evaluation_guide.md).
 
 ---
 
@@ -375,22 +375,22 @@ This must be implemented as a circuit breaker, not a manual toggle.
 ---
 
 ### Phase 1 — Pipeline Stabilization
-**Status: `PASSED` for the 2026-10-15 snapshot; current-runtime quality acceptance pending**
+**Status: historical snapshot passed (2026-10-15); v3 current-runtime acceptance is INCOMPLETE (2026-10-23)**
 
 **Goal:** Every query produces either a valid answer or a clean abstain. No crashes, no silent failures, no infinite loops.
 
 **Exit Criteria (all must pass):**
-- [x] The fixed 20-case `data/evaluation/phase1_smoke_set_v1.json` completes via full generation with no unhandled exception. Generation must not be disabled.
-- [x] The set contains 15 answerable cases and 5 `should_abstain` cases; all answerable gold chunks resolve to the frozen canonical corpus and the five abstain cases have no gold answer/chunk.
+- [x] The 20-case candidate `data/evaluation/phase1_smoke_set_v3.json` completes via full generation with no unhandled exception. Generation must not be disabled.
+- [x] The set contains 15 answerable cases and 5 `should_abstain` cases; answerable gold evidence resolves to the v3 canonical corpus and the five abstain cases have no gold answer/chunk.
 - [x] Runtime output for every case has status `ANSWERED` or `INSUFFICIENT_CONTEXT`, confidence finite and within `[0.0, 1.0]`, at most 2 generation attempts, complete §4 JSON log fields, and complete retrieval/generation latency fields.
-- [x] The run verifies the live Qdrant collection/path, exact vector count (796 for the frozen corpus), and a non-empty dense probe. Dense/BM25 source and stage counts are recorded.
+- [x] The run verifies the live Qdrant collection/path, exact vector count (642 for v3), and a non-empty dense probe. Dense/BM25 source and stage counts are recorded.
 - [x] Runtime/pipeline/provider exceptions are either prevented or explicitly classified and logged; no unhandled exception or `None` failure state escapes to the API.
-- [x] Human review confirms at least 18/20 correct final decisions: answerable cases must be answered correctly and grounded in retrieved evidence; abstain cases must return a reasoned abstention. No wrong or ungrounded answer may have the effective `GENERATE` confidence decision. The current report records 20/20 and zero confident-wrong answers.
+- [ ] Human review confirms at least 18/20 correct final decisions: answerable cases must be answered correctly and grounded in retrieved evidence; abstain cases must return a reasoned abstention. No wrong or ungrounded answer may have the effective `GENERATE` confidence decision. Review is pending; four rows in the current run are provider errors and require a clean rerun before review.
 - [x] `sanity_check_answer()` passes its five manual cases: short answer, verbatim copy, high overlap, normal grounded answer, and empty answer.
 
-**Acceptance procedure:** Run `python scripts/phase1_smoke.py`. Before a new run replaces an existing report, the runner archives the prior report under `results/metrics/archive/`. Review answerable rows with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke.json`; this interactive review can resume partially annotated reports. Mark `answer_correct=yes` only when the answer addresses the question and includes the gold answer's essential facts (paraphrase is acceptable). Mark `grounded=yes` only when every material claim is supported by retrieved chunks; retrieving the gold chunk alone does not establish groundedness. For each answer marked incorrect or ungrounded, select at least one `failure_categories` value (`answer_incorrect`, `unsupported_claim`, `retrieval_miss`, `overly_specific`, `incomplete_answer`, or `other`) and add notes where useful. Then run `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json`. The checker exits successfully only when the runtime, dataset, Qdrant, complete review, failure reasons, 18/20, and zero-confident-wrong gates all pass. Any already-known confident-wrong answer is reported even while other reviews are pending and must be fixed in a fresh acceptance run. A run with `SMOKE_STOP_BEFORE_GEN` is not Phase 1 acceptance evidence.
+**Acceptance procedure:** Run the v3 workflow in [`docs/evaluation_guide.md`](docs/evaluation_guide.md), using `QDRANT_COLLECTION=rag_research_phase1_v3` and `BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json`. The report path is `results/metrics/phase1_smoke_v3.json`; prior reports are archived. Review the fresh run with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json`, then run `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json`. The checker exits successfully only when runtime, dataset, Qdrant, complete review, failure reasons, 18/20, and zero-confident-wrong gates all pass. A run with `SMOKE_STOP_BEFORE_GEN` is not acceptance evidence.
 
-**Current re-acceptance (2026-10-22):** The full-generation run completed with `runtime_pass: true` and zero runtime failures against Qdrant collection `rag_research` (796 vectors). The checker currently reports `human_review_complete: false`, `quality_pass: false`, and `phase1_pass: false`; the 15 answerable cases still need review. In the archived 2026-10-15 report, `p1_answer_03` and `p1_answer_15_attention` were marked grounded using a review note that cites full-corpus text. Reassess their material claims against the chunks supplied to generation before carrying those judgments forward.
+**Current runtime run (2026-10-23):** `results/metrics/phase1_smoke_v3.json` completed all 20 runtime rows against `rag_research_phase1_v3` (642 vectors), with `runtime_pass: true`. Four records are classified as provider errors after Groq quota exhaustion; `human_review_complete: false`, `quality_pass: false`, and `phase1_pass: false`. The next valid acceptance step is to rerun after quota reset, then review the resulting report. A gold-blind sample pack is available at `results/metrics/phase1_blind_review_v3.json` for independent spot-checking; it does not replace reviewing all answerable cases.
 
 ---
 
@@ -814,7 +814,7 @@ System does NOT:
   "confidence_reject_threshold": 0.35,
   "confidence_partial_threshold": 0.65,
   "api_retrieval_attempts": "one initial attempt plus at most one BM25-heavy retry",
-  "context_max_chars": 3000
+  "context_max_chars": 6000
 }
 ```
 

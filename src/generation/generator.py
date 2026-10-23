@@ -13,7 +13,14 @@ from typing import Optional
 from dotenv import load_dotenv
 from src.controller.confidence_engine import ConfidenceEngine
 from src.controller.policy_engine import PolicyEngine
-from groq import Groq, AuthenticationError, BadRequestError, GroqError
+from groq import (
+    APIConnectionError,
+    AuthenticationError,
+    BadRequestError,
+    Groq,
+    GroqError,
+    RateLimitError,
+)
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("openai").setLevel(logging.WARNING)
@@ -31,6 +38,14 @@ ABSTAIN_ANSWER   = "INSUFFICIENT_CONTEXT"
 # sites; see apply_partial_trust_policy below.
 PARTIAL_TRUST_CHUNK_LIMIT = 3
 PARTIAL_TRUST_PREFIX = "[Low confidence — verify independently] "
+
+# Diversity is a soft guard, not a hard top-2 cut. A gold passage can be the
+# third-ranked passage from the same paper; dropping it turns an answerable
+# question into a false abstention. Keep three per document and let the context
+# character budget do the final trimming.
+DIVERSITY_MAX_PER_DOC = 3
+RATE_LIMIT_MAX_WAIT_SECONDS = 10.0
+CONNECTION_RETRY_WAIT_SECONDS = 1.0
 
 
 def apply_partial_trust_policy(
@@ -66,9 +81,12 @@ def apply_partial_trust_policy(
 SYSTEM_PROMPT = (
     "You are a Technical Research Assistant. Answer the query using ONLY the provided CONTEXT.\n\n"
     "STRICT RULES:\n"
-    "1. Grounding: Every claim must be directly supported by at least one [Source N].\n"
+    "1. Grounding: Every claim must be directly supported by at least one [Source N]. "
+    "Do not add a concluding summary or causal claim unless the context states it.\n"
     "2. Bounded Reasoning: You may infer only if multiple sources support the logic. Do NOT introduce external facts.\n"
-    "3. Format: Respond ONLY in valid JSON. No preamble, no markdown, no backticks.\n\n"
+    "3. Concision: Give only the minimum facts needed to answer the question. Do not add comparisons "
+    "or implications that the sources do not state.\n"
+    "4. Format: Respond ONLY in valid JSON. No preamble, no markdown, no backticks.\n\n"
     "JSON SCHEMA:\n"
     "{\n"
     "  \"answer\": \"your technical answer here\",\n"
@@ -136,7 +154,7 @@ def _get_score(chunk) -> float:
     return 0.0
 
 # Context helpers
-def filter_chunks_by_diversity(chunks: list, max_per_doc: int = 2) -> list:
+def filter_chunks_by_diversity(chunks: list, max_per_doc: int = DIVERSITY_MAX_PER_DOC) -> list:
     if not chunks:
         return chunks
 
@@ -183,12 +201,19 @@ def build_context_with_ids(chunks: list, max_chars: int = DEFAULT_MAX_CHARS) -> 
             metadata = _get_attr(chunk, "metadata", {}) or {}
             section  = metadata.get("section", "General")
 
-        header = f"[Source {i+1} | {doc_id} | {chunk_id} | Section: {section}]"
+        source_number = len(context_parts) + 1
+        header = f"[Source {source_number} | {doc_id} | {chunk_id} | Section: {section}]"
         block  = f"{header}\n{text}"
 
         if total_chars + len(block) > max_chars:
-            logger.info(f"[CONTEXT_LIMIT] Reached max_chars={max_chars} at chunk {i+1}")
-            break
+            # A long high-ranked passage should not prevent later, shorter
+            # passages from contributing evidence. Keep scanning the ranked
+            # list and pack any complete blocks that still fit.
+            logger.info(
+                f"[CONTEXT_LIMIT] Skipping chunk {chunk_id} at rank {i+1}; "
+                f"remaining_chars={max_chars - total_chars}"
+            )
+            continue
         context_parts.append(block)
         if not isinstance(chunk, str):
             included_ids.append(_get_attr(chunk, "chunk_id", f"c_{i}"))
@@ -222,20 +247,40 @@ def filter_chunks_by_score(chunks: list, min_score: Optional[float] = None) -> l
     return selected
 
 # LLM output parser
-def _parse_llm_output(raw: str) -> tuple[str, str, float, list]:
+def _strip_json_fence(raw: str) -> str:
+    """Best-effort extraction for the non-constrained fallback completion."""
+    text = (raw or "").strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+    if not text.startswith("{"):
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            text = text[start:end + 1]
+    return text
+
+
+def _parse_llm_output(raw: str) -> Optional[tuple[str, str, float, list]]:
+    """Return (answer, status, confidence, sources), or None if JSON is invalid."""
     try:
-        parsed = json.loads(raw)
-        answer   = parsed.get("answer", "").strip()
-        status   = parsed.get("status", "UNKNOWN")
+        parsed = json.loads(_strip_json_fence(raw))
+        if not isinstance(parsed, dict):
+            raise ValueError("top-level JSON value is not an object")
+        answer   = str(parsed.get("answer", "")).strip()
+        status   = str(parsed.get("status", "UNKNOWN"))
         conf     = float(parsed.get("confidence_score", 0.0))
         sources  = parsed.get("supporting_sources", [])
         if not answer:
             return "", "INSUFFICIENT_CONTEXT", conf, sources
         return answer, status, conf, sources
-    
     except Exception as e:
         logger.warning(f"[PARSE_ERROR] LLM output is not valid JSON: {e} | raw='{raw[:200]}'")
-        return raw, "INSUFFICIENT_CONTEXT", 0.0, []
+        return None
 
 def should_abort_before_generation(confidence_score: float, decision: str, has_chunks: bool, min_confidence: float = 0.05) -> bool:
     if not has_chunks:
@@ -331,6 +376,66 @@ def check_answer_evidence(
         return False, f"insufficient_evidence: answer statement(s) lack chunk support: {examples}"
     return True, "ok"
 
+
+_SUMMARY_SENTENCE_PREFIXES = (
+    "these factors",
+    "these results",
+    "these findings",
+    "this suggests",
+    "this indicates",
+    "overall",
+    "in summary",
+    "in conclusion",
+    "together",
+    "taken together",
+)
+
+
+def trim_unsupported_trailing_summary(
+    answer: str,
+    chunks: list,
+    min_sentence_coverage: float = 0.35,
+) -> tuple[str, str]:
+    """Drop a redundant concluding sentence when the actual answer is grounded.
+
+    Models sometimes append a generic sentence such as "These factors together
+    can introduce noise into the results" after a fully supported answer. The
+    sentence adds no numeric/source claim, but its paraphrase has low lexical
+    overlap and causes the whole answer to be rejected as ungrounded. Only trim
+    a short trailing sentence introduced by a summary marker, and only when
+    every preceding sentence already passes the evidence guard. Any other
+    unsupported sentence is left for check_answer_evidence() to reject.
+    """
+    sentences = [
+        part.strip()
+        for part in re.split(r"(?<=[.!?;])\s+", answer or "")
+        if part.strip()
+    ]
+    if len(sentences) < 2:
+        return answer, "ok"
+
+    trailing = sentences[-1]
+    prefix = " ".join(sentences[:-1]).strip()
+    if not prefix or len(trailing) >= len(prefix):
+        return answer, "ok"
+    if not trailing.lower().startswith(_SUMMARY_SENTENCE_PREFIXES):
+        return answer, "ok"
+    if re.search(r"\d|\[source\b", trailing, flags=re.IGNORECASE):
+        return answer, "ok"
+
+    prefix_ok, _prefix_reason = check_answer_evidence(
+        prefix, chunks, min_sentence_coverage=min_sentence_coverage
+    )
+    if not prefix_ok:
+        return answer, "ok"
+
+    trailing_ok, trailing_reason = check_answer_evidence(
+        trailing, chunks, min_sentence_coverage=min_sentence_coverage
+    )
+    if trailing_ok:
+        return answer, "ok"
+    return prefix, trailing_reason
+
 # Retrieval Hit Guard
 def _make_abstain_response(
     query: str,
@@ -388,6 +493,26 @@ def _is_json_validation_failure(exc: BadRequestError) -> bool:
     haystack = f"{code} {exc}".lower()
     return any(marker in haystack for marker in _JSON_VALIDATION_MARKERS)
 
+
+def _rate_limit_wait_seconds(exc: RateLimitError) -> float:
+    """Read Groq's Retry-After header, falling back to its message text."""
+    wait = None
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None) or {}
+    retry_after = headers.get("retry-after") or headers.get("Retry-After")
+    if retry_after is not None:
+        try:
+            wait = float(retry_after)
+        except (TypeError, ValueError):
+            wait = None
+    if wait is None:
+        match = re.search(r"try again in\s+([\d.]+)\s*s", str(exc), flags=re.IGNORECASE)
+        if match:
+            wait = float(match.group(1))
+    if wait is None:
+        wait = 1.0
+    return max(0.5, min(wait, RATE_LIMIT_MAX_WAIT_SECONDS))
+
 def check_retrieval_confidence(
     chunks: list,
     source_chunk_id: Optional[str],
@@ -426,7 +551,48 @@ class GroqGenerator:
         self.model  = model
         logger.info(f"[GroqGenerator] Ready. Model: {model}")
         self._confidence = ConfidenceEngine()
-        
+
+    def _create_completion(
+        self,
+        messages: list,
+        *,
+        temperature: float,
+        max_tokens: int,
+        json_mode: bool,
+    ):
+        """Call Groq with one bounded retry for a 429 or connection failure.
+
+        Retry-After is honoured but capped so a smoke run cannot block for
+        minutes. A second 429 or connection failure propagates to generate(),
+        which converts it into a structured provider-error abstention.
+        """
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        try:
+            return self.client.chat.completions.create(**kwargs)
+        except RateLimitError as exc:
+            wait = _rate_limit_wait_seconds(exc)
+            logger.warning(
+                "[GENERATION_RATE_LIMIT] 429 from provider; retrying once in %.1fs | model=%s",
+                wait, self.model,
+            )
+            time.sleep(wait)
+            return self.client.chat.completions.create(**kwargs)
+        except APIConnectionError as exc:
+            logger.warning(
+                "[GENERATION_CONNECTION] provider connection failed; retrying once in %.1fs "
+                "| model=%s | error=%s",
+                CONNECTION_RETRY_WAIT_SECONDS, self.model, exc,
+            )
+            time.sleep(CONNECTION_RETRY_WAIT_SECONDS)
+            return self.client.chat.completions.create(**kwargs)
+
     def generate(
         self,
         query:           str,
@@ -493,7 +659,7 @@ class GroqGenerator:
                 retrieval_decision=retrieval_decision,
             )
         score_filtered = filter_chunks_by_score(chunks)
-        filtered_chunks = filter_chunks_by_diversity(score_filtered, max_per_doc=2)
+        filtered_chunks = filter_chunks_by_diversity(score_filtered)
         num_chunks_used = len(filtered_chunks)
         logger.info(
             f"[RETRIEVAL_QUALITY] query='{query[:50]}...' | "
@@ -511,13 +677,24 @@ class GroqGenerator:
         ]
         effective_max_tokens = max_tokens if max_tokens is not None else settings.generation_max_tokens
 
-        try:
-            response = self.client.chat.completions.create(
+        def _abstain(reason: str) -> RAGResponse:
+            return _make_abstain_response(
+                query=query,
+                chunks=chunks,
                 model=self.model,
-                messages=messages,
+                reason=reason,
+                context_used=context,
+                context_chunk_ids=context_chunk_ids,
+                retrieval_confidence_score=retrieval_confidence,
+                retrieval_decision=retrieval_decision,
+            )
+
+        try:
+            response = self._create_completion(
+                messages,
                 temperature=temperature,
                 max_tokens=effective_max_tokens,
-                response_format={"type": "json_object"},
+                json_mode=True,
             )
         except AuthenticationError as exc:
             raise ValueError(
@@ -525,29 +702,56 @@ class GroqGenerator:
                 "Set environment variable GROQ_API_KEY dengan API key yang benar."
             ) from exc
         except BadRequestError as exc:
-            if _is_json_validation_failure(exc):
-                logger.warning(
-                    "[GENERATION_JSON_REJECTED] provider rejected model output as invalid "
-                    "JSON (code=json_validate_failed); treating as abstain | model=%s",
-                    self.model,
-                )
-                return _make_abstain_response(
-                    query=query,
-                    chunks=chunks,
-                    model=self.model,
-                    reason=(
-                        "provider rejected model output: response_format=json_object "
-                        "validation failed"
+            if not _is_json_validation_failure(exc):
+                raise RuntimeError(
+                    f"Groq generation failed: {exc}. Periksa koneksi API dan kunci Anda."
+                ) from exc
+            logger.warning(
+                "[GENERATION_JSON_REJECTED] provider rejected constrained JSON output "
+                "(code=json_validate_failed); falling back to unconstrained JSON "
+                "| model=%s",
+                self.model,
+            )
+            retry_messages = [
+                {
+                    "role": "system",
+                    "content": SYSTEM_PROMPT + (
+                        "\n\nThe previous constrained JSON attempt was rejected by the provider. "
+                        "Return exactly one JSON object matching the schema; escape quotes and "
+                        "newlines inside string values. Do not include markdown or text outside "
+                        "the object."
                     ),
-                    context_used=context,
-                    context_chunk_ids=context_chunk_ids,
-                    retrieval_confidence_score=retrieval_confidence,
-                    retrieval_decision=retrieval_decision,
+                },
+                messages[1],
+            ]
+            try:
+                response = self._create_completion(
+                    retry_messages,
+                    temperature=temperature,
+                    max_tokens=effective_max_tokens,
+                    json_mode=False,
                 )
-            raise RuntimeError(
-                f"Groq generation failed: {exc}. "
-                "Periksa koneksi API dan kunci Anda."
-            ) from exc
+            except RateLimitError as retry_exc:
+                return _abstain(
+                    f"provider_error: rate_limit_exceeded during JSON fallback: {retry_exc}"
+                )
+            except BadRequestError as retry_exc:
+                if _is_json_validation_failure(retry_exc):
+                    return _abstain(
+                        "provider_error: JSON validation failed after one plain-JSON fallback"
+                    )
+                raise RuntimeError(
+                    f"Groq generation failed: {retry_exc}. "
+                    "Periksa koneksi API dan kunci Anda."
+                ) from retry_exc
+            except GroqError as retry_exc:
+                return _abstain(
+                    f"provider_error: {type(retry_exc).__name__} during JSON fallback"
+                )
+        except RateLimitError as exc:
+            return _abstain(f"provider_error: rate_limit_exceeded: {exc}")
+        except APIConnectionError as exc:
+            return _abstain(f"provider_error: connection_error: {exc}")
         except GroqError as exc:
             raise RuntimeError(
                 f"Groq generation failed: {exc}. "
@@ -575,7 +779,10 @@ class GroqGenerator:
         t2 = time.time()
 
 
-        answer, status, confidence, sources = _parse_llm_output(raw_answer)
+        parsed_output = _parse_llm_output(raw_answer)
+        if parsed_output is None:
+            return _abstain("provider_error: invalid JSON response after completion")
+        answer, status, confidence, sources = parsed_output
         is_ok, sanity_reason = sanity_check_answer(answer, filtered_chunks)
         if not is_ok:
             logger.warning(f"[SANITY_CHECK] REJECTED | reason={sanity_reason}")
@@ -590,6 +797,17 @@ class GroqGenerator:
             answer = "I'm sorry, I couldn't find the answer in the provided context."
         elif status == "ANSWERED":
             evidence_ok, evidence_reason = check_answer_evidence(answer, filtered_chunks)
+            if not evidence_ok:
+                trimmed_answer, trim_reason = trim_unsupported_trailing_summary(
+                    answer, filtered_chunks
+                )
+                if trimmed_answer != answer:
+                    logger.warning(
+                        "[EVIDENCE_TRIM] dropped trailing summary with low support: %s",
+                        trim_reason,
+                    )
+                    answer = trimmed_answer
+                    evidence_ok = True
             if not evidence_ok:
                 return _make_abstain_response(
                     query=query,

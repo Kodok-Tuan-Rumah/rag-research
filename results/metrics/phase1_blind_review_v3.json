@@ -1,0 +1,807 @@
+{
+  "review_type": "phase1_independent_blind_review",
+  "source_report": "results/metrics/phase1_smoke_v3.json",
+  "gold_and_prior_reviews_excluded": true,
+  "review_guidance": "Judge answer correctness/completeness against the paper context and whether each material answer claim is supported by the exact retrieved/generation context. The expected answer and prior review labels are intentionally omitted.",
+  "records": [
+    {
+      "query_id": "p1_answer_01",
+      "question": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "The inter‑rater reliability was measured using Gwet’s AC1/2 statistic. On the 7‑point Likert scale helpfulness task, the Gwet AC2 score ranged from 0.37 to 0.55.",
+      "retrieval_confidence": {
+        "confidence_score": 0.6338,
+        "decision": "PARTIAL_TRUST",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0328,
+          "gap": 0.0239,
+          "mean_top3": 0.032,
+          "score_level": 0.9765,
+          "entropy": 0.9888,
+          "agreement": 0.75,
+          "context_overlap": null,
+          "evidence_relevance": 1.0,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [
+        {
+          "attempt": 1,
+          "context": "[Source 1 | tier3_llama2 | tier3_llama2_rs_0064 | Section: FINE-TUNING]\nMore results and analysis is available in Section A.3.7. Inter-Rater Reliability (IRR). In our human evaluations, three different annotators provided independent\nassessments for each model generation comparison. High IRR scores (closer to 1.0) are typically seen as\nbetter from a data quality perspective, however, context is important. Highly subjective tasks like evaluating\nthe overall helpfulness of LLM generations will usually have lower IRR scores than more objective labelling\ntasks. There are relatively few public benchmarks for these contexts, so we feel sharing our analysis here will\nbenefit the research community. We used Gwet’s AC1/2 statistic (Gwet, 2008, 2014) to measure inter-rater reliability (IRR), as we found it to\nbe the most stable metric across different measurement scenarios. On the 7-point Likert scale helpfulness\ntask that is used in our analysis, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific\nmodel comparison. We see scores on the lower end of that range for ratings from model comparisons with\nsimilar win rates to each other (like the Llama 2-Chat-70B-chat vs. ChatGPT comparison). We see scores on\nthe higher end of that range for ratings from model comparisons with a more clear winner (like the Llama\n2-Chat-34b-chat vs. Falcon-40b-instruct).\n\n[Source 2 | tier3_llama2 | tier3_llama2_rs_0103 | Section: APPENDIX]\nOn average, we had a 90% rejection\nrate model over model. 4.4\nSafety Evaluation of Llama 2-Chat\nSafety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according\nto the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and responses can be found in Appendix A.4.6. We then asked raters to judge models for safety violations on a five-point Likert scale with the following\ndefinitions:\n• 5 - No safety violations and very helpful\n• 4 - No safety violations and only minor non-safety issues\n• 3 - No safety violations but not helpful or other major non-safety issues\n• 2 - Mild or moderate safety violations\n\n(a) Overall violation percentage. (b) Overall safety and helpfulness mean rating. sizes. Right: Llama 2-Chat has high safety and helpfulness mean rating overall across model sizes. It is\nimportant to note that these results are subject to limitations of the prompt set, subjectivity of the review\nguidelines, and subjectivity of individual raters. • 1 - Severe safety violations\nWe consider a rating of 1 or 2 as violation and use violation percentage as our main evaluation metric, with\nthe mean rating as a supplement. Each example is annotated by three annotators and we take the majority\nvote to determine if the response is violating or not. We used Gwet’s AC1/2 statistic to measure inter-rater\nreliability (IRR) as in the helpfulness human evaluation. The IRR scores range from 0.70to0.95 depending\non the annotation batch, indicating a high degree of agreement among annotators on safety assessments. On Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure. We see lower IRR\nscores on batches where the models have a high violation rate (e.g., Vicuna) and higher IRR scores on batches\nwhere the models have relatively low violation rates (e.g., Llama 2-Chat, Falcon, and ChatGPT). carefully due to limitations of the prompt set, subjectivity of the review guidelines, content standards, and\nindividual raters.\n\n[Source 3 | tier3_llama2 | tier3_llama2_rs_0059 | Section: FINE-TUNING]\nHuman evaluation, while a gold standard, can\nbe complicated by various HCI considerations (Clark et al., 2021; Gehrmann et al., 2023), and is not always\nscalable. Thus, to select the best-performing models among several ablations at each iteration from RLHF-V1\nto V5, we first observed the improvement of the rewards from the latest reward models, to save costs and\nincrease iteration speed. We later validated major model versions with human evaluations. How Far Can Model-Based Evaluation Go? To measure the robustness of our reward model, we collected\na test set of prompts for both helpfulness and safety, and asked three annotators to judge the quality of the\nanswers based on a 7-point Likert scale (the higher the better). We observe that our reward models overall\nare well calibrated with our human preference annotations, as illustrated in \nconfirms the relevance of using our reward as a point-wise metric, despite being trained with a Pairwise\nRanking Loss. Still, as Goodhart’s Law states, when a measure becomes a target, it ceases to be a good measure. To ensure\nour measure won’t diverge from the human preferences, we additionally used a more general reward, trained\n\nRLHF-v5\n(with PPO)\nRLHF-v5\n(no PPO)\nRLHF-v4\nRLHF-v3\nRLHF-v2\nRLHF-v1\nSFT-v2\nSFT-v1\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\n90%\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\nHelpfulness\nJudge: Meta Reward Models\nHarmlessness\nRLHF-v5\n(with PPO)\nRLHF-v5\n(no PPO)\nRLHF-v4\nRLHF-v3\nRLHF-v2\nRLHF-v1\nSFT-v2\nSFT-v1\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\n90%\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\nHelpfulness\nJudge: GPT-4\nHarmlessness\n\nwin-rate % of Llama 2-Chat compared to ChatGPT. Left: the judge is our reward model, which may favor\nour model, and right, the judge is GPT-4, which should be more neutral. on diverse open-source Reward Modeling datasets.",
+          "prompt_chunk_ids": [
+            "tier3_llama2_rs_0064",
+            "tier3_llama2_rs_0103",
+            "tier3_llama2_rs_0059"
+          ]
+        }
+      ],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_llama2_rs_0064",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0328,
+          "length": 1307,
+          "text": "More results and analysis is available in Section A.3.7. Inter-Rater Reliability (IRR). In our human evaluations, three different annotators provided independent\nassessments for each model generation comparison. High IRR scores (closer to 1.0) are typically seen as\nbetter from a data quality perspective, however, context is important. Highly subjective tasks like evaluating\nthe overall helpfulness of LLM generations will usually have lower IRR scores than more objective labelling\ntasks. There are relatively few public benchmarks for these contexts, so we feel sharing our analysis here will\nbenefit the research community. We used Gwet’s AC1/2 statistic (Gwet, 2008, 2014) to measure inter-rater reliability (IRR), as we found it to\nbe the most stable metric across different measurement scenarios. On the 7-point Likert scale helpfulness\ntask that is used in our analysis, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific\nmodel comparison. We see scores on the lower end of that range for ratings from model comparisons with\nsimilar win rates to each other (like the Llama 2-Chat-70B-chat vs. ChatGPT comparison). We see scores on\nthe higher end of that range for ratings from model comparisons with a more clear winner (like the Llama\n2-Chat-34b-chat vs. Falcon-40b-instruct)."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0103",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "appendix",
+          "score": 0.032,
+          "length": 2070,
+          "text": "On average, we had a 90% rejection\nrate model over model. 4.4\nSafety Evaluation of Llama 2-Chat\nSafety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according\nto the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and responses can be found in Appendix A.4.6. We then asked raters to judge models for safety violations on a five-point Likert scale with the following\ndefinitions:\n• 5 - No safety violations and very helpful\n• 4 - No safety violations and only minor non-safety issues\n• 3 - No safety violations but not helpful or other major non-safety issues\n• 2 - Mild or moderate safety violations\n\n(a) Overall violation percentage. (b) Overall safety and helpfulness mean rating. sizes. Right: Llama 2-Chat has high safety and helpfulness mean rating overall across model sizes. It is\nimportant to note that these results are subject to limitations of the prompt set, subjectivity of the review\nguidelines, and subjectivity of individual raters. • 1 - Severe safety violations\nWe consider a rating of 1 or 2 as violation and use violation percentage as our main evaluation metric, with\nthe mean rating as a supplement. Each example is annotated by three annotators and we take the majority\nvote to determine if the response is violating or not. We used Gwet’s AC1/2 statistic to measure inter-rater\nreliability (IRR) as in the helpfulness human evaluation. The IRR scores range from 0.70to0.95 depending\non the annotation batch, indicating a high degree of agreement among annotators on safety assessments. On Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure. We see lower IRR\nscores on batches where the models have a high violation rate (e.g., Vicuna) and higher IRR scores on batches\nwhere the models have relatively low violation rates (e.g., Llama 2-Chat, Falcon, and ChatGPT). carefully due to limitations of the prompt set, subjectivity of the review guidelines, content standards, and\nindividual raters."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0059",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0313,
+          "length": 1795,
+          "text": "Human evaluation, while a gold standard, can\nbe complicated by various HCI considerations (Clark et al., 2021; Gehrmann et al., 2023), and is not always\nscalable. Thus, to select the best-performing models among several ablations at each iteration from RLHF-V1\nto V5, we first observed the improvement of the rewards from the latest reward models, to save costs and\nincrease iteration speed. We later validated major model versions with human evaluations. How Far Can Model-Based Evaluation Go? To measure the robustness of our reward model, we collected\na test set of prompts for both helpfulness and safety, and asked three annotators to judge the quality of the\nanswers based on a 7-point Likert scale (the higher the better). We observe that our reward models overall\nare well calibrated with our human preference annotations, as illustrated in \nconfirms the relevance of using our reward as a point-wise metric, despite being trained with a Pairwise\nRanking Loss. Still, as Goodhart’s Law states, when a measure becomes a target, it ceases to be a good measure. To ensure\nour measure won’t diverge from the human preferences, we additionally used a more general reward, trained\n\nRLHF-v5\n(with PPO)\nRLHF-v5\n(no PPO)\nRLHF-v4\nRLHF-v3\nRLHF-v2\nRLHF-v1\nSFT-v2\nSFT-v1\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\n90%\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\nHelpfulness\nJudge: Meta Reward Models\nHarmlessness\nRLHF-v5\n(with PPO)\nRLHF-v5\n(no PPO)\nRLHF-v4\nRLHF-v3\nRLHF-v2\nRLHF-v1\nSFT-v2\nSFT-v1\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\n90%\n10%\n20%\n30%\n40%\n50%\n60%\n70%\n80%\nHelpfulness\nJudge: GPT-4\nHarmlessness\n\nwin-rate % of Llama 2-Chat compared to ChatGPT. Left: the judge is our reward model, which may favor\nour model, and right, the judge is GPT-4, which should be more neutral. on diverse open-source Reward Modeling datasets."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0242",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "safety",
+          "score": 0.028,
+          "length": 1631,
+          "text": "The process included 4 tests:\n• The first test consists of 3 sections of testing to evaluate grammar, reading comprehension and writing\nstyle. Each section is timed and the test should take a total of 50 minutes to complete. A candidate\nmust score 90% on part I to continue on to parts II and III, and an average score of 4 on part II and III\nto pass the test. • The second test consisted of 42 questions split into sensitive topics alignment, answer ranking and\ntwo examples of answer writing, which were manually reviewed by us. To pass the test, annotators\nneeded to agree with our criteria on 80% of the answers, and pass the written examples with a score\nof 4 out of 5. • The third test consisted in measuring the alignment with our quality assessment criteria. The test\nconsisted of 31 different questions asking the annotators to grade different prompt-answer pairs,\nas well as ranking different answers to the same prompt. To measure alignment, we first collected\nresponses from different team members, and the annotators who agreed with our preferences in\nmore than 26 of the questions passed the test. • Finally, the last test consisted of a prompt response assessment where annotators choose a minimum of\n6 out of 18 prompts to write responses for. We manually assess each response to evaluate production\nreadiness. Annotators that have scored an average of >4 have passed the training. A.6\nDataset Contamination\nWith the increasing scale of publicly available training data, it has become inevitable that some portion of\nevaluation data is seen during training, and may provide an undue boost in evaluation performance."
+        },
+        {
+          "chunk_id": "tier2_self_instruct_rs_0022",
+          "doc_id": "tier2_self_instruct",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "introduction",
+          "score": 0.026,
+          "length": 1640,
+          "text": "We analyze the overlap between this set\nset and the seed instructions in §A.1. Human evaluation setup. Evaluating models’\nperformance on this evaluation set of diverse tasks\nis extremely challenging because different tasks require different expertise. Indeed, many of these\ntasks cannot be measured by automatic metrics or\neven be judged by normal crowdworkers (e.g., writing a program, or converting first-order logic into\nnatural language). To get a more faithful evaluation,\nwe asked the authors of the instructions to judge\nmodel predictions. Details on how we set up this\nhuman evaluation are described in Appendix B. The\nevaluators were asked to rate the output based on\nwhether it accurately and effectively completes the\ntask. We implemented a four-level rating system\nfor categorizing the quality of the models’ outputs:\n• RATING-A: The response is valid and satisfying. • RATING-B: The response is acceptable but has\nminor errors or imperfections. • RATING-C: The response is relevant and responds to the instruction, but it has significant\nerrors in the content. For example, GPT3 might\ngenerate a valid output first, but continue to generate other irrelevant things. For example, GPT3 might\ngenerate a valid output first, but continue to generate other irrelevant things. • RATING-D: The response is irrelevant or completely invalid. Results. Results. GPT3 model and its instruction-tuned counterparts\non this newly written instruction set (w. GPT3 model and its instruction-tuned counterparts\non this newly written instruction set (w. inter-rater\nagreement κ= 0.57 on the 4-class categorical scale,\nsee Appendix B for details)."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0007",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "abstract",
+          "score": 0.0156,
+          "length": 287,
+          "text": "More details in Section 3.4.2. While reviewing\nthese results, it is important to note that human evaluations\ncan be noisy due to limitations of the prompt set, subjectivity\nof the review guidelines, subjectivity of individual raters,\nand the inherent difficulty of comparing generations."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0033",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0156,
+          "length": 1999,
+          "text": "We collected a large dataset of over 1 million binary comparisons based on humans applying our specified\nguidelines, which we refer to as Meta reward modeling data. Note that the number of tokens in prompts and\nanswers differs depending on the text domain. Summarization and online forum data generally have longer\nprompts, while dialogue-style prompts are usually shorter. Compared to existing open-source datasets, our\npreference data features more conversation turns, and are longer, on average. 3.2.2\nReward Modeling\nThe reward model takes a model response and its corresponding prompt (including contexts from previous\nturns) as inputs and outputs a scalar score to indicate the quality (e.g., helpfulness and safety) of the model\ngeneration. Leveraging such response scores as rewards, we can optimize Llama 2-Chat during RLHF for\nbetter human preference alignment and improved helpfulness and safety. Others have found that helpfulness and safety sometimes trade off (Bai et al., 2022a), which can make it\nchallenging for a single reward model to perform well on both. To address this, we train two separate reward\nmodels, one optimized for helpfulness (referred to as Helpfulness RM) and another for safety (Safety RM). We initialize our reward models from pretrained chat model checkpoints, as it ensures that both models\nbenefit from knowledge acquired in pretraining. In short, the reward model “knows” what the chat model\n\nDataset\nNum. of\nComparisons\nAvg. # Turns\nper Dialogue\nAvg. # Tokens\nper Example\nAvg. # Tokens\nin Prompt\nAvg. # Tokens\nin Response\nAnthropic Helpful\n3.0\n251.5\n17.7\n88.4\nAnthropic Harmless\n3.0\n152.5\n15.7\n46.4\nOpenAI Summarize\n1.0\n371.1\n336.0\n35.1\nOpenAI WebGPT\n1.0\n237.2\n48.3\n188.9\nStackExchange\n1,038,480\n1.0\n440.2\n200.1\n240.2\nStanford SHP\n1.0\n338.3\n199.5\n138.8\nSynthetic GPT-J\n1.0\n123.3\n13.0\n110.3\nMeta (Safety & Helpfulness)\n1,418,091\n3.9\n798.5\n31.4\n234.1\nTotal\n2,919,326\n1.6\n595.7\n108.2\n216.9\n\ninternally collected human preference data used for reward modeling."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0035",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0154,
+          "length": 1891,
+          "text": "More details on Meta helpfulness\nand safety data per batch can be found in Appendix A.3.1. knows. knows. This prevents cases where, for instance, the two models would have an information mismatch, which\ncould result in favoring hallucinations. The model architecture and hyper-parameters are identical to those\nof the pretrained language models, except that the classification head for next-token prediction is replaced\nwith a regression head for outputting a scalar reward. Training Objectives. To train the reward model, we convert our collected pairwise human preference data\ninto a binary ranking label format (i.e., chosen & rejected) and enforce the chosen response to have a higher\nscore than its counterpart. We used a binary ranking loss consistent with Ouyang et al. (2022):\nLranking = −log(σ(rθ(x, yc) −rθ(x, yr)))\n(1)\nwhere rθ(x, y) is the scalar score output for prompt x and completion y with model weights θ. yc is the\npreferred response that annotators choose and yr is the rejected counterpart. Built on top of this binary ranking loss, we further modify it separately for better helpfulness and safety\nreward models as follows. Given that our preference ratings is decomposed as a scale of four points (e.g.,\nsignificantly better), as presented in Section 3.2.1, it can be useful to leverage this information to explicitly\nteach the reward model to assign more discrepant scores to the generations that have more differences. To\ndo so, we further add a margin component in the loss:\nLranking = −log(σ(rθ(x, yc) −rθ(x, yr) −m(r)))\n(2)\nwhere the margin m(r) is a discrete function of the preference rating. Naturally, we use a large margin\nfor pairs with distinct responses, and a smaller one for those with similar responses (shown in \nWe found this margin component can improve Helpfulness reward model accuracy especially on samples\nwhere two responses are more separable."
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_03",
+      "question": "In the survey’s “RAG vs Fine-tuning” subsection, what tasks are RAG and fine-tuning suited for, and how do their updates differ?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "RAG is best suited for precise information‑retrieval tasks such as question answering, where it can pull in up‑to‑date external knowledge at runtime. Fine‑tuning is best suited for tasks that require the model to replicate specific structures, styles or formats, i.e., deep customization of behaviour. RAG updates by retrieving new external knowledge in real time, whereas fine‑tuning updates by retraining the model on new data, making it a static update process.",
+      "retrieval_confidence": {
+        "confidence_score": 0.6689,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0315,
+          "gap": 0.0074,
+          "mean_top3": 0.0311,
+          "score_level": 0.9866,
+          "entropy": 0.9996,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 0.6,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [
+        {
+          "attempt": 1,
+          "context": "[Source 1 | tier1_advanced_rag_survey | tier1_advanced_rag_survey_rs_0047 | Section: TASK AND EVALUATION]\nThe primary objective of this evaluation is to comprehend\nand optimize the performance of RAG models across diverse\napplication scenarios.This chapter will mainly introduce the\nmain downstream tasks of RAG, datasets, and how to evaluate\nRAG systems. A. Downstream Task\nThe core task of RAG remains Question Answering (QA),\nincluding\ntraditional\nsingle-hop/multi-hop\nQA,\nmultiplechoice, domain-specific QA as well as long-form scenarios\nsuitable for RAG. In addition to QA, RAG is continuously\nbeing expanded into multiple downstream tasks, such as Information Extraction (IE), dialogue generation, code search, etc. The main downstream tasks of RAG and their corresponding\ndatasets are summarized in Table II. The main downstream tasks of RAG and their corresponding\ndatasets are summarized in Table II. B.\n\n[Source 2 | tier1_advanced_rag_survey | tier1_advanced_rag_survey_rs_0010 | Section: OVERVIEW OF RAG]\nA typical application of RAG is illustrated in \nHere, a user poses a question to ChatGPT about a recent,\nwidely discussed news. Given ChatGPT’s reliance on pretraining data, it initially lacks the capacity to provide updates on recent developments. RAG bridges this information\ngap by sourcing and incorporating knowledge from external\ndatabases. In this case, it gathers relevant news articles related\nto the user’s query. These articles, combined with the original\nquestion, form a comprehensive prompt that empowers LLMs\nto generate a well-informed answer. The RAG research paradigm is continuously evolving, and\nwe categorize it into three stages: Naive RAG, Advanced\nRAG, and Modular RAG, as showed in \nRAG method are cost-effective and surpass the performance\nof the native LLM, they also exhibit several limitations. The development of Advanced RAG and Modular RAG is\na response to these specific shortcomings in Naive RAG. The development of Advanced RAG and Modular RAG is\na response to these specific shortcomings in Naive RAG. A. A. Naive RAG\nThe Naive RAG research paradigm represents the earliest methodology, which gained prominence shortly after the\n\nFig.\n\n[Source 3 | tier1_advanced_rag_survey | tier1_advanced_rag_survey_rs_0019 | Section: OVERVIEW OF RAG]\nFor example, this can involve\nfine-tuning the retriever for better retrieval results, fine-tuning\nthe generator for more personalized outputs, or engaging in\ncollaborative fine-tuning [27]. D. D. RAG vs Fine-tuning\nThe augmentation of LLMs has attracted considerable attention due to their growing prevalence. Among the optimization\nmethods for LLMs, RAG is often compared with Fine-tuning\n(FT) and prompt engineering. Each method has distinct characteristics as illustrated in \nillustrate the differences among three methods in two dimensions: external knowledge requirements and model adaption\nrequirements. Prompt engineering leverages a model’s inherent\ncapabilities with minimum necessity for external knowledge\nand model adaption. RAG can be likened to providing a model\nwith a tailored textbook for information retrieval, ideal for precise information retrieval tasks. In contrast, FT is comparable\nto a student internalizing knowledge over time, suitable for\nscenarios requiring replication of specific structures, styles, or\nformats. RAG excels in dynamic environments by offering realtime knowledge updates and effective utilization of external\nknowledge sources with high interpretability. However, it\ncomes with higher latency and ethical considerations regarding\ndata retrieval. On the other hand, FT is more static, requiring\nretraining for updates but enabling deep customization of the\nmodel’s behavior and style. It demands significant computational resources for dataset preparation and training, and\nwhile it can reduce hallucinations, it may face challenges with\nunfamiliar data. In multiple evaluations of their performance on various\nknowledge-intensive tasks across different topics, [28] revealed that while unsupervised fine-tuning shows some improvement, RAG consistently outperforms it, for both existing knowledge encountered during training and entirely new\nknowledge. Additionally, it was found that LLMs struggle\nto learn new factual information through unsupervised finetuning.",
+          "prompt_chunk_ids": [
+            "tier1_advanced_rag_survey_rs_0047",
+            "tier1_advanced_rag_survey_rs_0010",
+            "tier1_advanced_rag_survey_rs_0019"
+          ]
+        }
+      ],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0047",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "task and evaluation",
+          "score": 0.0315,
+          "length": 806,
+          "text": "The primary objective of this evaluation is to comprehend\nand optimize the performance of RAG models across diverse\napplication scenarios.This chapter will mainly introduce the\nmain downstream tasks of RAG, datasets, and how to evaluate\nRAG systems. A. Downstream Task\nThe core task of RAG remains Question Answering (QA),\nincluding\ntraditional\nsingle-hop/multi-hop\nQA,\nmultiplechoice, domain-specific QA as well as long-form scenarios\nsuitable for RAG. In addition to QA, RAG is continuously\nbeing expanded into multiple downstream tasks, such as Information Extraction (IE), dialogue generation, code search, etc. The main downstream tasks of RAG and their corresponding\ndatasets are summarized in Table II. The main downstream tasks of RAG and their corresponding\ndatasets are summarized in Table II. B."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0010",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "overview of rag",
+          "score": 0.0313,
+          "length": 1170,
+          "text": "A typical application of RAG is illustrated in \nHere, a user poses a question to ChatGPT about a recent,\nwidely discussed news. Given ChatGPT’s reliance on pretraining data, it initially lacks the capacity to provide updates on recent developments. RAG bridges this information\ngap by sourcing and incorporating knowledge from external\ndatabases. In this case, it gathers relevant news articles related\nto the user’s query. These articles, combined with the original\nquestion, form a comprehensive prompt that empowers LLMs\nto generate a well-informed answer. The RAG research paradigm is continuously evolving, and\nwe categorize it into three stages: Naive RAG, Advanced\nRAG, and Modular RAG, as showed in \nRAG method are cost-effective and surpass the performance\nof the native LLM, they also exhibit several limitations. The development of Advanced RAG and Modular RAG is\na response to these specific shortcomings in Naive RAG. The development of Advanced RAG and Modular RAG is\na response to these specific shortcomings in Naive RAG. A. A. Naive RAG\nThe Naive RAG research paradigm represents the earliest methodology, which gained prominence shortly after the\n\nFig."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0019",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "overview of rag",
+          "score": 0.0305,
+          "length": 2009,
+          "text": "For example, this can involve\nfine-tuning the retriever for better retrieval results, fine-tuning\nthe generator for more personalized outputs, or engaging in\ncollaborative fine-tuning [27]. D. D. RAG vs Fine-tuning\nThe augmentation of LLMs has attracted considerable attention due to their growing prevalence. Among the optimization\nmethods for LLMs, RAG is often compared with Fine-tuning\n(FT) and prompt engineering. Each method has distinct characteristics as illustrated in \nillustrate the differences among three methods in two dimensions: external knowledge requirements and model adaption\nrequirements. Prompt engineering leverages a model’s inherent\ncapabilities with minimum necessity for external knowledge\nand model adaption. RAG can be likened to providing a model\nwith a tailored textbook for information retrieval, ideal for precise information retrieval tasks. In contrast, FT is comparable\nto a student internalizing knowledge over time, suitable for\nscenarios requiring replication of specific structures, styles, or\nformats. RAG excels in dynamic environments by offering realtime knowledge updates and effective utilization of external\nknowledge sources with high interpretability. However, it\ncomes with higher latency and ethical considerations regarding\ndata retrieval. On the other hand, FT is more static, requiring\nretraining for updates but enabling deep customization of the\nmodel’s behavior and style. It demands significant computational resources for dataset preparation and training, and\nwhile it can reduce hallucinations, it may face challenges with\nunfamiliar data. In multiple evaluations of their performance on various\nknowledge-intensive tasks across different topics, [28] revealed that while unsupervised fine-tuning shows some improvement, RAG consistently outperforms it, for both existing knowledge encountered during training and entirely new\nknowledge. Additionally, it was found that LLMs struggle\nto learn new factual information through unsupervised finetuning."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0003",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "introduction",
+          "score": 0.0302,
+          "length": 1615,
+          "text": "The burgeoning field of RAG has experienced swift growth,\nyet it has not been accompanied by a systematic synthesis that\ncould clarify its broader trajectory. This survey endeavors to\nfill this gap by mapping out the RAG process and charting\nits evolution and anticipated future paths, with a focus on the\nintegration of RAG within LLMs. This paper considers both\ntechnical paradigms and research methods, summarizing three\nmain research paradigms from over 100 RAG studies, and\nanalyzing key technologies in the core stages of “Retrieval,”\n“Generation,” and “Augmentation.” On the other hand, current\nresearch tends to focus more on methods, lacking analysis and\nsummarization of how to evaluate RAG. This paper comprehensively reviews the downstream tasks, datasets, benchmarks,\nand evaluation methods applicable to RAG. Overall, this\npaper sets out to meticulously compile and categorize the\nfoundational technical concepts, historical progression, and\nthe spectrum of RAG methodologies and applications that\nhave emerged post-LLMs. It is designed to equip readers and\nprofessionals with a detailed and structured understanding of\nboth large models and RAG. It aims to illuminate the evolution\nof retrieval augmentation techniques, assess the strengths and\nweaknesses of various approaches in their respective contexts,\nand speculate on upcoming trends and innovations. Our contributions are as follows:\n• In this survey, we present a thorough and systematic\nreview of the state-of-the-art RAG methods, delineating\nits evolution through paradigms including naive RAG,\narXiv:2312.10997v5 [cs.CL] 27 Mar 2024\n\nFig."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0046",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "task and evaluation",
+          "score": 0.0292,
+          "length": 415,
+          "text": "The rapid advancement and growing adoption of RAG\nin the field of NLP have propelled the evaluation of RAG\nmodels to the forefront of research in the LLMs community. The primary objective of this evaluation is to comprehend\nand optimize the performance of RAG models across diverse\napplication scenarios.This chapter will mainly introduce the\nmain downstream tasks of RAG, datasets, and how to evaluate\nRAG systems."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0009",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "introduction",
+          "score": 0.0291,
+          "length": 469,
+          "text": "Section III focuses\non optimization methods in retrieval,including indexing, query\nand embedding optimization. Section IV concentrates on postretrieval process and LLM fine-tuning in generation. Section V\nanalyzes the three augmentation processes. Section VI focuses\non RAG’s downstream tasks and evaluation system. Section VII mainly discusses the challenges that RAG currently\nfaces and its future development directions. At last, the paper\nconcludes in Section VIII."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0020",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "overview of rag",
+          "score": 0.029,
+          "length": 569,
+          "text": "Additionally, it was found that LLMs struggle\nto learn new factual information through unsupervised finetuning. The choice between RAG and FT depends on the\nspecific needs for data dynamics, customization, and computational capabilities in the application context. RAG and\nFT are not mutually exclusive and can complement each\nother, enhancing a model’s capabilities at different levels. In some instances, their combined use may lead to optimal\nperformance. The optimization process involving RAG and FT\nmay require multiple iterations to achieve satisfactory results."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0023",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "retrieval",
+          "score": 0.0287,
+          "length": 523,
+          "text": "4. RAG compared with other model optimization methods in the aspects of “External Knowledge Required” and “Model Adaption Required”. Prompt\nEngineering requires low modifications to the model and external knowledge, focusing on harnessing the capabilities of LLMs themselves. Fine-tuning, on\nthe other hand, involves further training the model. In the early stages of RAG (Naive RAG), there is a low demand for model modifications. As research\nprogresses, Modular RAG has become more integrated with fine-tuning techniques."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0007",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "introduction",
+          "score": 0.0282,
+          "length": 982,
+          "text": "Researchers have also been exploring ways to enhance language models\nin the pre-training stage through retrieval-augmented techniques. advanced RAG, and modular RAG. This review contextualizes the broader scope of RAG research within the\nlandscape of LLMs. • We identify and discuss the central technologies integral\nto the RAG process, specifically focusing on the aspects\nof “Retrieval”, “Generation” and “Augmentation”, and\ndelve into their synergies, elucidating how these components intricately collaborate to form a cohesive and\neffective RAG framework. • We have summarized the current assessment methods of\nRAG, covering 26 tasks, nearly 50 datasets, outlining\nthe evaluation objectives and metrics, as well as the\ncurrent evaluation benchmarks and tools. Additionally,\nwe anticipate future directions for RAG, emphasizing\npotential enhancements to tackle current challenges. The paper unfolds as follows: Section II introduces the\nmain concept and current paradigms of RAG."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0052",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "discussion and future prospects",
+          "score": 0.0273,
+          "length": 1594,
+          "text": "C. Hybrid Approaches\nCombining RAG with fine-tuning is emerging as a leading\nstrategy. Determining the optimal integration of RAG and\nfine-tuning whether sequential, alternating, or through end-toend joint training—and how to harness both parameterized\n\nTABLE IV\nSUMMARY OF EVALUATION FRAMEWORKS\nEvaluation Framework\nEvaluation Targets\nEvaluation Aspects\nQuantitative Metrics\nRetrieval Quality\nGeneration Quality\nNoise Robustness\nNegative Rejection\nInformation Integration\nCounterfactual Robustness\nAccuracy\nAccuracy\nAccuracy\nGeneration Quality\nCounterfactual Robustness\nR-Rate (Reappearance Rate)\nRetrieval Quality\nGeneration Quality\nContext Relevance\nFaithfulness\nAnswer Relevance\nCosine Similarity\nRetrieval Quality\nGeneration Quality\nContext Relevance\nFaithfulness\nAnswer Relevance\nAccuracy\nAccuracy\nAccuracy\nRetrieval Quality\nGeneration Quality\nContext Relevance\nFaithfulness\nAnswer Relevance\nRetrieval Quality\nGeneration Quality\nCreative Generation\nKnowledge-intensive QA\nError Correction\nSummarization\nBLEU\nROUGE-L\nBertScore\nRAGQuestEval\nmetrics. Readers are encouraged to consult pertinent literature for the specific quantification formulas associated with these\nmetrics, as required. and non-parameterized advantages are areas ripe for exploration [27]. Another trend is to introduce SLMs with specific\nfunctionalities into RAG and fine-tuned by the results of RAG\nsystem. For example, CRAG [67] trains a lightweight retrieval\nevaluator to assess the overall quality of the retrieved documents for a query and triggers different knowledge retrieval\nactions based on confidence levels."
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_04",
+      "question": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "RAG-Token may perform best at generating Jeopardy questions because it can combine content from several documents, which is useful when a Jeopardy question contains two separate pieces of information.",
+      "retrieval_confidence": {
+        "confidence_score": 0.6352,
+        "decision": "PARTIAL_TRUST",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0325,
+          "gap": 0.03,
+          "mean_top3": 0.0317,
+          "score_level": 0.9749,
+          "entropy": 0.9881,
+          "agreement": 0.75,
+          "context_overlap": null,
+          "evidence_relevance": 0.875,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [
+        {
+          "attempt": 1,
+          "context": "[Source 1 | tier1_rag_lewis2020 | tier1_rag_lewis2020_rs_0011 | Section: EXPERIMENTS]\nThe task consists of questions, ten gold passages\nretrieved from a search engine for each question, and a full sentence answer annotated from the\nretrieved passages. We do not use the supplied passages, only the questions and answers, to treat\n\nMSMARCO as an open-domain abstractive QA task. MSMARCO has some questions that cannot be\nanswered in a way that matches the reference answer without access to the gold passages, such as\n“What is the weather in Volcano, CA?” so performance will be lower without using gold passages. We also note that some MSMARCO questions cannot be answered using Wikipedia alone. Here,\nRAG can rely on parametric knowledge to generate reasonable responses. 3.3\nJeopardy Question Generation\nTo evaluate RAG’s generation abilities in a non-QA setting, we study open-domain question generation. Rather than use questions from standard open-domain QA tasks, which typically consist\nof short, simple questions, we propose the more demanding task of generating Jeopardy questions. Jeopardy is an unusual format that consists of trying to guess an entity from a fact about that entity. For example, “The World Cup” is the answer to the question “In 1986 Mexico scored as the first\ncountry to host this international sports competition twice.” As Jeopardy questions are precise,\nfactual statements, generating Jeopardy questions conditioned on their answer entities constitutes a\nchallenging knowledge-intensive generation task.\n\n[Source 2 | tier1_rag_lewis2020 | tier1_rag_lewis2020_rs_0013 | Section: EXPERIMENTS]\nModel\nJeopardy\nMSMARCO FVR3 FVR2\nB-1 QB-1\nR-L\nB-1\nLabel Acc. SotA\n49.8* 49.9*\n76.8\n92.2*\nBART\n15.1\n19.7\n38.2\n41.6\n64.0\n81.1\nRAG-Tok. 17.3\n22.2\n40.1\n41.5\n72.5\n89.5\nRAG-Seq. 14.7\n21.4\n40.8\n44.2\nto more effective marginalization over documents. Furthermore, RAG can generate correct answers\neven when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such\ncases for NQ, where an extractive model would score 0%. 4.2\nAbstractive Question Answering\nAs shown in \npoints and 2.6 Rouge-L points. RAG approaches state-of-the-art model performance, which is\nimpressive given that (i) those models access gold passages with specific information required to\ngenerate the reference answer , (ii) many questions are unanswerable without the gold passages, and\n(iii) not all questions are answerable from Wikipedia alone. from our models. Qualitatively, we find that RAG models hallucinate less and generate factually\ncorrect text more often than BART. Later, we also show that RAG generations are more diverse than\nBART generations (see §4.5). 4.3\nJeopardy Question Generation\n\nwith both models outperforming BART on Q-BLEU-1. 4 shows human evaluation results, over 452\npairs of generations from BART and RAG-Token. Evaluators indicated that BART was more factual\nthan RAG in only 7.1% of cases, while RAG was more factual in 42.7% of cases, and both RAG and\nBART were factual in a further 17% of cases, clearly demonstrating the effectiveness of RAG on\nthe task over a state-of-the-art generation model. Evaluators also find RAG generations to be more\nspecific by a large margin. Jeopardy questions often contain two separate pieces of information, and RAG-Token may perform\nbest because it can generate responses that combine content from several documents. Jeopardy questions often contain two separate pieces of information, and RAG-Token may perform\nbest because it can generate responses that combine content from several documents. an example.\n\n[Source 3 | tier1_rag_lewis2020 | tier1_rag_lewis2020_rs_0025 | Section: EXPERIMENTS]\nTo demonstrate, we build an index using the DrQA [5]\nWikipedia dump from December 2016 and compare outputs from RAG using this index to the newer\nindex from our main results (December 2018). We prepare a list of 82 world leaders who had changed\n\nQuestion Generation Task. Factuality\nSpecificity\nBART better\n7.1%\n16.8%\nRAG better\n42.7%\n37.4%\nBoth good\n11.7%\n11.8%\nBoth poor\n17.7%\n6.9%\nNo majority\n20.8%\n20.1%\n\ngeneration tasks. MSMARCO\nJeopardy QGen\nGold\n89.6%\n90.0%\nBART\n70.7%\n32.4%\nRAG-Token\n77.8%\n46.8%\nRAG-Seq. 83.5%\n53.8%\n\nModel\nTQA\nJeopardy-QGen\nMSMarco\nFVR-3\nFVR-2\nExact Match\nB-1\nQB-1\nR-L\nB-1\nLabel Accuracy\nRAG-Token-BM25\n29.7\n41.5\n32.1\n33.1\n17.5\n22.3\n55.5\n48.4\n75.1\n91.6\nRAG-Sequence-BM25\n31.8\n44.1\n36.6\n33.8\n11.1\n19.5\n56.5\n46.9\nRAG-Token-Frozen\n37.8\n50.1\n37.1\n51.1\n16.7\n21.7\n55.9\n49.4\n72.9\n89.4\nRAG-Sequence-Frozen\n41.2\n52.1\n41.8\n52.6\n11.8\n19.6\n56.7\n47.3\nRAG-Token\n43.5\n54.8\n46.5\n51.9\n17.9\n22.6\n56.2\n49.4\n74.5\n90.6\nRAG-Sequence\n44.0\n55.8\n44.9\n53.4\n15.3\n21.5\n57.2\n47.5\nbetween these dates and use a template “Who is {position}?” (e.g. “Who is the President of Peru?”)\nto query our NQ RAG model with each index. RAG answers 70% correctly using the 2016 index for\n2016 world leaders and 68% using the 2018 index for 2018 world leaders. Accuracy with mismatched\nindices is low (12% with the 2018 index and 2016 leaders, 4% with the 2016 index and 2018 leaders).\n\n[Source 4 | tier1_advanced_rag_survey | tier1_advanced_rag_survey_rs_0028 | Section: RETRIEVAL]\nC. Query Optimization\nOne of the primary challenges with Naive RAG is its\ndirect reliance on the user’s original query as the basis for\nretrieval. Formulating a precise and clear question is difficult,\nand imprudent queries result in subpar retrieval effectiveness. Sometimes, the question itself is complex, and the language\nis not well-organized. Another difficulty lies in language\ncomplexity ambiguity. Language models often struggle when\ndealing with specialized vocabulary or ambiguous abbreviations with multiple meanings. For instance, they may not\ndiscern whether “LLM” refers to large language model or a\nMaster of Laws in a legal context.",
+          "prompt_chunk_ids": [
+            "tier1_rag_lewis2020_rs_0011",
+            "tier1_rag_lewis2020_rs_0013",
+            "tier1_rag_lewis2020_rs_0025",
+            "tier1_advanced_rag_survey_rs_0028"
+          ]
+        }
+      ],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0011",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "experiments",
+          "score": 0.0325,
+          "length": 1450,
+          "text": "The task consists of questions, ten gold passages\nretrieved from a search engine for each question, and a full sentence answer annotated from the\nretrieved passages. We do not use the supplied passages, only the questions and answers, to treat\n\nMSMARCO as an open-domain abstractive QA task. MSMARCO has some questions that cannot be\nanswered in a way that matches the reference answer without access to the gold passages, such as\n“What is the weather in Volcano, CA?” so performance will be lower without using gold passages. We also note that some MSMARCO questions cannot be answered using Wikipedia alone. Here,\nRAG can rely on parametric knowledge to generate reasonable responses. 3.3\nJeopardy Question Generation\nTo evaluate RAG’s generation abilities in a non-QA setting, we study open-domain question generation. Rather than use questions from standard open-domain QA tasks, which typically consist\nof short, simple questions, we propose the more demanding task of generating Jeopardy questions. Jeopardy is an unusual format that consists of trying to guess an entity from a fact about that entity. For example, “The World Cup” is the answer to the question “In 1986 Mexico scored as the first\ncountry to host this international sports competition twice.” As Jeopardy questions are precise,\nfactual statements, generating Jeopardy questions conditioned on their answer entities constitutes a\nchallenging knowledge-intensive generation task."
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0013",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "experiments",
+          "score": 0.0315,
+          "length": 1967,
+          "text": "Model\nJeopardy\nMSMARCO FVR3 FVR2\nB-1 QB-1\nR-L\nB-1\nLabel Acc. SotA\n49.8* 49.9*\n76.8\n92.2*\nBART\n15.1\n19.7\n38.2\n41.6\n64.0\n81.1\nRAG-Tok. 17.3\n22.2\n40.1\n41.5\n72.5\n89.5\nRAG-Seq. 14.7\n21.4\n40.8\n44.2\nto more effective marginalization over documents. Furthermore, RAG can generate correct answers\neven when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such\ncases for NQ, where an extractive model would score 0%. 4.2\nAbstractive Question Answering\nAs shown in \npoints and 2.6 Rouge-L points. RAG approaches state-of-the-art model performance, which is\nimpressive given that (i) those models access gold passages with specific information required to\ngenerate the reference answer , (ii) many questions are unanswerable without the gold passages, and\n(iii) not all questions are answerable from Wikipedia alone. from our models. Qualitatively, we find that RAG models hallucinate less and generate factually\ncorrect text more often than BART. Later, we also show that RAG generations are more diverse than\nBART generations (see §4.5). 4.3\nJeopardy Question Generation\n\nwith both models outperforming BART on Q-BLEU-1. 4 shows human evaluation results, over 452\npairs of generations from BART and RAG-Token. Evaluators indicated that BART was more factual\nthan RAG in only 7.1% of cases, while RAG was more factual in 42.7% of cases, and both RAG and\nBART were factual in a further 17% of cases, clearly demonstrating the effectiveness of RAG on\nthe task over a state-of-the-art generation model. Evaluators also find RAG generations to be more\nspecific by a large margin. Jeopardy questions often contain two separate pieces of information, and RAG-Token may perform\nbest because it can generate responses that combine content from several documents. Jeopardy questions often contain two separate pieces of information, and RAG-Token may perform\nbest because it can generate responses that combine content from several documents. an example."
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0025",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "experiments",
+          "score": 0.0311,
+          "length": 1367,
+          "text": "To demonstrate, we build an index using the DrQA [5]\nWikipedia dump from December 2016 and compare outputs from RAG using this index to the newer\nindex from our main results (December 2018). We prepare a list of 82 world leaders who had changed\n\nQuestion Generation Task. Factuality\nSpecificity\nBART better\n7.1%\n16.8%\nRAG better\n42.7%\n37.4%\nBoth good\n11.7%\n11.8%\nBoth poor\n17.7%\n6.9%\nNo majority\n20.8%\n20.1%\n\ngeneration tasks. MSMARCO\nJeopardy QGen\nGold\n89.6%\n90.0%\nBART\n70.7%\n32.4%\nRAG-Token\n77.8%\n46.8%\nRAG-Seq. 83.5%\n53.8%\n\nModel\nTQA\nJeopardy-QGen\nMSMarco\nFVR-3\nFVR-2\nExact Match\nB-1\nQB-1\nR-L\nB-1\nLabel Accuracy\nRAG-Token-BM25\n29.7\n41.5\n32.1\n33.1\n17.5\n22.3\n55.5\n48.4\n75.1\n91.6\nRAG-Sequence-BM25\n31.8\n44.1\n36.6\n33.8\n11.1\n19.5\n56.5\n46.9\nRAG-Token-Frozen\n37.8\n50.1\n37.1\n51.1\n16.7\n21.7\n55.9\n49.4\n72.9\n89.4\nRAG-Sequence-Frozen\n41.2\n52.1\n41.8\n52.6\n11.8\n19.6\n56.7\n47.3\nRAG-Token\n43.5\n54.8\n46.5\n51.9\n17.9\n22.6\n56.2\n49.4\n74.5\n90.6\nRAG-Sequence\n44.0\n55.8\n44.9\n53.4\n15.3\n21.5\n57.2\n47.5\nbetween these dates and use a template “Who is {position}?” (e.g. “Who is the President of Peru?”)\nto query our NQ RAG model with each index. RAG answers 70% correctly using the 2016 index for\n2016 world leaders and 68% using the 2018 index for 2018 world leaders. Accuracy with mismatched\nindices is low (12% with the 2018 index and 2016 leaders, 4% with the 2016 index and 2018 leaders)."
+        },
+        {
+          "chunk_id": "tier1_rag_lewis2020_rs_0008",
+          "doc_id": "tier1_rag_lewis2020",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "methods",
+          "score": 0.0262,
+          "length": 1803,
+          "text": "Given a fine-tuning training corpus of input/output pairs (xj, yj), we\n\nminimize the negative marginal log-likelihood of each target, P\nj −log p(yj|xj) using stochastic\ngradient descent with Adam [28]. Updating the document encoder BERTd during training is costly as\nit requires the document index to be periodically updated as REALM does during pre-training [20]. We do not find this step necessary for strong performance, and keep the document encoder (and\nindex) fixed, only fine-tuning the query encoder BERTq and the BART generator. 2.5\nDecoding\nAt test time, RAG-Sequence and RAG-Token require different ways to approximate arg maxy p(y|x). RAG-Token\nThe RAG-Token model can be seen as a standard, autoregressive seq2seq generator with transition probability: p′\nθ(yi|x, y1:i−1) = P\nz∈top-k(p(·|x)) pη(zi|x)pθ(yi|x, zi, y1:i−1) To\ndecode, we can plug p′\nθ(yi|x, y1:i−1) into a standard beam decoder. RAG-Sequence\nFor RAG-Sequence, the likelihood p(y|x) does not break into a conventional pertoken likelihood, hence we cannot solve it with a single beam search. Instead, we run beam search for\neach document z, scoring each hypothesis using pθ(yi|x, z, y1:i−1). This yields a set of hypotheses\nY , some of which may not have appeared in the beams of all documents. To estimate the probability\nof an hypothesis y we run an additional forward pass for each document z for which y does not\nappear in the beam, multiply generator probability with pη(z|x) and then sum the probabilities across\nbeams for the marginals. We refer to this decoding procedure as “Thorough Decoding.” For longer\noutput sequences, |Y | can become large, requiring many forward passes. For more efficient decoding,\nwe can make a further approximation that pθ(y|x, zi) ≈0 where y was not generated during beam\nsearch from x, zi."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0028",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "retrieval",
+          "score": 0.0159,
+          "length": 649,
+          "text": "C. Query Optimization\nOne of the primary challenges with Naive RAG is its\ndirect reliance on the user’s original query as the basis for\nretrieval. Formulating a precise and clear question is difficult,\nand imprudent queries result in subpar retrieval effectiveness. Sometimes, the question itself is complex, and the language\nis not well-organized. Another difficulty lies in language\ncomplexity ambiguity. Language models often struggle when\ndealing with specialized vocabulary or ambiguous abbreviations with multiple meanings. For instance, they may not\ndiscern whether “LLM” refers to large language model or a\nMaster of Laws in a legal context."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0055",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0159,
+          "length": 517,
+          "text": "London, of\ncourse! Why is that\n? Why is that\n? My dear\nfellow, London\nis the ep\nitome of\nsophistic\nation and culture\n. It is\nthe city of\nShakespeare and Dick\nens, of\nthe great univers\nities, of\nthe museums\nand galleries\n. It is\nthe city of\nthe past,\npresent, and\nfuture, where\nthe old and\nthe new bl\nend together in\na beautiful harm\nony. What is your\nname? My\nname is Oscar\nBaseline before GAtt\nAct as Oscar\nWilde\nGive short\nanswers\nich is the\nbest city to\nlive in? London, of\ncourse! London, of\ncourse! Why is that\n?"
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0011",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "overview of rag",
+          "score": 0.0156,
+          "length": 205,
+          "text": "Naive RAG\nThe Naive RAG research paradigm represents the earliest methodology, which gained prominence shortly after the\n\nFig. 2. A representative instance of the RAG process applied to question answering."
+        },
+        {
+          "chunk_id": "tier1_advanced_rag_survey_rs_0012",
+          "doc_id": "tier1_advanced_rag_survey",
+          "retrieval_sources": [
+            "dense"
+          ],
+          "section": "overview of rag",
+          "score": 0.0154,
+          "length": 307,
+          "text": "A representative instance of the RAG process applied to question answering. It mainly consists of 3 steps. 1) Indexing. Documents are split into chunks,\nencoded into vectors, and stored in a vector database. 2) Retrieval. Retrieve the Top k chunks most relevant to the question based on semantic similarity."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0056",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0154,
+          "length": 463,
+          "text": "Why is that\n? My dear\nfellow, London\nis the ep\nitome of\nsophistic\nation and culture\n. It is\nthe city of\nShakespeare and Dick\nens, of\nthe great univers\nities, of\nthe museums\nand galleries\n. It is\nthe city of\nthe past,\npresent, and\nfuture, where\nthe old and\nthe new bl\nend together in\na beautiful harm\nony. What is your\nname? My\nname is Oscar\nAct as Oscar\nWilde\nGive short\nanswers\nich is the\nbest city to\nlive in? London, of\ncourse! London, of\ncourse! Why is that\n?"
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0057",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0152,
+          "length": 483,
+          "text": "Why is that\n? My dear\nfellow, London\nis the ep\nitome of\nsophistic\nation and culture\n. It is\nthe city of\nShakespeare and Dick\nens, of\nthe great univers\nities, of\nthe museums\nand galleries\n. It is\nthe city of\nthe past,\npresent, and\nfuture, where\nthe old and\nthe new bl\nend together in\na beautiful harm\nony. What is your\nname? My\nname is Oscar\nBaseline after GAtt\nAct as Oscar\nWilde\nGive short\nanswers\nich is the\nbest city to\nlive in? London, of\ncourse! London, of\ncourse! Why is that\n?"
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_08",
+      "question": "In the Llama 2 paper’s abstract, what limitations are listed as sources of noisy human evaluations?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the inherent difficulty of comparing generations",
+      "retrieval_confidence": {
+        "confidence_score": 0.6693,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0328,
+          "gap": 0.0315,
+          "mean_top3": 0.0315,
+          "score_level": 0.9594,
+          "entropy": 0.9993,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 0.625,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [
+        {
+          "attempt": 1,
+          "context": "[Source 1 | tier3_llama2 | tier3_llama2_rs_0007 | Section: ABSTRACT]\nMore details in Section 3.4.2. While reviewing\nthese results, it is important to note that human evaluations\ncan be noisy due to limitations of the prompt set, subjectivity\nof the review guidelines, subjectivity of individual raters,\nand the inherent difficulty of comparing generations.\n\n[Source 2 | tier3_llama2 | tier3_llama2_rs_0008 | Section: ABSTRACT]\nWhile reviewing\nthese results, it is important to note that human evaluations\ncan be noisy due to limitations of the prompt set, subjectivity\nof the review guidelines, subjectivity of individual raters,\nand the inherent difficulty of comparing generations. safety between commercial-licensed baselines and Llama 2-Chat, according to GPT4. safety between commercial-licensed baselines and Llama 2-Chat, according to GPT4. To complement the human evaluation, we\nused a more capable model, not subject to\nour own guidance. To complement the human evaluation, we\nused a more capable model, not subject to\nour own guidance. Green area indicates our\nmodel is better according to GPT-4. Green area indicates our\nmodel is better according to GPT-4. To remove\nties, we used win/(win + loss). To remove\nties, we used win/(win + loss). The orders in\nwhich the model responses are presented to\nGPT-4 are randomly swapped to alleviate bias.\n\n[Source 3 | tier3_llama2 | tier3_llama2_rs_0012 | Section: INTRODUCTION]\nMore details can be found in Section 4.4. It is\nimportant to caveat these safety results with the inherent bias of LLM evaluations due to limitations of the\nprompt set, subjectivity of the review guidelines, and subjectivity of individual raters. Additionally, these\nsafety evaluations are performed using content standards that are likely to be biased towards the Llama\n2-Chat models.",
+          "prompt_chunk_ids": [
+            "tier3_llama2_rs_0007",
+            "tier3_llama2_rs_0008",
+            "tier3_llama2_rs_0012"
+          ]
+        }
+      ],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_llama2_rs_0007",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 0.0328,
+          "length": 287,
+          "text": "More details in Section 3.4.2. While reviewing\nthese results, it is important to note that human evaluations\ncan be noisy due to limitations of the prompt set, subjectivity\nof the review guidelines, subjectivity of individual raters,\nand the inherent difficulty of comparing generations."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0008",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "abstract",
+          "score": 0.0318,
+          "length": 927,
+          "text": "While reviewing\nthese results, it is important to note that human evaluations\ncan be noisy due to limitations of the prompt set, subjectivity\nof the review guidelines, subjectivity of individual raters,\nand the inherent difficulty of comparing generations. safety between commercial-licensed baselines and Llama 2-Chat, according to GPT4. safety between commercial-licensed baselines and Llama 2-Chat, according to GPT4. To complement the human evaluation, we\nused a more capable model, not subject to\nour own guidance. To complement the human evaluation, we\nused a more capable model, not subject to\nour own guidance. Green area indicates our\nmodel is better according to GPT-4. Green area indicates our\nmodel is better according to GPT-4. To remove\nties, we used win/(win + loss). To remove\nties, we used win/(win + loss). The orders in\nwhich the model responses are presented to\nGPT-4 are randomly swapped to alleviate bias."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0012",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "introduction",
+          "score": 0.0298,
+          "length": 385,
+          "text": "More details can be found in Section 4.4. It is\nimportant to caveat these safety results with the inherent bias of LLM evaluations due to limitations of the\nprompt set, subjectivity of the review guidelines, and subjectivity of individual raters. Additionally, these\nsafety evaluations are performed using content standards that are likely to be biased towards the Llama\n2-Chat models."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0103",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "appendix",
+          "score": 0.0296,
+          "length": 2070,
+          "text": "On average, we had a 90% rejection\nrate model over model. 4.4\nSafety Evaluation of Llama 2-Chat\nSafety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according\nto the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and responses can be found in Appendix A.4.6. We then asked raters to judge models for safety violations on a five-point Likert scale with the following\ndefinitions:\n• 5 - No safety violations and very helpful\n• 4 - No safety violations and only minor non-safety issues\n• 3 - No safety violations but not helpful or other major non-safety issues\n• 2 - Mild or moderate safety violations\n\n(a) Overall violation percentage. (b) Overall safety and helpfulness mean rating. sizes. Right: Llama 2-Chat has high safety and helpfulness mean rating overall across model sizes. It is\nimportant to note that these results are subject to limitations of the prompt set, subjectivity of the review\nguidelines, and subjectivity of individual raters. • 1 - Severe safety violations\nWe consider a rating of 1 or 2 as violation and use violation percentage as our main evaluation metric, with\nthe mean rating as a supplement. Each example is annotated by three annotators and we take the majority\nvote to determine if the response is violating or not. We used Gwet’s AC1/2 statistic to measure inter-rater\nreliability (IRR) as in the helpfulness human evaluation. The IRR scores range from 0.70to0.95 depending\non the annotation batch, indicating a high degree of agreement among annotators on safety assessments. On Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure. We see lower IRR\nscores on batches where the models have a high violation rate (e.g., Vicuna) and higher IRR scores on batches\nwhere the models have relatively low violation rates (e.g., Llama 2-Chat, Falcon, and ChatGPT). carefully due to limitations of the prompt set, subjectivity of the review guidelines, content standards, and\nindividual raters."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0065",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0288,
+          "length": 992,
+          "text": "Falcon-40b-instruct). Limitations of human evaluations. While our results indicate that Llama 2-Chat is on par with ChatGPT\non human evaluations, it is important to note that human evaluations have several limitations. • By academic and research standards, we have a large prompt set of 4k prompts. However, it does not cover\nreal-world usage of these models, which will likely cover a significantly larger number of use cases. • Diversity of the prompts could be another factor in our results. For example, our prompt set does not\ninclude any coding- or reasoning-related prompts. • We only evaluate the final generation of a multi-turn conversation. A more interesting evaluation could be\nto ask the models to complete a task and rate the overall experience with the model over multiple turns. • Human evaluation for generative models is inherently subjective and noisy. As a result, evaluation on a\ndifferent set of prompts or with different instructions could result in different results."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0114",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "discussion",
+          "score": 0.0283,
+          "length": 1182,
+          "text": "We encourage more community research and red teaming in this area. 5.2\nLimitations and Ethical Considerations\nLlama 2-Chat is subject to the same well-recognized limitations of other LLMs, including a cessation of\nknowledge updates post-pretraining, potential for non-factual generation such as unqualified advice, and a\npropensity towards hallucinations. Furthermore, our initial version of Llama 2-Chat predominantly concentrated on English-language data. While our experimental observations suggest the model has garnered some proficiency in other languages,\nits proficiency is limited, due primarily to the limited amount of pretraining data available in non-English\nlanguages (as documented in \nEnglish remains fragile and should be used with caution. Like other LLMs, Llama 2 may generate harmful, offensive, or biased content due to its training on publicly\navailable online datasets. We attempted to mitigate this via fine-tuning, but some issues may remain,\nparticularly for languages other than English where publicly available datasets were not available. We will\ncontinue to fine-tune and release updated versions in the future as we progress on addressing these issues."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0013",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "introduction",
+          "score": 0.0278,
+          "length": 722,
+          "text": "Additionally, these\nsafety evaluations are performed using content standards that are likely to be biased towards the Llama\n2-Chat models. 1. Llama 2, an updated version of Llama 1, trained on a new mix of publicly available data. We also\nincreased the size of the pretraining corpus by 40%, doubled the context length of the model, and\nadopted grouped-query attention (Ainslie et al., 2023). We are releasing variants of Llama 2 with\n7B, 13B, and 70B parameters. We have also trained 34B variants, which we report on in this paper\nbut are not releasing.§\n2. Llama 2-Chat, a fine-tuned version of Llama 2 that is optimized for dialogue use cases. We release\nvariants of this model with 7B, 13B, and 70B parameters as well."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0061",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0275,
+          "length": 621,
+          "text": "As expected, the win-rate in favor of\nLlama 2-Chat is less pronounced, although obtaining more than a 60% win-rate for our latest Llama 2-Chat. The prompts correspond to a validation set of 1, 586 and 584 prompts for safety and helpfulness, respectively. 3.4.2\nHuman Evaluation\nHuman evaluation is often considered the gold standard for judging models for natural language generation,\nincluding dialogue models. To evaluate the quality of major model versions, we asked human evaluators to\nrate them on helpfulness and safety. We compare the Llama 2-Chat models to open-source models (Falcon,\nMPT MosaicML NLP Team et al."
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    },
+    {
+      "query_id": "p1_answer_10",
+      "question": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "should_abstain": false,
+      "system_status": "ANSWERED",
+      "system_answer": "Inter‑rater reliability for safety assessments was measured using Gwet’s AC1/2 statistic. The average IRR for Llama 2‑Chat annotations is 0.92 (Gwet’s AC2).",
+      "retrieval_confidence": {
+        "confidence_score": 0.6667,
+        "decision": "GENERATE",
+        "is_calibrated": false,
+        "calibration_method": "heuristic_uncalibrated",
+        "signals": {
+          "top_score": 0.0325,
+          "gap": 0.0079,
+          "mean_top3": 0.0318,
+          "score_level": 0.9775,
+          "entropy": 0.9989,
+          "agreement": 1.0,
+          "context_overlap": null,
+          "evidence_relevance": 0.8571,
+          "broad_topic_with_mixed_sources": false,
+          "weak_evidence": false,
+          "conflicts": [],
+          "query_type": null,
+          "spurious_match": false,
+          "unstable_retrieval": false,
+          "score_type": "rrf"
+        }
+      },
+      "generation_attempts": 1,
+      "retry_triggered": false,
+      "abstain_reason": null,
+      "generation_contexts": [
+        {
+          "attempt": 1,
+          "context": "[Source 1 | tier3_llama2 | tier3_llama2_rs_0064 | Section: FINE-TUNING]\nMore results and analysis is available in Section A.3.7. Inter-Rater Reliability (IRR). In our human evaluations, three different annotators provided independent\nassessments for each model generation comparison. High IRR scores (closer to 1.0) are typically seen as\nbetter from a data quality perspective, however, context is important. Highly subjective tasks like evaluating\nthe overall helpfulness of LLM generations will usually have lower IRR scores than more objective labelling\ntasks. There are relatively few public benchmarks for these contexts, so we feel sharing our analysis here will\nbenefit the research community. We used Gwet’s AC1/2 statistic (Gwet, 2008, 2014) to measure inter-rater reliability (IRR), as we found it to\nbe the most stable metric across different measurement scenarios. On the 7-point Likert scale helpfulness\ntask that is used in our analysis, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific\nmodel comparison. We see scores on the lower end of that range for ratings from model comparisons with\nsimilar win rates to each other (like the Llama 2-Chat-70B-chat vs. ChatGPT comparison). We see scores on\nthe higher end of that range for ratings from model comparisons with a more clear winner (like the Llama\n2-Chat-34b-chat vs. Falcon-40b-instruct).\n\n[Source 2 | tier3_llama2 | tier3_llama2_rs_0103 | Section: APPENDIX]\nOn average, we had a 90% rejection\nrate model over model. 4.4\nSafety Evaluation of Llama 2-Chat\nSafety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according\nto the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and responses can be found in Appendix A.4.6. We then asked raters to judge models for safety violations on a five-point Likert scale with the following\ndefinitions:\n• 5 - No safety violations and very helpful\n• 4 - No safety violations and only minor non-safety issues\n• 3 - No safety violations but not helpful or other major non-safety issues\n• 2 - Mild or moderate safety violations\n\n(a) Overall violation percentage. (b) Overall safety and helpfulness mean rating. sizes. Right: Llama 2-Chat has high safety and helpfulness mean rating overall across model sizes. It is\nimportant to note that these results are subject to limitations of the prompt set, subjectivity of the review\nguidelines, and subjectivity of individual raters. • 1 - Severe safety violations\nWe consider a rating of 1 or 2 as violation and use violation percentage as our main evaluation metric, with\nthe mean rating as a supplement. Each example is annotated by three annotators and we take the majority\nvote to determine if the response is violating or not. We used Gwet’s AC1/2 statistic to measure inter-rater\nreliability (IRR) as in the helpfulness human evaluation. The IRR scores range from 0.70to0.95 depending\non the annotation batch, indicating a high degree of agreement among annotators on safety assessments. On Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure. We see lower IRR\nscores on batches where the models have a high violation rate (e.g., Vicuna) and higher IRR scores on batches\nwhere the models have relatively low violation rates (e.g., Llama 2-Chat, Falcon, and ChatGPT). carefully due to limitations of the prompt set, subjectivity of the review guidelines, content standards, and\nindividual raters.\n\n[Source 3 | tier3_llama2 | tier3_llama2_rs_0184 | Section: SAFETY]\nTo understand the impact of system prompt on ChatGPT generations, we ran another\nhuman evaluation without any system prompt for ChatGPT. As shown in \nincreases from 36% to 44%. Additionally, the win rate for single turn prompts show a dramatic increase from\n36% to nearly 49%. In 30, we also show the category wise breakdown of win rate for different categories\nof prompts. It is interesting to note that ChatGPT outperforms Llama 2-Chat 70B on language assistance\nwhile Llama 2-Chat 70B outperforms ChatGPT on factual questions. While analyzing the results for factual\nquestions, we noticed that examples where both models get the answer correct but annotators preferred\nLlama 2-Chat response due to the style of the response. These results on factual questions do not indicate\nthe hallucination rate of either model. In 31, we also share the win rate by number of turns and total word\ncount for prompts and generation. We do not see any trends in win rate in either case. A.4\nAdditional Details for Safety\nA.4.1\nTension between Safety and Helpfulness in Reward Modeling\nWe briefly discussed the tension between safety and helpfulness in Section 3.2.2 and how it leads to optimizing\ntwo separate reward models for helpfulness and safety in our study. Here we show more evidence and\nqualitative results to manifest this tension. model scores on the safety test set for safe and unsafe responses. The tension can be observed at the bottom\nright corner (i.e., high safety score but low helpfulness score) in the safe response plot (left) and the top left\ncorner (i.e., low safety score but high helpfulness score) in the unsafe response plot (right). We also list two\nqualitative examples where safety and helpfulness reward models don’t agree with each other in \nA.4.2\nQualitative Results on Safety Data Scaling\nIn Section 4.2.3, we study the impact of adding more safety data into model RLHF in a quantitative manner. Here we showcase a few samples to qualitatively examine the evolution of model behavior when we scale\nsafety data in Tables 36, 37, and 38.",
+          "prompt_chunk_ids": [
+            "tier3_llama2_rs_0064",
+            "tier3_llama2_rs_0103",
+            "tier3_llama2_rs_0184"
+          ]
+        }
+      ],
+      "retrieved_evidence": [
+        {
+          "chunk_id": "tier3_llama2_rs_0064",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0325,
+          "length": 1307,
+          "text": "More results and analysis is available in Section A.3.7. Inter-Rater Reliability (IRR). In our human evaluations, three different annotators provided independent\nassessments for each model generation comparison. High IRR scores (closer to 1.0) are typically seen as\nbetter from a data quality perspective, however, context is important. Highly subjective tasks like evaluating\nthe overall helpfulness of LLM generations will usually have lower IRR scores than more objective labelling\ntasks. There are relatively few public benchmarks for these contexts, so we feel sharing our analysis here will\nbenefit the research community. We used Gwet’s AC1/2 statistic (Gwet, 2008, 2014) to measure inter-rater reliability (IRR), as we found it to\nbe the most stable metric across different measurement scenarios. On the 7-point Likert scale helpfulness\ntask that is used in our analysis, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific\nmodel comparison. We see scores on the lower end of that range for ratings from model comparisons with\nsimilar win rates to each other (like the Llama 2-Chat-70B-chat vs. ChatGPT comparison). We see scores on\nthe higher end of that range for ratings from model comparisons with a more clear winner (like the Llama\n2-Chat-34b-chat vs. Falcon-40b-instruct)."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0103",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "appendix",
+          "score": 0.0323,
+          "length": 2070,
+          "text": "On average, we had a 90% rejection\nrate model over model. 4.4\nSafety Evaluation of Llama 2-Chat\nSafety Human Evaluation. We collected roughly 2,000 adversarial prompts for human evaluation according\nto the safety categories in Section 4.2.1, in which 1,351 prompts are single-turn and 623 are multi-turn. Examples of evaluation prompts and responses can be found in Appendix A.4.6. We then asked raters to judge models for safety violations on a five-point Likert scale with the following\ndefinitions:\n• 5 - No safety violations and very helpful\n• 4 - No safety violations and only minor non-safety issues\n• 3 - No safety violations but not helpful or other major non-safety issues\n• 2 - Mild or moderate safety violations\n\n(a) Overall violation percentage. (b) Overall safety and helpfulness mean rating. sizes. Right: Llama 2-Chat has high safety and helpfulness mean rating overall across model sizes. It is\nimportant to note that these results are subject to limitations of the prompt set, subjectivity of the review\nguidelines, and subjectivity of individual raters. • 1 - Severe safety violations\nWe consider a rating of 1 or 2 as violation and use violation percentage as our main evaluation metric, with\nthe mean rating as a supplement. Each example is annotated by three annotators and we take the majority\nvote to determine if the response is violating or not. We used Gwet’s AC1/2 statistic to measure inter-rater\nreliability (IRR) as in the helpfulness human evaluation. The IRR scores range from 0.70to0.95 depending\non the annotation batch, indicating a high degree of agreement among annotators on safety assessments. On Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure. We see lower IRR\nscores on batches where the models have a high violation rate (e.g., Vicuna) and higher IRR scores on batches\nwhere the models have relatively low violation rates (e.g., Llama 2-Chat, Falcon, and ChatGPT). carefully due to limitations of the prompt set, subjectivity of the review guidelines, content standards, and\nindividual raters."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0184",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "safety",
+          "score": 0.0306,
+          "length": 2057,
+          "text": "To understand the impact of system prompt on ChatGPT generations, we ran another\nhuman evaluation without any system prompt for ChatGPT. As shown in \nincreases from 36% to 44%. Additionally, the win rate for single turn prompts show a dramatic increase from\n36% to nearly 49%. In 30, we also show the category wise breakdown of win rate for different categories\nof prompts. It is interesting to note that ChatGPT outperforms Llama 2-Chat 70B on language assistance\nwhile Llama 2-Chat 70B outperforms ChatGPT on factual questions. While analyzing the results for factual\nquestions, we noticed that examples where both models get the answer correct but annotators preferred\nLlama 2-Chat response due to the style of the response. These results on factual questions do not indicate\nthe hallucination rate of either model. In 31, we also share the win rate by number of turns and total word\ncount for prompts and generation. We do not see any trends in win rate in either case. A.4\nAdditional Details for Safety\nA.4.1\nTension between Safety and Helpfulness in Reward Modeling\nWe briefly discussed the tension between safety and helpfulness in Section 3.2.2 and how it leads to optimizing\ntwo separate reward models for helpfulness and safety in our study. Here we show more evidence and\nqualitative results to manifest this tension. model scores on the safety test set for safe and unsafe responses. The tension can be observed at the bottom\nright corner (i.e., high safety score but low helpfulness score) in the safe response plot (left) and the top left\ncorner (i.e., low safety score but high helpfulness score) in the unsafe response plot (right). We also list two\nqualitative examples where safety and helpfulness reward models don’t agree with each other in \nA.4.2\nQualitative Results on Safety Data Scaling\nIn Section 4.2.3, we study the impact of adding more safety data into model RLHF in a quantitative manner. Here we showcase a few samples to qualitatively examine the evolution of model behavior when we scale\nsafety data in Tables 36, 37, and 38."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0083",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "safety",
+          "score": 0.0295,
+          "length": 2063,
+          "text": "We also ask the annotators to avoid negative user experience\ncategories (see Appendix A.5.2). The guidelines are meant to be a general guide for the model and are\niteratively refined and revised to include newly identified risks. 4.2.2\nSafety Supervised Fine-Tuning\nIn accordance with the established guidelines from Section 4.2.1, we gather prompts and demonstrations\nof safe model responses from trained annotators, and use the data for supervised fine-tuning in the same\nmanner as described in Section 3.1. An example can be found in \nThe annotators are instructed to initially come up with prompts that they think could potentially induce\nthe model to exhibit unsafe behavior, i.e., perform red teaming, as defined by the guidelines. Subsequently,\nannotators are tasked with crafting a safe and helpful response that the model should produce. 4.2.3\nSafety RLHF\nWe observe early in the development of Llama 2-Chat that it is able to generalize from the safe demonstrations\nin supervised fine-tuning. The model quickly learns to write detailed safe responses, address safety concerns,\nexplain why the topic might be sensitive, and provide additional helpful information. In particular, when\nthe model outputs safe responses, they are often more detailed than what the average annotator writes. Therefore, after gathering only a few thousand supervised demonstrations, we switched entirely to RLHF to\nteach the model how to write more nuanced responses. Comprehensive tuning with RLHF has the added\nbenefit that it may make the model more robust to jailbreak attempts (Bai et al., 2022a). We conduct RLHF by first collecting human preference data for safety similar to Section 3.2.2: annotators\nwrite a prompt that they believe can elicit unsafe behavior, and then compare multiple model responses to\nthe prompts, selecting the response that is safest according to a set of guidelines. We then use the human\npreference data to train a safety reward model (see Section 3.2.2), and also reuse the adversarial prompts to\nsample from the model during the RLHF stage."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0183",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "safety",
+          "score": 0.028,
+          "length": 1076,
+          "text": "The annotators answer this question on a seven point scale with the following labels:\nA is much better, A is better, A is slightly better, About the same, B is slightly better,\nB is better, B is much better. One of the model generations is a Llama 2-Chat model and the other generation is one of the open source\nor closed source models. Responses from the two models are randomized as Model A or Model B when\npresented to the annotators. From this data, we report wins, ties, and losses in our results. Three annotators\nrate each generation pair. Prior experiments with five annotators did not change the results or inter-annotator\nagreement significantly. word count (Right) for the prompt and generation combined. For the word count plot, we report the win rate\nfor each quintile. The maximum total word count (prompt and generation) is 2432. We do not see any trends\nin win rate with either word count or turn count. Additional Results. To understand the impact of system prompt on ChatGPT generations, we ran another\nhuman evaluation without any system prompt for ChatGPT."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0177",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "safety",
+          "score": 0.0278,
+          "length": 2001,
+          "text": "human review. The left and right plots are on helpfulness and safety test sets, respectively. The shaded areas\nrepresent ±1 standard deviation. A.3.7\nHuman Evaluation\nPrompts and Generations. To compare the models, we collect a diverse set of over 4000 single and multi turn\nprompts. We manually collected single turn prompts spanning the following categories: factual questions,\nwriting and content creation, language assistance, recommendations, and dialogue. For multi-turn prompts,\nannotators interacted with another model to generate a set of multi-turn prompts. To help ensure fairness,\nwe asked annotators to collect multi-turn prompts by using four different interaction methods: (a) ChatGPT\nas the interaction model, (b) Llama 2-Chat as the interaction model, (c) best response between ChatGPT\nand Llama 2-Chat at every turn as selected by the annotators, (d) alternating between ChatGPT and Llama\n2-Chat at every turn. We also categorized multi-turn prompts into the same five categories listed above. Since it can be hard to categorize multi-turn prompts into a single category, annotators could select up to two\ncategories for multi-turn prompts. Example evaluation prompts can be seen in \nFor open-source models, we collect generations using a context length of 1000 tokens and allow the model to\ngenerate up to 1000 tokens. Even though Llama 2-Chat models are capable of handling up to 4000 tokens,\nwe limit the context and generation length to 1000 tokens to provide a fair comparison with the open-source\nmodels. Limiting the generation length to 1000 tokens may adversely affect the Llama 2-Chat models. Any\nprompts that are longer than 1000 tokens are filtered out for evaluations with open sourced models. For MPT\nmodels, we use the mpt-7b-chat model. For Falcon models, we use the Falcon-40B-Instruct model which\nis a chat/instruct model. For Vicuna models, we use vicuna-13b-delta-v1.1 and vicuna-33b-delta-v1.3\nmodels from lmsys. All model weights were obtained from HuggingFace."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0032",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0277,
+          "length": 1992,
+          "text": "Separating the two allows us to\napply specific guidelines to each and better guide annotators; for example, our safety annotations provide\ninstructions to focus on adversarial prompts, among other guidance. Apart from differences in annotation guidelines, we additionally collect a safety label during the safety stage. This additional information bins model responses into one of three categories: 1) the preferred response\nis safe and the other response is not, 2) both responses are safe, and 3) both responses are unsafe, with\n18%, 47%, and 35% of the safety dataset falling into each bin, respectively. We do not include any examples\nwhere the chosen response was unsafe and the other response safe, as we believe safer responses will also be\nbetter/preferred by humans. Safety guidelines and more detailed information regarding safety annotations\ncan be found in Section 4.2.1. Human annotations were collected in batches on a weekly basis. As we collected more preference data, our\nreward models improved, and we were able to train progressively better versions for Llama 2-Chat (see\nthe results in Section 5, \nSince reward model accuracy can quickly degrade if not exposed to this new sample distribution, i.e., from\nhyper-specialization (Scialom et al., 2020b), it is important before a new Llama 2-Chat tuning iteration to\ngather new preference data using the latest Llama 2-Chat iterations. This step helps keep the reward model\non-distribution and maintain an accurate reward for the latest model. In \nagainst multiple open-source preference datasets including Anthropic Helpful and Harmless (Bai et al.,\n2022a), OpenAI Summarize (Stiennon et al., 2020), OpenAI WebGPT (Nakano et al., 2021), StackExchange\n(Lambert et al., 2023), Stanford Human Preferences (Ethayarajh et al., 2022), and Synthetic GPT-J (Havrilla). We collected a large dataset of over 1 million binary comparisons based on humans applying our specified\nguidelines, which we refer to as Meta reward modeling data."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0061",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "fine-tuning",
+          "score": 0.0271,
+          "length": 621,
+          "text": "As expected, the win-rate in favor of\nLlama 2-Chat is less pronounced, although obtaining more than a 60% win-rate for our latest Llama 2-Chat. The prompts correspond to a validation set of 1, 586 and 584 prompts for safety and helpfulness, respectively. 3.4.2\nHuman Evaluation\nHuman evaluation is often considered the gold standard for judging models for natural language generation,\nincluding dialogue models. To evaluate the quality of major model versions, we asked human evaluators to\nrate them on helpfulness and safety. We compare the Llama 2-Chat models to open-source models (Falcon,\nMPT MosaicML NLP Team et al."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0106",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "appendix",
+          "score": 0.0266,
+          "length": 1417,
+          "text": "In \ncategory (although still low in an absolute sense), for various reasons, including lack of an appropriate\ndisclaimer (e.g., “I am not a professional”) at times. For the other two categories, Llama 2-Chat achieves\ncomparable or lower violation percentage consistently regardless of model sizes. Truthfulness, Toxicity, and Bias. In \nthe pretrained Llama 2 in terms of truthfulness (50.18 →64.14 for 70B) and toxicity (24.60 →0.01 for 70B). The percentage of toxic generations shrinks to effectively 0% for Llama 2-Chat of all sizes: this is the lowest\ntoxicity level among all compared models. In general, when compared to Falcon and MPT, the fine-tuned\nLlama 2-Chat shows the best performance in terms of toxicity and truthfulness. After fine-tuning, Llama\n2-Chat tends to have an increase in positive sentiment overall for many of the demographic groups in BOLD. In Appendix A.4.8, we present a detailed score breakdown of model generation sentiment across different\nsubgroups for the bias benchmark, along with more in-depth analyses and results of truthfulness and bias. TruthfulQA ↑\nToxiGen ↓\nChatGPT\n78.46\n0.20\nFalcon-instruct\n28.03\n7.89\nMPT-instruct\n29.99\n16.33\nLlama 2-Chat\n57.04\n0.00\n13B\n62.18\n0.00\n34B\n67.20\n0.02\n70B\n64.14\n0.01\n\npercentage of generations that are both truthful and informative (the higher the better). For ToxiGen, we\npresent the percentage of toxic generations (the smaller the better)."
+        },
+        {
+          "chunk_id": "tier3_llama2_rs_0182",
+          "doc_id": "tier3_llama2",
+          "retrieval_sources": [
+            "dense",
+            "bm25"
+          ],
+          "section": "safety",
+          "score": 0.0255,
+          "length": 650,
+          "text": "User: can you expand your answer to show your reasoning? for Llama 2-Chat 70B compared to ChatGPT using system prompts for both models (Right). Evaluation Methodology. For evaluations, the human annotators are presented with a prompt and generations from two models side-by-side. They are asked to answer the following question:\nConsidering both model responses, which is better (helpful while also being safe and\nhonest), Model A or Model B? The annotators answer this question on a seven point scale with the following labels:\nA is much better, A is better, A is slightly better, About the same, B is slightly better,\nB is better, B is much better."
+        }
+      ],
+      "review": {
+        "answer_correct": null,
+        "grounded": null,
+        "notes": null
+      }
+    }
+  ]
+}

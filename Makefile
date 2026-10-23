@@ -25,16 +25,19 @@ viz:
 	$(PYTHON) $(SCRIPTS)/visualize.py
 
 phase1-smoke:
-	$(PYTHON) $(SCRIPTS)/phase1_smoke.py
+	QDRANT_COLLECTION=rag_research_phase1_v3 \
+	BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json \
+	$(PYTHON) $(SCRIPTS)/phase1_smoke.py \
+		--dataset data/evaluation/phase1_smoke_set_v3.json \
+		--output results/metrics/phase1_smoke_v3.json
 
 # Annotate human_review for the 20 acceptance cases. Reads the existing report
-# and shows only the chunks the generator actually placed in the prompt.
-# No LLM call. Finish with `make phase1-check`.
+# and shows the exact generation contexts. No LLM call. Finish with `make phase1-check`.
 phase1-review:
-	$(PYTHON) $(SCRIPTS)/phase1_smoke_review.py
+	$(PYTHON) $(SCRIPTS)/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json
 
 phase1-check:
-	$(PYTHON) $(SCRIPTS)/phase1_smoke.py --check-report results/metrics/phase1_smoke.json
+	$(PYTHON) $(SCRIPTS)/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json
 
 # THE MASTER COMMAND
 all: rust-build ingest index eval viz

@@ -1,3 +1,4 @@
+import json
 import math
 import sys
 from pathlib import Path
@@ -17,6 +18,7 @@ from src.generation.generator import (
     check_answer_evidence,
     sanity_check_answer,
     should_abort_before_generation,
+    trim_unsupported_trailing_summary,
 )
 
 
@@ -314,6 +316,139 @@ def test_generator_limits_partial_trust_to_three_chunks_and_separates_confidence
     assert result.confidence_score == 0.58
 
 
+def test_generator_context_keeps_third_chunk_from_same_document():
+    """A third ranked passage from the same paper can be the only gold passage."""
+    chunks = [
+        {
+            "chunk_id": f"c{i}",
+            "doc_id": "same-paper",
+            "text": (
+                "Source three defines intra-attention as relating different positions "
+                "of a single sequence to compute a representation."
+                if i == 3 else f"Background passage {i} about attention."
+            ),
+            "retrieval_score": 0.8 - i * 0.001,
+            "metadata": {},
+        }
+        for i in range(1, 5)
+    ]
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(create=self.create)
+            )
+
+        def create(self, **kwargs):
+            self.calls.append(kwargs)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=(
+                            '{"answer":"Intra-attention relates different positions of a '
+                            'single sequence to compute a representation.","status":"ANSWERED",'
+                            '"confidence_score":0.9,"supporting_sources":["[Source 3]"]}'
+                        )
+                    )
+                )]
+            )
+
+    class Confidence:
+        def calculate_confidence(self, chunks, **kwargs):
+            return {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}}
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = Confidence()
+
+    result = generator.generate("What is intra-attention?", chunks)
+
+    assert result.status == "ANSWERED", result.reason
+    prompt = generator.client.calls[0]["messages"][1]["content"]
+    assert "[Source 3 |" in prompt
+    assert "c3" in prompt
+
+
+def test_generator_trims_unsupported_trailing_summary_but_keeps_grounded_answer():
+    answer = (
+        "Human evaluations can be noisy due to limitations of the prompt set, "
+        "subjectivity of the review guidelines, subjectivity of individual raters, "
+        "and the inherent difficulty of comparing generations. "
+        "These factors together can introduce significant noise into the results."
+    )
+    chunk = {
+        "chunk_id": "c1",
+        "doc_id": "paper-a",
+        "text": (
+            "Human evaluations can be noisy due to limitations of the prompt set, "
+            "subjectivity of the review guidelines, subjectivity of individual raters, "
+            "and the inherent difficulty of comparing generations."
+        ),
+        "retrieval_score": 0.8,
+        "metadata": {},
+    }
+
+    trimmed, trim_reason = trim_unsupported_trailing_summary(answer, [chunk])
+
+    assert trimmed != answer
+    assert "significant noise" not in trimmed
+    assert trim_reason.startswith("insufficient_evidence:")
+    assert check_answer_evidence(trimmed, [chunk])[0] is True
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(create=self.create)
+            )
+
+        def create(self, **kwargs):
+            self.calls.append(kwargs)
+            return SimpleNamespace(
+                choices=[SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=json.dumps({
+                            "answer": answer,
+                            "status": "ANSWERED",
+                            "confidence_score": 0.9,
+                            "supporting_sources": ["[Source 1]"],
+                        })
+                    )
+                )]
+            )
+
+    class Confidence:
+        def calculate_confidence(self, chunks, **kwargs):
+            return {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}}
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = Confidence()
+
+    result = generator.generate("What are limitations of human evaluations?", [chunk])
+
+    assert result.status == "ANSWERED", result.reason
+    assert "significant noise" not in result.answer
+
+
+def test_trailing_summary_trim_does_not_remove_a_direct_answer_sentence():
+    answer = "The paper defines the method in the methods section. This is the answer."
+    chunk = {
+        "text": "The paper defines the method in the methods section.",
+        "chunk_id": "c1",
+        "doc_id": "paper-a",
+        "retrieval_score": 0.8,
+        "metadata": {},
+    }
+
+    trimmed, _reason = trim_unsupported_trailing_summary(answer, [chunk])
+
+    assert trimmed == answer
+
+
 def test_should_skip_reranker_for_small_or_weak_candidates():
     assert should_skip_reranker(candidate_count=2, top_gap=0.001, elapsed_ms=100.0) is True
     assert should_skip_reranker(candidate_count=6, top_gap=0.01, elapsed_ms=100.0) is True
@@ -407,7 +542,11 @@ def test_factual_escalation_retries_once_and_emits_log_schema(monkeypatch, tmp_p
         }
     )
     monkeypatch.setattr(runner, "QdrantVectorStore", lambda: fake_store)
-    monkeypatch.setattr(runner, "MasterHybridRetriever", lambda vector_store: retriever)
+    monkeypatch.setattr(
+        runner,
+        "MasterHybridRetriever",
+        lambda vector_store, **kwargs: retriever,
+    )
     monkeypatch.setattr(runner, "GroqGenerator", lambda model: generator)
     monkeypatch.setattr(runner, "Groq", lambda **kwargs: object())
     monkeypatch.setattr(runner, "ConfidenceEngine", FakeConfidenceEngine)

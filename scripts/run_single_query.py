@@ -306,7 +306,10 @@ def run_single_query(
     print(f"{'='*60}\n")
 
     store      = QdrantVectorStore()
-    retriever  = MasterHybridRetriever(vector_store=store)
+    retriever  = MasterHybridRetriever(
+        vector_store=store,
+        bm25_chunks_path=settings.bm25_chunks_path,
+    )
     index_diagnostics = store.require_nonempty_index(
         expected_corpus_chunks=len(retriever.chunks),
         consumer="run_single_query",
@@ -706,6 +709,7 @@ def run_single_query(
     print("[Generation] Self-reflection retry loop...")
     retry_count = 0
     generation_attempts = 0
+    generation_contexts: list[dict] = []
     allow_all_refs_on_retry = False
     t0_gen = time.time()
 
@@ -752,6 +756,11 @@ def run_single_query(
                 source_chunk_id=source_chunk_id,
                 min_top1_score=RETRIEVAL_MIN_TOP1_SCORE,
             )
+            generation_contexts.append({
+                "attempt": generation_attempts,
+                "context": getattr(response, "context_used", "") or "",
+                "prompt_chunk_ids": list(getattr(response, "context_chunk_ids", []) or []),
+            })
         except Exception as e:
             print(f" [GENERATION_ERROR] {type(e).__name__}: {e} - aborting to abstain")
             from src.generation.generator import _make_abstain_response
@@ -906,7 +915,7 @@ def run_single_query(
                         4
                         ),
             "length":   len(_get_attr(r, "text", "") or ""),
-            "text":     (_get_attr(r, "text", "") or "")[:300],
+            "text":     _get_attr(r, "text", "") or "",
         }
         for r in debug_source
     ]
@@ -968,7 +977,9 @@ def run_single_query(
         "retrieval_scores":     retrieval_scores,
         "reranker_scores":     reranker_scores,
         "chunks_used":          chunks_used,
-        "final_context":        final_context[:500] + "..." if len(final_context) > 500 else final_context,
+        "final_context":        getattr(response, "context_used", "") or final_context,
+        "prompt_chunk_ids":     list(getattr(response, "context_chunk_ids", []) or []),
+        "generation_contexts":  generation_contexts,
         "answer":               response.answer,
         "status":               final_status,
         "answer_status":        answer_status,
@@ -1175,7 +1186,10 @@ def get_components():
     global _STORE, _RETRIEVER, _GENERATOR
     if _STORE is None:
         _STORE      = QdrantVectorStore()
-        _RETRIEVER  = MasterHybridRetriever(vector_store=_STORE)
+        _RETRIEVER  = MasterHybridRetriever(
+            vector_store=_STORE,
+            bm25_chunks_path=settings.bm25_chunks_path,
+        )
         _GENERATOR  = GroqGenerator(model=settings.groq_model)
         print("[Cache] Components loaded reuse for subsequent queries")
     return _STORE, _RETRIEVER, _GENERATOR
