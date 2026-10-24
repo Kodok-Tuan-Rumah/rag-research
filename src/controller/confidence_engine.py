@@ -357,7 +357,13 @@ class ConfidenceEngine:
         # Apply evidence gates last so answer/context overlap cannot raise a
         # weakly supported or mixed-source broad query back into GENERATE.
         if weak_evidence:
-            confidence_score = min(confidence_score, self.reject_threshold)
+            # Land strictly below the reject cut: `_decision_for_score` uses
+            # `<`, so capping at the threshold itself yields PARTIAL_TRUST and
+            # still calls the generator.
+            confidence_score = min(
+                confidence_score,
+                max(0.0, self.reject_threshold - 1e-6),
+            )
         elif broad_topic_with_mixed_sources:
             confidence_score = min(
                 confidence_score,

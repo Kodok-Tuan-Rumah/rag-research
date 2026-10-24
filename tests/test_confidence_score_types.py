@@ -99,7 +99,7 @@ def test_broad_question_with_mixed_sources_cannot_reach_generate():
     assert result["decision"] == "PARTIAL_TRUST"
 
 
-def test_lexically_unrelated_evidence_cannot_reach_generate():
+def test_lexically_unrelated_evidence_is_rejected():
     engine = _engine()
     chunks = [
         {
@@ -117,4 +117,6 @@ def test_lexically_unrelated_evidence_cannot_reach_generate():
 
     assert result["signals"]["evidence_relevance"] < 0.25
     assert result["signals"]["weak_evidence"] is True
-    assert result["decision"] != "GENERATE"
+    # A hard abstention: capping at the threshold would land on the strict
+    # `<` boundary and produce PARTIAL_TRUST, which still calls the generator.
+    assert result["decision"] == "REJECT"
