@@ -286,6 +286,11 @@ class GenerateResponse(BaseModel):
     # a caller cannot distinguish a provider rejection from a model refusal or a
     # sanity-check rejection.
     abstain_reason: str | None = None
+    # When failure_type == "provider_error": rate_limit | connection | auth |
+    # invalid_json | not_configured | provider. Mirrors the generator's
+    # provider_error_kind so callers can classify operational failures without
+    # parsing abstain_reason.
+    provider_error_kind: str | None = None
     generator_status: str = "UNKNOWN"
     generator_confidence: float | None = None
     llm_confidence: float | None = None
@@ -711,6 +716,7 @@ async def generate_answer(req: GenerateRequest):
                     if generation_abstained
                     else None
                 ),
+                provider_error_kind=getattr(response, "provider_error_kind", None),
             )
             used_chunks = chunks[:PARTIAL_TRUST_CHUNK_LIMIT]
             _log_query_event(
@@ -731,6 +737,7 @@ async def generate_answer(req: GenerateRequest):
                 unsupported_claims_count=result.unsupported_claims_count,
                 generation_chunk_ids=result.generation_chunk_ids,
                 context_chunk_ids=result.context_chunk_ids,
+                provider_error_kind=result.provider_error_kind,
                 retry_triggered=retry_triggered,
                 latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": result.latency_total_ms},
             )
@@ -807,6 +814,7 @@ async def generate_answer(req: GenerateRequest):
                 if generation_abstained
                 else None
             ),
+            provider_error_kind=getattr(response, "provider_error_kind", None),
         )
         _log_query_event(
             query_id=rid, query=req.query,
@@ -826,6 +834,7 @@ async def generate_answer(req: GenerateRequest):
             unsupported_claims_count=result.unsupported_claims_count,
             generation_chunk_ids=result.generation_chunk_ids,
             context_chunk_ids=result.context_chunk_ids,
+            provider_error_kind=result.provider_error_kind,
             retry_triggered=retry_triggered,
             latency_ms={"retrieval": latency_retrieval_ms, "reranker": rerank_ms, "generation": latency_generation_ms, "total": latency_total_ms},
         )

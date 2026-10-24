@@ -862,3 +862,53 @@ def test_successful_answer_is_cached(monkeypatch):
     assert len(fake_cache.set_calls) == 1
     assert fake_cache.set_calls[0][2] == 600
     assert fake_cache.delete_calls == []
+
+
+def test_api_forwards_provider_error_kind(monkeypatch):
+    chunks = [{
+        "chunk_id": "c1",
+        "doc_id": "d1",
+        "text": "complete grounded context.",
+        "retrieval_score": 0.2,
+        "metadata": {},
+    }]
+
+    class ProviderErrorGenerator:
+        def generate(self, query, chunks, **kwargs):
+            return type("Response", (), {
+                "answer": "INSUFFICIENT_CONTEXT",
+                "retrieval_method": "abstained",
+                "model": "test-model",
+                "status": "INSUFFICIENT_CONTEXT",
+                "confidence_score": 0.0,
+                "post_generation_confidence_score": None,
+                "post_generation_decision": None,
+                "llm_confidence_score": None,
+                "retrieved_chunks": chunks,
+                "context_chunk_ids": ["c1"],
+                "reason": "provider_error: rate_limit_exceeded",
+                "failure_type": "provider_error",
+                "provider_error_kind": "rate_limit",
+            })()
+
+    monkeypatch.setattr(main, "retriever", FakeRetriever([chunks]))
+    monkeypatch.setattr(main, "generator", ProviderErrorGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    events = []
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: events.append(event))
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.failure_type == "provider_error"
+    assert response.provider_error_kind == "rate_limit"
+    assert response.decision == "REJECT"
+    assert response.abstain_reason == "provider_error: rate_limit_exceeded"
+    assert events[0]["failure_type"] == "provider_error"
+    assert events[0]["provider_error_kind"] == "rate_limit"

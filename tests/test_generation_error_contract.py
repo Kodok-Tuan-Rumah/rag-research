@@ -156,8 +156,8 @@ def test_json_validation_failure_returns_abstain_not_exception():
     assert result.confidence_score == 0.0
 
 
-def test_authentication_error_still_raises():
-    """A bad API key is an operator problem and must not be hidden as an abstain."""
+def test_authentication_error_maps_to_provider_error():
+    """A bad API key is a provider operational failure: structured, not raised."""
     from groq import AuthenticationError
     import httpx
 
@@ -169,8 +169,11 @@ def test_authentication_error_still_raises():
     )
     gen = build_generator(auth_error)
 
-    with pytest.raises(ValueError, match="GROQ_API_KEY"):
-        gen.generate("What is hybrid search?", CHUNKS)
+    result = gen.generate("What is hybrid search?", CHUNKS)
+
+    assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.failure_type == "provider_error"
+    assert result.provider_error_kind == "auth"
 
 
 # --- 2. the abstain carries a machine-readable reason -----------------------
@@ -287,6 +290,8 @@ def test_rate_limit_after_retry_returns_structured_abstain(monkeypatch):
     assert result.status == "INSUFFICIENT_CONTEXT"
     assert "rate_limit" in (result.reason or "").lower()
     assert "provider_error" in (result.reason or "").lower()
+    assert result.failure_type == "provider_error"
+    assert result.provider_error_kind == "rate_limit"
 
 
 def test_connection_error_retries_once_then_answers(monkeypatch):
@@ -314,6 +319,8 @@ def test_connection_error_after_retry_is_a_structured_provider_abstain(monkeypat
 
     assert len(calls) == 2
     assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.failure_type == "provider_error"
+    assert result.provider_error_kind == "connection"
     assert "provider_error" in (result.reason or "").lower()
     assert "connection" in (result.reason or "").lower()
 

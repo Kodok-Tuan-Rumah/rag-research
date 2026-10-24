@@ -34,6 +34,22 @@ DEFAULT_TOP_K     = 10
 
 ABSTAIN_ANSWER   = "INSUFFICIENT_CONTEXT"
 
+# R1 failure taxonomy: a provider failure must never surface as blocks marked
+# insufficient_context. The library-level failure_type covers the pipeline, while
+# provider_error_kind is specific to Groq failure types.
+FAILURE_INSUFFICIENT_CONTEXT = "insufficient_context"
+FAILURE_UNSUPPORTED_CLAIMS   = "unsupported_claims"
+FAILURE_PROVIDER_ERROR       = "provider_error"
+FAILURE_SANITY_CHECK         = "sanity_check"
+FAILURE_EMPTY_OUTPUT         = "empty_output"
+
+PROVIDER_RATE_LIMIT     = "rate_limit"
+PROVIDER_CONNECTION     = "connection"
+PROVIDER_AUTH           = "auth"
+PROVIDER_INVALID_JSON   = "invalid_json"
+PROVIDER_NOT_CONFIGURED = "not_configured"
+PROVIDER_UNKNOWN        = "provider"
+
 # PARTIAL_TRUST presentation rule. Both values used to be inlined at four
 # sites; see apply_partial_trust_policy below.
 PARTIAL_TRUST_CHUNK_LIMIT = 3
@@ -123,6 +139,9 @@ class RAGResponse:
     reflection_score:          Optional[float] = None
     unsupported_claims_count:  Optional[int] = None
     failure_type:              str   = "none"
+    # When failure_type == "provider_error", why the provider failed
+    # (rate_limit | connection | auth | invalid_json | not_configured | provider).
+    provider_error_kind:       Optional[str] = None
     # Why the pipeline abstained. PROJECT_GOALS.md §4 requires structured
     # failure classification; without this on the response, callers cannot tell a
     # provider failure from a model refusal without parsing logs.
@@ -527,6 +546,7 @@ def _make_abstain_response(
     post_generation_confidence_score: Optional[float] = None,
     post_generation_decision: Optional[str] = None,
     failure_type: str = "insufficient_context",
+    provider_error_kind: Optional[str] = None,
     reflection_passed: Optional[bool] = None,
     reflection_score: Optional[float] = None,
     unsupported_claims_count: Optional[int] = None,
@@ -553,6 +573,7 @@ def _make_abstain_response(
         post_generation_confidence_score=post_generation_confidence_score,
         post_generation_decision=post_generation_decision,
         failure_type=failure_type,
+        provider_error_kind=provider_error_kind,
         reflection_passed=reflection_passed,
         reflection_score=reflection_score,
         unsupported_claims_count=unsupported_claims_count,
@@ -762,7 +783,12 @@ class GroqGenerator:
         ]
         effective_max_tokens = max_tokens if max_tokens is not None else settings.generation_max_tokens
 
-        def _abstain(reason: str) -> RAGResponse:
+        def _abstain(
+            reason: str,
+            *,
+            failure_type: str = FAILURE_PROVIDER_ERROR,
+            provider_error_kind: str = PROVIDER_UNKNOWN,
+        ) -> RAGResponse:
             return _make_abstain_response(
                 query=query,
                 chunks=chunks,
@@ -772,6 +798,8 @@ class GroqGenerator:
                 context_chunk_ids=context_chunk_ids,
                 retrieval_confidence_score=retrieval_confidence,
                 retrieval_decision=retrieval_decision,
+                failure_type=failure_type,
+                provider_error_kind=provider_error_kind,
             )
 
         try:
@@ -782,15 +810,16 @@ class GroqGenerator:
                 json_mode=True,
             )
         except AuthenticationError as exc:
-            raise ValueError(
-                "Invalid GROQ_API_KEY atau token tidak valid. "
-                "Set environment variable GROQ_API_KEY dengan API key yang benar."
-            ) from exc
+            return _abstain(
+                f"provider_error: authentication failed: {exc}",
+                provider_error_kind=PROVIDER_AUTH,
+            )
         except BadRequestError as exc:
             if not _is_json_validation_failure(exc):
-                raise RuntimeError(
-                    f"Groq generation failed: {exc}. Periksa koneksi API dan kunci Anda."
-                ) from exc
+                return _abstain(
+                    f"provider_error: bad request: {exc}",
+                    provider_error_kind=PROVIDER_UNKNOWN,
+                )
             logger.warning(
                 "[GENERATION_JSON_REJECTED] provider rejected constrained JSON output "
                 "(code=json_validate_failed); falling back to unconstrained JSON "
@@ -818,30 +847,39 @@ class GroqGenerator:
                 )
             except RateLimitError as retry_exc:
                 return _abstain(
-                    f"provider_error: rate_limit_exceeded during JSON fallback: {retry_exc}"
+                    f"provider_error: rate_limit_exceeded during JSON fallback: {retry_exc}",
+                    provider_error_kind=PROVIDER_RATE_LIMIT,
                 )
             except BadRequestError as retry_exc:
                 if _is_json_validation_failure(retry_exc):
                     return _abstain(
-                        "provider_error: JSON validation failed after one plain-JSON fallback"
+                        "provider_error: JSON validation failed after one plain-JSON fallback",
+                        provider_error_kind=PROVIDER_INVALID_JSON,
                     )
-                raise RuntimeError(
-                    f"Groq generation failed: {retry_exc}. "
-                    "Periksa koneksi API dan kunci Anda."
-                ) from retry_exc
+                return _abstain(
+                    f"provider_error: bad request: {retry_exc}",
+                    provider_error_kind=PROVIDER_UNKNOWN,
+                )
             except GroqError as retry_exc:
                 return _abstain(
-                    f"provider_error: {type(retry_exc).__name__} during JSON fallback"
+                    f"provider_error: {type(retry_exc).__name__} during JSON fallback",
+                    provider_error_kind=PROVIDER_UNKNOWN,
                 )
         except RateLimitError as exc:
-            return _abstain(f"provider_error: rate_limit_exceeded: {exc}")
+            return _abstain(
+                f"provider_error: rate_limit_exceeded: {exc}",
+                provider_error_kind=PROVIDER_RATE_LIMIT,
+            )
         except APIConnectionError as exc:
-            return _abstain(f"provider_error: connection_error: {exc}")
+            return _abstain(
+                f"provider_error: connection_error: {exc}",
+                provider_error_kind=PROVIDER_CONNECTION,
+            )
         except GroqError as exc:
-            raise RuntimeError(
-                f"Groq generation failed: {exc}. "
-                "Periksa koneksi API dan kunci Anda."
-            ) from exc
+            return _abstain(
+                f"provider_error: {type(exc).__name__}: {exc}",
+                provider_error_kind=PROVIDER_UNKNOWN,
+            )
 
         raw_content = response.choices[0].message.content or ""
         if not raw_content.strip():
@@ -858,6 +896,7 @@ class GroqGenerator:
                 context_chunk_ids=context_chunk_ids,
                 retrieval_confidence_score=retrieval_confidence,
                 retrieval_decision=retrieval_decision,
+                failure_type=FAILURE_EMPTY_OUTPUT,
             )
 
         raw_answer = raw_content.strip()
@@ -866,7 +905,10 @@ class GroqGenerator:
 
         parsed_output = _parse_llm_output(raw_answer)
         if parsed_output is None:
-            return _abstain("provider_error: invalid JSON response after completion")
+            return _abstain(
+                "provider_error: invalid JSON response after completion",
+                provider_error_kind=PROVIDER_INVALID_JSON,
+            )
         answer, status, confidence, sources = parsed_output
         is_ok, sanity_reason = sanity_check_answer(answer, filtered_chunks)
         if not is_ok:
@@ -877,6 +919,7 @@ class GroqGenerator:
                 llm_confidence_score=confidence,
                 retrieval_confidence_score=retrieval_confidence,
                 retrieval_decision=retrieval_decision,
+                failure_type=FAILURE_SANITY_CHECK,
             )
         reflection = None
         if status == "INSUFFICIENT_CONTEXT":
