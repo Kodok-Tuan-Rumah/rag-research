@@ -62,3 +62,14 @@ datasets; see [`data/evaluation/README.md`](data/evaluation/README.md).
 * The engineering target is end-to-end P95 latency ≤3.5 seconds on the no-retry path; the original `<2s` aspiration is superseded by the budget in `PROJECT_GOALS.md`.
 * Keep current model complexity bounded; require controlled evaluation before promoting optional retrieval features.
 * Prefer validated data, corpus, and retrieval-quality improvements over adding model complexity.
+
+## PROPOSED DIRECTION — FORENSIC AI (NOT IMPLEMENTED)
+
+A product-direction proposal for sentence-level citation, evidence-conflict
+detection, calibrated confidence certificates, and adversarial noise filtering
+is recorded in [`PROJECT_GOALS.md`](PROJECT_GOALS.md#17-proposed-product-differentiators--forensic-ai).
+None of these capabilities are implemented, and this section is not a runtime
+description. Confidence remains heuristic and uncalibrated. The goals document
+recommends citation-to-sentence attribution first and conflict detection second,
+and treats calibrated confidence as the existing Phase 3 blocker rather than a
+new feature.

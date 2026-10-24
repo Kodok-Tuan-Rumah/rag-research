@@ -819,7 +819,7 @@
         "answer_correct": true,
         "grounded": true,
         "reviewer": "mayzar",
-        "notes": "y",
+        "notes": null,
         "failure_categories": []
       },
       "result": {
@@ -11237,11 +11237,14 @@
       "gold_chunk_id": "tier2_self_instruct_rs_0054",
       "exception": null,
       "human_review": {
-        "answer_correct": true,
-        "grounded": true,
+        "answer_correct": false,
+        "grounded": false,
         "reviewer": "mayzar",
-        "notes": null,
-        "failure_categories": []
+        "notes": "Gold awal salah. Self-Instruct menyatakan NPPrompt memakai embedding sendiri untuk mencari kata relevan dan mengurangi mapping verbalizer; STAR adalah metode rationale bootstrapping. Jawaban STAR tidak didukung untuk pertanyaan ini.",
+        "failure_categories": [
+          "answer_incorrect",
+          "unsupported_claim"
+        ]
       },
       "result": {
         "query": "What method reduces the dependency on manual mapping from model prediction to label by using a model’s own embeddings?",
@@ -12033,11 +12036,13 @@
       "gold_chunk_id": "tier3_attention_all_you_need_rs_0010",
       "exception": null,
       "human_review": {
-        "answer_correct": true,
+        "answer_correct": false,
         "grounded": true,
         "reviewer": "mayzar",
-        "notes": null,
-        "failure_categories": []
+        "notes": "False abstention. Definisi self-attention ada di chunk 0010–0011; retrieval memutuskan GENERATE (0.6702), tetapi generator menolak setelah dua percobaan.",
+        "failure_categories": [
+          "false_abstention"
+        ]
       },
       "result": {
         "query": "What is attention mechanism in transformer models?",
@@ -16588,11 +16593,11 @@
     "runtime_failed_query_ids": [],
     "human_review_complete": true,
     "failure_reasons_complete": true,
-    "correct_final_decisions": 19,
+    "correct_final_decisions": 18,
     "minimum_correct_final_decisions": 18,
-    "confident_wrong_answers": 0,
-    "quality_pass": true,
-    "phase1_pass": true
+    "confident_wrong_answers": 1,
+    "quality_pass": false,
+    "phase1_pass": false
   },
   "previous_report_archive": "results/metrics/archive/phase1_smoke_20261022T141128.830369Z.json"
 }

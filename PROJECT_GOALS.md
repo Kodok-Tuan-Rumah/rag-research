@@ -1,5 +1,5 @@
 # RAG SYSTEM — ENGINEERING GOALS & PRODUCTION SPEC
-> **Version:** 2.1
+> **Version:** 2.2
 > **Repo:** `rag-research`  
 > **Status:** Historical Phase 1 snapshot passed on 2026-10-15. The v3 current-runtime run completed on 2026-10-23 and passed runtime gates, but has four provider errors due to exhausted Groq quota and has not had human review (`quality_pass: false`, `phase1_pass: false`). Phase 1 remains open; Phase 2 work is not an acceptance substitute.
 > **Last Updated:** 2026-10-23
@@ -30,6 +30,14 @@
 7. [Roadmap — Phase-Gated Execution](#7-roadmap--phase-gated-execution)
 8. [Production Readiness Checklist](#8-production-readiness-checklist)
 9. [Non-Goals](#9-non-goals)
+10. [Evaluation Integrity Constraints](#10-evaluation-integrity-constraints)
+11. [Grounding Strictness Specification](#11-grounding-strictness-specification)
+12. [Confidence System Constraints](#12-confidence-system-constraints)
+13. [Load & Throughput Behavior](#13-load--throughput-behavior)
+14. [Change Safety Protocol](#14-change-safety-protocol)
+15. [Dataset & Index Versioning](#15-dataset--index-versioning)
+16. [Adversarial Robustness](#16-adversarial-robustness)
+17. [Proposed Product Differentiators — "Forensic AI"](#17-proposed-product-differentiators--forensic-ai)
 
 ---
 
@@ -794,6 +802,213 @@ System does NOT:
 
 
 
+## 17. Proposed Product Differentiators — "Forensic AI"
+
+> **Status: PROPOSED — not implemented, not committed, and not a phase-gate
+> change.** Added 2026-10-23. This section records a product-direction
+> proposal. None of the capabilities below exist in the current runtime unless
+> a subsection explicitly says otherwise. Do not use them in README claims,
+> demos, sales material, or evaluation reports until the acceptance evidence in
+> §17.3–§17.7 exists. The Phase 1–5 gates in §7 and the production checklist in §8 remain
+> authoritative, and Phase 1 is still open.
+
+### 17.1 Positioning
+
+Generic "chat with PDF" systems optimize fluent answers. This proposal moves
+the external value proposition from **generative AI** toward **forensic AI**:
+
+> Do not optimize for how fluently the system speaks. Optimize for how
+> defensibly it can account for every sentence.
+
+The differentiators are evidence provenance, explicit conflict reporting,
+calibrated uncertainty, and resistance to distractor documents. They are
+product capabilities built on top of the existing reliability work, not a
+replacement for it. A citation feature is worthless if retrieval is wrong; a
+confidence percentage is dangerous if it is uncalibrated.
+
+### 17.2 Feature portfolio
+
+| ID | Differentiator | Intended user value | Current state | Gate |
+|---|---|---|---|---|
+| F1 | Citation-to-sentence attribution | Every answer sentence links to a specific source sentence; clicking highlights it in the PDF | **Not implemented.** §11.1/§11.2 define the validation rule, but provenance metadata and a citation API do not exist | Requires re-ingestion/provenance work; after Phase 2 |
+| F2 | Evidence conflict detection | Surfaces contradictory evidence instead of blending it into one confident answer | **Not implemented.** §11.3 specifies NLI contradiction handling, but no NLI model or contradiction eval set exists | Requires F1-style citation substrate plus a labeled contradiction set; Phase 3/4 |
+| F3 | Calibrated confidence certificate | A statistically calibrated answer-level confidence with documented methodology | **Not implemented.** Confidence is heuristic and uncalibrated (§5.1); Phase 3 is the existing plan | Blocked by Phase 2's ≥200 labeled samples; Phase 3 |
+| F4 | Adversarial noise filtering | Ignores bibliography-only, title-only, keyword-stuffed, and near-duplicate distractor chunks | **Partial foundation only.** Layered heuristic gates exist in §3.3; adversarial robustness is not measured | Phase 2 adversarial slice; rule changes after baseline |
+
+### 17.3 F1 — Citation-to-Sentence Attribution (Deep Linking)
+
+**Product behaviour.** Each sentence in an answer carries one or more citations.
+Selecting a citation opens the source PDF at the cited page and highlights the
+supporting sentence. The user does not have to search the document for the
+claim.
+
+**Technical approach.** Extend §11.1 span-level grounding into a user-visible
+contract:
+
+1. Ingest and persist provenance for every chunk: `doc_id`, PDF page number,
+   `char_start`/`char_end`, optional `bbox`, and a stable sentence identifier.
+2. Map each generated claim to at least one retrieved span using substring
+   match or semantic similarity ≥ 0.75 (§11.1).
+3. Return a structured `citations` array keyed by answer sentence. Citations
+   must be constructed from retrieval metadata, never parsed from model output.
+4. Resolve the citation to a page/sentence highlight in the source viewer. If
+   `bbox` is unavailable, fall back to page plus sentence text rather than
+   claiming an exact visual highlight.
+
+**Current gap (source-verified 2026-10-23).** The 642-chunk v3 corpus stores
+`doc_id`, `chunk_id`, and chunk-relative sentence fields, but all 642 rows record
+`start_sentence_idx = end_sentence_idx = 0` and no page, character-offset, or
+bbox field. `document_loader.py` joins cleaned page text with `"\n\n"` and
+discards page boundaries. `check_answer_evidence` in `generator.py` is lexical
+overlap and explicitly not semantic entailment. No API response field carries
+sentence-level citations.
+
+**Acceptance evidence.** On a labeled set of answer sentences: citation
+precision (fraction of citations that actually support the claim), support rate,
+and deep-link resolution accuracy on a sample of PDFs. A fabricated citation is
+a critical failure. The test set must include multi-column papers, tables, and
+pages with headers/footers.
+
+### 17.4 F2 — Evidence Conflict Detection (The "Truth" Auditor)
+
+**Product behaviour.** When retrieved documents disagree, the system reports
+the disagreement with citations instead of averaging the claims into a single
+answer. Example: "Paper A reports the method is efficient; Paper B reports a
+failure risk at high temperature." Where the conflict bears on the answer, the
+system abstains under §11.3; where it is peripheral, it reports a conflict
+warning.
+
+**Technical approach.** Run a Natural Language Inference (NLI) model over
+retrieved chunk pairs and classify `ENTAILMENT`, `NEUTRAL`, or `CONTRADICTION`.
+A deterministic threshold decides when a contradiction is actionable. The
+detector must be an NLI model or a validated judge with measured precision and
+recall; an LLM's self-reported "no conflict" is not sufficient evidence.
+Pairwise comparison is O(k²), so cap the number of pairs (for example, the top
+five chunks) and measure the cost against §6.
+
+**Current gap.** No NLI implementation exists in `src/`. §11.3 is a
+specification only. `check_answer_evidence` is a lexical guard, not
+contradiction detection. There is no contradiction-labeled evaluation set, and
+the 13-query retrieval set cannot support a precision/recall claim.
+
+**Policy question to settle before implementation.** Not every contradiction
+invalidates an answer. Define which conflicts force abstention, which produce a
+warning, and which are out of scope (for example, different experimental
+conditions). This policy must be tested, not inferred from a single example.
+
+**Acceptance evidence.** Precision, recall, and F1 on a labeled contradiction
+set; false-conflict rate on a neutral set; false-abstention impact; latency
+within §6 or an explicit degradation path; human adjudication of a sample.
+
+### 17.5 F3 — Calibrated Confidence Certificate (Not "Deterministic")
+
+**Terminology correction.** "Deterministic confidence" is a misnomer. Isotonic
+regression produces a *calibrated probability*, not a deterministic guarantee.
+A score of 0.95 means that among similarly scored answers in the calibration
+distribution, about 95% were correct. It does **not** mean that this particular
+answer has a 1-in-20 chance of being wrong, and it is not a per-answer
+frequency claim. Product copy must use the former wording only.
+
+**Relationship to the existing roadmap.** This is not a new feature. Phase 3
+(§7) already requires ≥200 `(raw_confidence, actual_correct)` pairs, isotonic
+regression, a reliability diagram, ECE < 0.10 on held-out data, a calibrated
+abstain threshold, and separate calibration by query type (§12.4). The current
+engine is heuristic and uncalibrated (§5.1), which is already the highest
+priority blocker in Appendix B.
+
+**Certificate contents.** If Phase 3 passes, an answer may expose: calibration
+sample size, calibration date, dataset/corpus fingerprints (§15), ECE,
+per-query-type coverage, model and prompt versions, and the calibrated score.
+Until then, label confidence as **heuristic and uncalibrated**. Do not display a
+percentage, and do not claim "95% accuracy", "zero hallucination", or a
+per-answer error rate.
+
+**Acceptance evidence.** All Phase 3 exit criteria, plus reproducibility of the
+certificate and a recalibration trigger when the corpus, model, or prompt
+changes. The zero-confident-wrong constraint in §2.3 remains absolute.
+
+### 17.6 F4 — Adversarial Noise Filtering
+
+**Product behaviour.** The system rejects chunks that are similar to the query
+but do not contain usable evidence: bibliography-only passages, title/author
+lines, keyword-stuffed distractors, near-duplicate boilerplate, and chunks
+containing instructions aimed at the model.
+
+**Current foundation.** §3.3 already layers a post-RRF score gate, a
+pre-reranker `is_low_quality_chunk` gate, a strict filter with a minimum-filter
+fallback, and a generation-time score gate. These are heuristics with known
+limitations, not proof of adversarial robustness. The `min_score_threshold`
+correction in Appendix A is a concrete example of a gate that filters nothing
+on the RRF scale.
+
+**Technical approach.** Add an adversarial slice to the Phase 2 dataset before
+tightening any rule: distractor injection, near-duplicate irrelevant chunks,
+empty/bibliography-only chunks, and prompt injection in retrieved text. Measure
+distractor rejection and clean-set false rejection separately. Only then extend
+the filters. Strip or neutralize instructions in chunks and enforce the
+answer-only-from-facts policy in §16.1.
+
+**Acceptance evidence.** Adversarial-category EM/answer accuracy, distractor
+rejection rate, false-rejection rate on clean queries, zero executed prompt
+injections, and correct abstention when the only retrieved chunks are
+distractors. Tightening a filter without these measurements is not an
+improvement.
+
+### 17.7 Packaging: "The Audit Dossier"
+
+A proposed formal output mode, in Markdown first and PDF only if needed:
+
+1. **Conclusion** — the answer, or an explicit abstention.
+2. **Evidence map** — claim-by-claim mapping to source spans (F1).
+3. **Conflict analysis** — contradictory findings, with both sides cited (F2).
+4. **Integrity metrics** — calibrated confidence and coverage (F3).
+
+This is a presentation/reporting layer, not a new retrieval pipeline and not a
+multi-turn chatbot. It depends on F1–F3; without them it would be a longer
+answer with decorative citations. It does not relax §9's non-goals. The word
+"audit" is product language, not a legal, patent, or compliance certification;
+the report must carry that disclaimer.
+
+**Acceptance evidence.** Every claim in a generated dossier maps to a citation;
+the conflict section appears only when a conflict was detected; metrics are
+reproducible from stored records; human review confirms no unsupported claims.
+
+### 17.8 Priority Recommendation
+
+The recommendation is **F1 first, F2 second**, matching the research-user value
+argument, with F4 as inexpensive evaluation work and F3 treated as the existing
+Phase 3 blocker rather than a new feature.
+
+| Order | Work | Why this order | Suggested placement |
+|---|---|---|---|
+| 1 | F1 — citation-to-sentence attribution | Highest visible user value; turns the existing §11.1/§11.2 rule into evidence navigation; creates the span substrate F2 and the dossier need | Provenance schema design during Phase 2; implementation after Phase 2 exit |
+| 2 | F2 — conflict detection | Strongest "audit" differentiator, but only credible once claims are citation-mapped and a contradiction set exists | Phase 3/4, after F1 |
+| 3 | F4 — adversarial filtering | Defensive and comparatively cheap; the existing gates provide a starting point, but the evaluation slice must come first | Phase 2 dataset work; rule changes after baseline |
+| 4 | F3 — calibrated confidence | Necessary trust infrastructure, already the critical blocker; it is not a differentiator until ECE and sample-size gates pass | Existing Phase 3; do not re-scope |
+
+No implementation work in this section starts before Phase 1 acceptance closes.
+Designing datasets, provenance schemas, and label guidelines is planning work,
+not an acceptance substitute.
+
+### 17.9 Risks and Guardrails
+
+- **Citation spoofing.** Citations must come from retrieval metadata, not from
+  model-generated text. Retrieved documents can contain fake citation strings.
+- **Overclaiming.** Lexical support is not entailment. "Zero hallucination" and
+  "95% accuracy" are prohibited until the corresponding measured gates pass.
+- **Re-indexing risk.** Adding page/offset metadata changes the corpus
+  fingerprint. Version it and re-run evaluation under §14 and §15; do not
+  overwrite the v3 corpus in place.
+- **False conflicts and false abstention.** NLI false positives can increase
+  abstention on answerable queries. Measure both error directions.
+- **Latency.** Pairwise NLI can violate §6. Cap pairs and use the degradation
+  strategy rather than silently exceeding the budget.
+- **Scope displacement.** PDF highlighting and report export are ingestion,
+  API, and frontend work. They must not displace Phase 1 acceptance or Phase 3
+  calibration.
+
+---
+
 ## Appendix A — Current Runtime Snapshot (Source-Verified 2026-10-11)
 
 ```json
@@ -969,4 +1184,4 @@ that could never pass both went unrecorded here for as long as they lasted.
 
 ---
 
-*END OF DOCUMENT — Version 2.0*
+*END OF DOCUMENT — Version 2.2*

@@ -289,6 +289,11 @@ class GenerateResponse(BaseModel):
     generator_status: str = "UNKNOWN"
     generator_confidence: float | None = None
     llm_confidence: float | None = None
+    # Optional lexical self-reflection metadata. None means the generator did
+    # not evaluate an answer (for example, retrieval abstained first).
+    reflection_passed: bool | None = None
+    reflection_score: float | None = None
+    unsupported_claims_count: int | None = None
     generation_chunk_ids: list[str] = Field(default_factory=list)
     context_chunk_ids: list[str] = Field(default_factory=list)
 
@@ -654,6 +659,17 @@ async def generate_answer(req: GenerateRequest):
                 chunks, getattr(response, "answer", ""), decision
             )
 
+            generator_status = getattr(response, "status", "UNKNOWN")
+            generator_failure_type = getattr(response, "failure_type", "none") or "none"
+            failure_type = (
+                generator_failure_type
+                if generator_failure_type != "none"
+                else "insufficient_context"
+                if generator_status == "INSUFFICIENT_CONTEXT"
+                else "none"
+            )
+            generation_abstained = failure_type != "none"
+
             result = GenerateResponse(
                 query=req.query,
                 answer=presented_answer,
@@ -664,7 +680,10 @@ async def generate_answer(req: GenerateRequest):
                 latency_total_ms=round((time.time() - t_api_start) * 1000, 2),
                 model=response.model,
                 confidence=confidence,
-                decision=decision,
+                # Keep the retrieval decision in retrieval_confidence and the
+                # generator's confidence metadata. The public decision must
+                # reflect an abstention produced after retrieval as well.
+                decision="REJECT" if generation_abstained else decision,
                 retrieval_confidence=confidence,
                 post_generation_confidence=getattr(
                     response,
@@ -674,34 +693,32 @@ async def generate_answer(req: GenerateRequest):
                 post_generation_decision=getattr(response, "post_generation_decision", None),
                 retry_triggered=retry_triggered,
                 retrieval_chunk_ids=_chunk_ids(chunks),
-                generator_status=getattr(response, "status", "UNKNOWN"),
+                generator_status=generator_status,
                 generator_confidence=getattr(
                     response,
                     "post_generation_confidence_score",
                     getattr(response, "confidence_score", None),
                 ),
                 llm_confidence=getattr(response, "llm_confidence_score", None),
+                reflection_passed=getattr(response, "reflection_passed", None),
+                reflection_score=getattr(response, "reflection_score", None),
+                unsupported_claims_count=getattr(response, "unsupported_claims_count", None),
                 generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
                 context_chunk_ids=getattr(response, "context_chunk_ids", []),
-                failure_type=(
-                    "insufficient_context"
-                    if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
-                    else "none"
-                ),
+                failure_type=failure_type,
                 abstain_reason=(
                     getattr(response, "reason", None)
-                    if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
+                    if generation_abstained
                     else None
                 ),
             )
-            generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
             used_chunks = chunks[:PARTIAL_TRUST_CHUNK_LIMIT]
             _log_query_event(
                 query_id=rid, query=req.query,
                 query_type=query_type,
                 answer_status="abstained" if generation_abstained else "answered",
-                failure_type="insufficient_context" if generation_abstained else "none",
-                abstain_reason=getattr(response, "reason", None) if generation_abstained else None,
+                failure_type=result.failure_type,
+                abstain_reason=result.abstain_reason,
                 confidence_score=confidence,
                 retrieval_scores=_chunk_scores(used_chunks, "retrieval_score"),
                 reranker_scores=_chunk_scores(used_chunks, "rerank_score"),
@@ -709,6 +726,9 @@ async def generate_answer(req: GenerateRequest):
                 generator_status=result.generator_status,
                 generator_confidence=result.generator_confidence,
                 llm_confidence=result.llm_confidence,
+                reflection_passed=result.reflection_passed,
+                reflection_score=result.reflection_score,
+                unsupported_claims_count=result.unsupported_claims_count,
                 generation_chunk_ids=result.generation_chunk_ids,
                 context_chunk_ids=result.context_chunk_ids,
                 retry_triggered=retry_triggered,
@@ -731,6 +751,16 @@ async def generate_answer(req: GenerateRequest):
         )
         latency_generation_ms = round((time.time() - t_gen_start) * 1000, 2)
         latency_total_ms = round((time.time() - t_api_start) * 1000, 2)
+        generator_status = getattr(response, "status", "UNKNOWN")
+        generator_failure_type = getattr(response, "failure_type", "none") or "none"
+        failure_type = (
+            generator_failure_type
+            if generator_failure_type != "none"
+            else "insufficient_context"
+            if generator_status == "INSUFFICIENT_CONTEXT"
+            else "none"
+        )
+        generation_abstained = failure_type != "none"
         logger.info(
             f"[{rid} COMPLETE]"
             f"retrieval_ms={latency_retrieval_ms}|"
@@ -746,7 +776,7 @@ async def generate_answer(req: GenerateRequest):
             latency_total_ms=latency_total_ms,
             model=response.model,
             confidence=confidence,
-            decision=decision,
+            decision="REJECT" if generation_abstained else decision,
             retrieval_confidence=confidence,
             post_generation_confidence=getattr(
                 response,
@@ -756,36 +786,34 @@ async def generate_answer(req: GenerateRequest):
             post_generation_decision=getattr(response, "post_generation_decision", None),
             retry_triggered=retry_triggered,
             retrieval_chunk_ids=_chunk_ids(chunks),
-            generator_status=getattr(response, "status", "UNKNOWN"),
+            generator_status=generator_status,
             generator_confidence=getattr(
                 response,
                 "post_generation_confidence_score",
                 getattr(response, "confidence_score", None),
             ),
             llm_confidence=getattr(response, "llm_confidence_score", None),
+            reflection_passed=getattr(response, "reflection_passed", None),
+            reflection_score=getattr(response, "reflection_score", None),
+            unsupported_claims_count=getattr(response, "unsupported_claims_count", None),
             generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
             context_chunk_ids=getattr(response, "context_chunk_ids", []),
             # Retrieval succeeded but the generator declined to answer. Without
             # this the response reported failure_type="none" for a query that
             # produced no answer, which PROJECT_GOALS.md §4 forbids.
-            failure_type=(
-                "insufficient_context"
-                if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
-                else "none"
-            ),
+            failure_type=failure_type,
             abstain_reason=(
                 getattr(response, "reason", None)
-                if getattr(response, "status", "") == "INSUFFICIENT_CONTEXT"
+                if generation_abstained
                 else None
             ),
         )
-        generation_abstained = result.generator_status == "INSUFFICIENT_CONTEXT"
         _log_query_event(
             query_id=rid, query=req.query,
             query_type=query_type,
             answer_status="abstained" if generation_abstained else "answered",
-            failure_type="insufficient_context" if generation_abstained else "none",
-            abstain_reason=getattr(response, "reason", None) if generation_abstained else None,
+            failure_type=result.failure_type,
+            abstain_reason=result.abstain_reason,
             confidence_score=confidence,
             retrieval_scores=_chunk_scores(chunks, "retrieval_score"),
             reranker_scores=_chunk_scores(chunks, "rerank_score"),
@@ -793,6 +821,9 @@ async def generate_answer(req: GenerateRequest):
             generator_status=result.generator_status,
             generator_confidence=result.generator_confidence,
             llm_confidence=result.llm_confidence,
+            reflection_passed=result.reflection_passed,
+            reflection_score=result.reflection_score,
+            unsupported_claims_count=result.unsupported_claims_count,
             generation_chunk_ids=result.generation_chunk_ids,
             context_chunk_ids=result.context_chunk_ids,
             retry_triggered=retry_triggered,

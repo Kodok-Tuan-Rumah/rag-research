@@ -79,6 +79,18 @@ after quota reset, review the fresh report, then run the checker. See the
 [evaluation guide](docs/evaluation_guide.md) and the gates in
 [`PROJECT_GOALS.md`](PROJECT_GOALS.md#phase-1--pipeline-stabilization).
 
+### Experimental lexical self-reflection
+
+After an answer is generated, the pipeline compares each sentence's content
+words with retrieved passages. A sentence is flagged below 0.35 lexical
+coverage; the answer passes when no sentence is flagged or at least 75% of its
+sentences pass. This is an experimental overlap heuristic, not entailment,
+factuality verification, or calibrated confidence. The optional
+`reflection_passed`, `reflection_score`, and `unsupported_claims_count` fields
+are emitted only when the check ran; the count is weakly supported sentences,
+not extracted atomic claims. A failed check abstains with
+`failure_type: "unsupported_claims"`.
+
 ### Retrieval Ranking Mode
 
 Hybrid retrieval uses **RRF-only by default**. The cross-encoder remains available as an explicit opt-in:

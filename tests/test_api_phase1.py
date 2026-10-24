@@ -425,6 +425,52 @@ def test_api_propagates_generator_abstention_and_context_provenance(monkeypatch)
     assert events[0]["failure_type"] == "insufficient_context"
 
 
+@pytest.mark.parametrize("retrieval_decision", ["GENERATE", "PARTIAL_TRUST"])
+def test_api_propagates_unsupported_claims_reflection_metadata(monkeypatch, retrieval_decision):
+    class ReflectionAbstainingGenerator(FakeGenerator):
+        def generate(self, query, chunks, **kwargs):
+            return type("Response", (), {
+                "answer": "INSUFFICIENT_CONTEXT",
+                "retrieval_method": "hybrid_rrf_rerank",
+                "model": "test-model",
+                "status": "INSUFFICIENT_CONTEXT",
+                "failure_type": "unsupported_claims",
+                "reason": "self_reflection_failed: unsupported claims",
+                "confidence_score": 0.71,
+                "post_generation_decision": "GENERATE",
+                "retrieved_chunks": chunks,
+                "context_chunk_ids": ["c1"],
+                "reflection_passed": False,
+                "reflection_score": 0.5,
+                "unsupported_claims_count": 2,
+            })()
+
+    chunk = {
+        "chunk_id": "c1", "doc_id": "d1", "text": "grounded research context",
+        "retrieval_score": 0.2, "metadata": {},
+    }
+    monkeypatch.setattr(main, "retriever", FakeRetriever([[chunk]]))
+    monkeypatch.setattr(main, "generator", ReflectionAbstainingGenerator())
+    monkeypatch.setattr(main, "confidence_engine", FakeConfidenceEngine([
+        {"confidence_score": 0.8, "decision": retrieval_decision, "signals": {}},
+    ]))
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "cache", FakeCache())
+    events = []
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: events.append(event))
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.decision == "REJECT"
+    assert response.failure_type == "unsupported_claims"
+    assert response.post_generation_decision == "GENERATE"
+    assert response.reflection_passed is False
+    assert response.reflection_score == 0.5
+    assert response.unsupported_claims_count == 2
+    assert events[0]["answer_status"] == "abstained"
+    assert events[0]["failure_type"] == "unsupported_claims"
+
+
 def test_generate_context_returns_only_chunk_ids_included_before_limit():
     from src.generation.generator import build_context_with_ids
 

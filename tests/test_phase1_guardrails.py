@@ -18,6 +18,7 @@ from src.generation.generator import (
     check_answer_evidence,
     sanity_check_answer,
     should_abort_before_generation,
+    self_reflection_inspect,
     trim_unsupported_trailing_summary,
 )
 
@@ -85,7 +86,78 @@ def test_generator_abstains_with_reason_for_unsupported_specific_answer():
 
     assert result.status == "INSUFFICIENT_CONTEXT"
     assert result.answer == "INSUFFICIENT_CONTEXT"
-    assert result.reason.startswith("insufficient_evidence:")
+    assert result.failure_type == "unsupported_claims"
+    assert result.reflection_passed is False
+    assert result.reason.startswith("self_reflection_failed:")
+
+
+def test_self_reflection_uses_sentence_fraction_abstention_threshold():
+    chunk = {"text": "Retrieval models combine lexical scores for document ranking."}
+    answer = (
+        "Retrieval models combine lexical scores. "
+        "The lexical scores support document ranking. "
+        "The models combine scores for document ranking. "
+        "The system predicts the weather in Jakarta."
+    )
+
+    result = self_reflection_inspect(answer, [chunk])
+
+    assert result["unsupported_count"] == 1
+    assert result["score"] == 0.75
+    assert result["passed"] is True
+
+
+def test_generator_abstains_when_reflection_score_falls_below_threshold():
+    chunk = {
+        "chunk_id": "c1",
+        "doc_id": "paper-a",
+        "text": "The study evaluates toxicity classification using HateBERT. It compares text classification models on datasets.",
+        "retrieval_score": 0.8,
+        "metadata": {"section": "body"},
+    }
+    answer = (
+        "The study evaluates toxicity classification using HateBERT. "
+        "HateBERT compares text classification models on datasets. "
+        "The model achieved 94 percent benchmark accuracy. "
+        "The treatment reduced medical costs by 70 percent."
+    )
+
+    class Client:
+        def __init__(self):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+        def create(self, **kwargs):
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                content=json.dumps({
+                    "answer": answer,
+                    "status": "ANSWERED",
+                    "confidence_score": 0.99,
+                    "supporting_sources": ["[Source 1]"],
+                })
+            ))])
+
+    class HighConfidence:
+        def calculate_confidence(self, chunks, **kwargs):
+            return {"confidence_score": 0.95, "decision": "GENERATE", "signals": {}}
+
+    generator = GroqGenerator.__new__(GroqGenerator)
+    generator.model = "test-model"
+    generator.client = Client()
+    generator._confidence = HighConfidence()
+
+    result = generator.generate(
+        "What does this study report?",
+        [chunk],
+        retrieval_decision="GENERATE",
+        retrieval_confidence=0.95,
+    )
+
+    assert result.status == "INSUFFICIENT_CONTEXT"
+    assert result.answer == "INSUFFICIENT_CONTEXT"
+    assert result.failure_type == "unsupported_claims"
+    assert result.reflection_passed is False
+    assert result.reflection_score == 0.5
+    assert result.unsupported_claims_count == 2
 
 
 @pytest.mark.parametrize(

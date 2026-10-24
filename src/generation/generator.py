@@ -117,6 +117,12 @@ class RAGResponse:
     retrieval_decision:        Optional[str] = None
     post_generation_confidence_score: Optional[float] = None
     post_generation_decision: Optional[str] = None
+    # Lexical self-reflection is only populated after an answer was generated.
+    # None means the check did not run; it must not look like a passing score.
+    reflection_passed:         Optional[bool] = None
+    reflection_score:          Optional[float] = None
+    unsupported_claims_count:  Optional[int] = None
+    failure_type:              str   = "none"
     # Why the pipeline abstained. PROJECT_GOALS.md §4 requires structured
     # failure classification; without this on the response, callers cannot tell a
     # provider failure from a model refusal without parsing logs.
@@ -323,8 +329,9 @@ def check_answer_evidence(
 
     Each sentence is compared with each retrieved passage independently. This
     avoids treating a collection of loosely related passages as if one passage
-    supported the whole answer. It is a conservative lexical guard, not an NLI
-    entailment model; callers should keep the threshold configurable.
+    supported the whole answer. The answer passes when all sentences are
+    supported or at least 75% pass the lexical coverage threshold. This is not
+    an NLI entailment model.
     """
     if not answer or not chunks:
         return False, "insufficient_evidence: answer or evidence is empty"
@@ -368,7 +375,8 @@ def check_answer_evidence(
         if best_coverage < min_sentence_coverage:
             weak_sentences.append((sentence, best_coverage))
 
-    if weak_sentences:
+    score = (len(sentences) - len(weak_sentences)) / max(len(sentences), 1)
+    if weak_sentences and score < 0.75:
         examples = "; ".join(
             f"'{sentence[:80]}' ({coverage:.2f})"
             for sentence, coverage in weak_sentences[:2]
@@ -401,10 +409,10 @@ def trim_unsupported_trailing_summary(
     Models sometimes append a generic sentence such as "These factors together
     can introduce noise into the results" after a fully supported answer. The
     sentence adds no numeric/source claim, but its paraphrase has low lexical
-    overlap and causes the whole answer to be rejected as ungrounded. Only trim
-    a short trailing sentence introduced by a summary marker, and only when
-    every preceding sentence already passes the evidence guard. Any other
-    unsupported sentence is left for check_answer_evidence() to reject.
+    overlap and can cause the whole answer to fail the coverage policy. Only
+    trim a short trailing sentence introduced by a summary marker, and only
+    when the preceding answer passes the evidence coverage guard. Other
+    unsupported sentences remain in the text for reflection to assess.
     """
     sentences = [
         part.strip()
@@ -436,6 +444,75 @@ def trim_unsupported_trailing_summary(
         return answer, "ok"
     return prefix, trailing_reason
 
+
+def self_reflection_inspect(answer: str, chunks: list, min_sentence_coverage: float = 0.35) -> dict:
+    """Perform sentence-level self-reflection to evaluate groundedness and unsupported claims.
+
+    Returns:
+        dict: {
+            "passed": bool,
+            "score": float (0.0 to 1.0),
+            "total_sentences": int,
+            "unsupported_count": int,
+            "details": list[tuple[str, float]]
+        }
+    """
+    if not answer or not chunks or answer.startswith("I'm sorry, I couldn't find"):
+        return {"passed": True, "score": 1.0, "total_sentences": 0, "unsupported_count": 0, "details": []}
+
+    stopwords = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+        "do", "does", "did", "has", "have", "had", "what", "which", "who",
+        "when", "where", "why", "how", "and", "or", "but", "if", "then",
+        "this", "that", "these", "those", "it", "its", "they", "them", "their",
+        "with", "from", "for", "to", "of", "in", "on", "at", "by", "as",
+        "can", "could", "would", "should", "will", "may", "might", "must",
+        "also", "than", "into", "using", "use", "used", "based", "according",
+    }
+
+    def content_terms(text: str) -> set[str]:
+        return {
+            token for token in re.findall(r"[a-z0-9]+", text.lower())
+            if len(token) > 1 and token not in stopwords
+        }
+
+    evidence_terms = []
+    for chunk in chunks:
+        text = _get_attr(chunk, "text", "") or ""
+        terms = content_terms(text)
+        if terms:
+            evidence_terms.append(terms)
+    if not evidence_terms:
+        return {"passed": False, "score": 0.0, "total_sentences": 1, "unsupported_count": 1, "details": [(answer, 0.0)]}
+
+    sentences = [part.strip() for part in re.split(r"(?<=[.!?;])\s+", answer) if part.strip()]
+    if not sentences:
+        sentences = [answer.strip()]
+
+    total = len(sentences)
+    unsupported = 0
+    details = []
+
+    for sentence in sentences:
+        terms = content_terms(sentence)
+        if not terms:
+            details.append((sentence, 1.0))
+            continue
+        best_coverage = max(len(terms & passage) / len(terms) for passage in evidence_terms)
+        details.append((sentence, best_coverage))
+        if best_coverage < min_sentence_coverage:
+            unsupported += 1
+
+    score = max(0.0, min(1.0, (total - unsupported) / max(total, 1)))
+    passed = unsupported == 0 or score >= 0.75
+    return {
+        "passed": passed,
+        "score": score,
+        "total_sentences": total,
+        "unsupported_count": unsupported,
+        "details": details,
+    }
+
 # Retrieval Hit Guard
 def _make_abstain_response(
     query: str,
@@ -449,6 +526,10 @@ def _make_abstain_response(
     retrieval_decision: Optional[str] = None,
     post_generation_confidence_score: Optional[float] = None,
     post_generation_decision: Optional[str] = None,
+    failure_type: str = "insufficient_context",
+    reflection_passed: Optional[bool] = None,
+    reflection_score: Optional[float] = None,
+    unsupported_claims_count: Optional[int] = None,
 ) -> RAGResponse:
     logger.warning(f"[ABSTAIN] {reason} | query='{query[:60]}'")
     return RAGResponse(
@@ -471,6 +552,10 @@ def _make_abstain_response(
         retrieval_decision=retrieval_decision,
         post_generation_confidence_score=post_generation_confidence_score,
         post_generation_decision=post_generation_decision,
+        failure_type=failure_type,
+        reflection_passed=reflection_passed,
+        reflection_score=reflection_score,
+        unsupported_claims_count=unsupported_claims_count,
         reason=reason,
     )
 
@@ -793,10 +878,11 @@ class GroqGenerator:
                 retrieval_confidence_score=retrieval_confidence,
                 retrieval_decision=retrieval_decision,
             )
+        reflection = None
         if status == "INSUFFICIENT_CONTEXT":
             answer = "I'm sorry, I couldn't find the answer in the provided context."
         elif status == "ANSWERED":
-            evidence_ok, evidence_reason = check_answer_evidence(answer, filtered_chunks)
+            evidence_ok, _evidence_reason = check_answer_evidence(answer, filtered_chunks)
             if not evidence_ok:
                 trimmed_answer, trim_reason = trim_unsupported_trailing_summary(
                     answer, filtered_chunks
@@ -808,17 +894,35 @@ class GroqGenerator:
                     )
                     answer = trimmed_answer
                     evidence_ok = True
-            if not evidence_ok:
+            # Inspect the final generated text after removing a recognized
+            # unsupported trailing summary. The score policy is shared with
+            # check_answer_evidence so this remains a meaningful abstention
+            # gate rather than an always-pass duplicate.
+            reflection = self_reflection_inspect(answer, filtered_chunks)
+            logger.info(
+                f"[SELF_REFLECTION] passed={reflection['passed']} | "
+                f"score={reflection['score']:.2f} | unsupported_claims={reflection['unsupported_count']}"
+            )
+            if not reflection["passed"]:
                 return _make_abstain_response(
                     query=query,
                     chunks=chunks,
                     model=self.model,
-                    reason=evidence_reason,
+                    reason=(
+                        "self_reflection_failed: "
+                        f"{reflection['unsupported_count']} of "
+                        f"{reflection['total_sentences']} sentences fell below "
+                        "the lexical evidence-coverage threshold"
+                    ),
                     context_used=context,
                     context_chunk_ids=context_chunk_ids,
                     llm_confidence_score=confidence,
                     retrieval_confidence_score=retrieval_confidence,
                     retrieval_decision=retrieval_decision,
+                    failure_type="unsupported_claims",
+                    reflection_passed=False,
+                    reflection_score=reflection["score"],
+                    unsupported_claims_count=reflection["unsupported_count"],
                 )
 
         latency_context_ms = round((t1 - t0_total) * 1000, 2)
@@ -861,6 +965,11 @@ class GroqGenerator:
                 retrieval_decision=retrieval_decision,
                 post_generation_confidence_score=final_confidence,
                 post_generation_decision=confidence_result.get("decision"),
+                reflection_passed=reflection["passed"] if reflection is not None else None,
+                reflection_score=reflection["score"] if reflection is not None else None,
+                unsupported_claims_count=(
+                    reflection["unsupported_count"] if reflection is not None else None
+                ),
             )
 
         if should_abort_before_generation(
@@ -880,8 +989,12 @@ class GroqGenerator:
                 retrieval_decision=retrieval_decision,
                 post_generation_confidence_score=final_confidence,
                 post_generation_decision=confidence_result.get("decision"),
+                reflection_passed=reflection["passed"] if reflection is not None else None,
+                reflection_score=reflection["score"] if reflection is not None else None,
+                unsupported_claims_count=(
+                    reflection["unsupported_count"] if reflection is not None else None
+                ),
             )
-        
         logger.info(
             f"[CONFIDENCE_CALC] score={final_confidence:.2f} | "
             f"decision={confidence_result['decision']}"
@@ -907,6 +1020,11 @@ class GroqGenerator:
             retrieval_decision=retrieval_decision,
             post_generation_confidence_score=final_confidence,
             post_generation_decision=confidence_result.get("decision"),
+            reflection_passed=reflection["passed"] if reflection is not None else None,
+            reflection_score=reflection["score"] if reflection is not None else None,
+            unsupported_claims_count=(
+                reflection["unsupported_count"] if reflection is not None else None
+            ),
         )
 
 
