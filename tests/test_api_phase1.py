@@ -806,6 +806,93 @@ def test_cache_hit_records_metrics_and_query_log(monkeypatch):
     assert fake_cache.set_calls == []
 
 
+def test_cache_hit_response_exposes_cache_hit(monkeypatch):
+    cached = main.GenerateResponse(
+        query="test query",
+        answer="cached answer",
+        retrieved_chunks=[],
+        retrieval_method="cache",
+        latency_retrieval_ms=12.0,
+        latency_generation_ms=34.0,
+        latency_total_ms=46.0,
+        model="test-model",
+        confidence=0.8,
+        decision="GENERATE",
+        generator_status="ANSWERED",
+    ).model_dump()
+
+    fake_cache = FakeCache(cached)
+    monkeypatch.setattr(main, "cache", fake_cache)
+    monkeypatch.setattr(main, "retriever", FakeRetriever([]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(main, "confidence_engine", FakeConfidenceEngine([]))
+    monkeypatch.setattr(main, "_record_metrics", lambda **event: None)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.cache_hit is True
+    assert response.latency_retrieval_ms == 0.0
+    assert response.latency_generation_ms == 0.0
+
+
+def test_cache_miss_response_exposes_cache_hit_false(monkeypatch):
+    fake_cache = FakeCache()
+    monkeypatch.setattr(main, "cache", fake_cache)
+    monkeypatch.setattr(main, "retriever", FakeRetriever([_single_chunk()]))
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    response = asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert response.cache_hit is False
+
+
+def test_cached_abstention_is_not_served(monkeypatch):
+    cached = main.GenerateResponse(
+        query="test query",
+        answer="INSUFFICIENT_CONTEXT",
+        retrieved_chunks=[],
+        retrieval_method="cache",
+        latency_retrieval_ms=1.0,
+        latency_generation_ms=1.0,
+        latency_total_ms=2.0,
+        model="test-model",
+        confidence=0.0,
+        decision="REJECT",
+        failure_type="low_confidence",
+        generator_status="INSUFFICIENT_CONTEXT",
+    ).model_dump()
+
+    fake_cache = FakeCache(cached)
+    retriever = FakeRetriever([_single_chunk()])
+    monkeypatch.setattr(main, "cache", fake_cache)
+    monkeypatch.setattr(main, "retriever", retriever)
+    monkeypatch.setattr(main, "generator", FakeGenerator())
+    monkeypatch.setattr(
+        main,
+        "confidence_engine",
+        FakeConfidenceEngine([
+            {"confidence_score": 0.8, "decision": "GENERATE", "signals": {}},
+        ]),
+    )
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **event: None)
+
+    asyncio.run(main.generate_answer(main.GenerateRequest(query="test query")))
+
+    assert fake_cache.delete_calls == ["rag:gen:test query:None:False"]
+    assert retriever.calls != []
+
+
 def test_abstention_is_not_cached(monkeypatch):
     class AbstainingGenerator(FakeGenerator):
         def generate(self, query, chunks, **kwargs):

@@ -274,6 +274,7 @@ class GenerateResponse(BaseModel):
     post_generation_confidence: float | None = None
     post_generation_decision: str | None = None
     retry_triggered: bool = False
+    cache_hit: bool = False
     # Complete ordered retrieval IDs, including abstentions whose user-facing
     # `retrieved_chunks` list is intentionally shortened. This keeps evaluation
     # metrics tied to the same retrieval call without a second search.
@@ -439,6 +440,7 @@ async def generate_answer(req: GenerateRequest):
                         "latency_retrieval_ms": 0.0,
                         "latency_generation_ms": 0.0,
                         "latency_total_ms": cache_latency_ms,
+                        "cache_hit": True,
                     }
                 )
                 logger.info(f"[{rid}] CACHE HIT for query: {req.query}")
