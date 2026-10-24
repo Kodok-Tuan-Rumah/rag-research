@@ -37,9 +37,8 @@ SECTION_SCORE_DELTA: dict[str, float] = {
 BLOCKED_SECTIONS = {"references", "bibliography"} 
 MAX_REF_IN_CONTEXT = 1  
 SCORE_DISTRIBUTION_PATH = "data/debug/score_distribution.json"
-RRF_K = 60
-RRF_CIRCUIT_BREAKER_PERCENTILE = 0.50
 RERANK_LATENCY_BUDGET_MS = 700.0
+RETRIEVAL_DEGRADATION_BUDGET_MS = 800.0
 RERANK_GUARD_MAX_PAIRS = 6
 MIN_CANDIDATES_FOR_RERANK = 3
 RERANK_GAP_SKIP_THRESHOLD = 0.005
@@ -86,13 +85,37 @@ def is_valid_query(q: str) -> bool:
     q_lower = q.lower()
     return any(kw in q_lower for kw in _DOMAIN_KEYWORDS)
 
-def rrf_circuit_breaker_threshold(num_lists: int, rank_depth: int, k: int = RRF_K) -> tuple[float, float, float]:
-    if num_lists <= 0 or rank_depth <= 0:
-        return 0.0, 0.0, 0.0
-    min_score = 1.0 / (k + rank_depth)
-    max_score = num_lists * (1.0 / (k + 1))
-    threshold = min_score + RRF_CIRCUIT_BREAKER_PERCENTILE * (max_score - min_score)
-    return threshold, min_score, max_score
+def reranker_circuit_breaker(
+    candidates: list,
+    retrieval_elapsed_ms: float,
+    use_reranker: bool = True,
+    mode: str = "full",
+) -> tuple[bool, str]:
+    """Decide whether latency degradation requires skipping the reranker.
+
+    PROJECT_GOALS.md §6.3 authorizes skipping only when retrieval+reranking
+    exceeds the latency budget. RRF confidence is not a skip signal: the
+    canonical retriever always reranks when ``rerank=True``, and the fused
+    ``score`` field still holds the upstream dense/BM25 similarity, which is
+    not comparable to an RRF threshold.
+    """
+    if mode != "full":
+        return True, f"mode={mode}"
+    if not use_reranker:
+        return True, "use_reranker=False"
+    if len(candidates) < 2:
+        return True, "too few candidates to rerank"
+    if retrieval_elapsed_ms > RETRIEVAL_DEGRADATION_BUDGET_MS:
+        return (
+            True,
+            f"retrieval_elapsed_ms={retrieval_elapsed_ms:.1f} > "
+            f"budget={RETRIEVAL_DEGRADATION_BUDGET_MS:.0f}ms (latency, skip)",
+        )
+    return (
+        False,
+        f"retrieval_elapsed_ms={retrieval_elapsed_ms:.1f} <= "
+        f"budget={RETRIEVAL_DEGRADATION_BUDGET_MS:.0f}ms (rerank)",
+    )
 
 # Helpers
 def compute_context_overlap(answer: str, contexts: list[str]) -> float:
@@ -556,25 +579,18 @@ def run_single_query(
             for chunk in rerank_candidates
         }
 
-        rrf_lists_count = len(all_dense_hits) + len(all_bm25_hits)
-        rrf_threshold, rrf_min, rrf_max = rrf_circuit_breaker_threshold(
-            num_lists=rrf_lists_count,
-            rank_depth=candidate_k,
+        retrieval_elapsed_ms = (
+            timings.get("query_expansion_ms", 0.0)
+            + timings.get("embedding_ms", 0.0)
+            + timings.get("bm25_ms", 0.0)
+            + timings.get("rrf_ms", 0.0)
         )
-        top_rrf_score = _get_attr(rerank_candidates[0], "score", 0) if rerank_candidates else 0
-
-        if not (use_reranker and mode == "full"):
-            skip_reranker = True 
-            skip_reason = "use_reranker=False"
-        elif len(rerank_candidates) < 2:
-            skip_reranker = True
-            skip_reason = "too few candidates to rerank"
-        elif top_rrf_score >= rrf_threshold:
-            skip_reranker = True
-            skip_reason = f"top_rrf_score={top_rrf_score:.4f} >= threshold={rrf_threshold:.4f} (confident, skip)"
-        else:
-            skip_reranker = False
-            skip_reason = f"top_rrf_score={top_rrf_score:.4f} < threshold={rrf_threshold:.4f} (ambiguous, rerank)"
+        skip_reranker, skip_reason = reranker_circuit_breaker(
+            rerank_candidates,
+            retrieval_elapsed_ms=retrieval_elapsed_ms,
+            use_reranker=use_reranker,
+            mode=mode,
+        )
         print(f"    [CIRCUIT_BREAKER] {skip_reason} -> {'skip' if skip_reranker else 'run'} reranker")
         
         def _best_window(q: str, text: str, window: int = 600, step: int = 200) -> str:

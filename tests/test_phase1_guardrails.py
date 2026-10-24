@@ -527,6 +527,45 @@ def test_should_skip_reranker_for_small_or_weak_candidates():
     assert should_skip_reranker(candidate_count=6, top_gap=0.001, elapsed_ms=100.0) is False
 
 
+def test_reranker_circuit_breaker_ignores_dense_similarity():
+    candidates = [
+        {"chunk_id": "c1", "score": 0.6021, "retrieval_score": 0.0161, "rrf_score": 0.0161},
+        {"chunk_id": "c2", "score": 0.5500, "retrieval_score": 0.0159, "rrf_score": 0.0159},
+    ]
+
+    skip, reason = runner.reranker_circuit_breaker(
+        candidates, retrieval_elapsed_ms=25.0
+    )
+
+    assert skip is False
+    assert "rerank" in reason
+
+
+def test_reranker_circuit_breaker_skips_on_latency_spike():
+    candidates = [{"chunk_id": "c1"}, {"chunk_id": "c2"}]
+
+    skip, reason = runner.reranker_circuit_breaker(
+        candidates, retrieval_elapsed_ms=900.0
+    )
+
+    assert skip is True
+    assert "latency" in reason
+
+
+def test_reranker_circuit_breaker_respects_request_flags():
+    candidates = [{"chunk_id": "c1"}, {"chunk_id": "c2"}]
+
+    assert runner.reranker_circuit_breaker(
+        candidates, retrieval_elapsed_ms=25.0, use_reranker=False
+    )[0] is True
+    assert runner.reranker_circuit_breaker(
+        candidates, retrieval_elapsed_ms=25.0, mode="baseline"
+    )[0] is True
+    assert runner.reranker_circuit_breaker(
+        candidates[:1], retrieval_elapsed_ms=25.0
+    )[0] is True
+
+
 def test_general_generation_policy_allows_json_response_budget():
     policy = PolicyEngine().generation_policy("general")
 
