@@ -11,6 +11,13 @@ sentence-transformers==6.1.0
 transformers==5.18.0
 numpy==2.5.3
 
+# ── calibration ──────────────────────────────────────────────────────────────
+# Imported by src/controller/calibration.py and required to load models/*.joblib
+# at startup. sentence-transformers pulls both transitively today; pinning them
+# keeps a dependency bump from silently removing the calibrated path.
+scikit-learn==1.9.1
+joblib==1.6.0
+
 # ── observability / cache ───────────────────────────────────────────────────
 # redis is imported by src/api/cache.py; without it the cache silently disables
 # in the container even when REDIS_ENABLED=true.
@@ -27,3 +34,8 @@ python-multipart==0.0.32
 # ── NOT included: langgraph ──────────────────────────────────────────────────
 # Declared in llm.txt only; conflicts with PROJECT_GOALS.md §9. Do not add
 # without an explicit decision record.
+# OpenTelemetry tracing (optional)
+opentelemetry-api==1.45.1
+opentelemetry-sdk==1.45.1
+opentelemetry-instrumentation-fastapi==0.66b1
+opentelemetry-exporter-otlp==1.45.1

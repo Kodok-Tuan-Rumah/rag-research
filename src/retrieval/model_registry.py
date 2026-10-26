@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import numpy as np
 import threading
+from typing import Optional
 from sentence_transformers import SentenceTransformer, CrossEncoder
 from src.api.config import settings
+from src.retrieval.reranker_rust import HybridReranker
 
 EMBED_MODEL = settings.embed_model
 RERANK_MODEL = settings.reranker_model
@@ -32,29 +34,36 @@ class ModelRegistry:
         _embedder_probe(self.embedder, EMBED_MODEL)
         self._reranker = None
         self._reranker_lock = threading.Lock()
+        self._hybrid_reranker = None
         print("[ModelRegistry] Embedder loaded. Reranker will load on first use.")
 
     @property
     def reranker(self):
-        """Load the optional cross-encoder only when a caller requests reranking."""
-        if self._reranker is None:
+        """Load the optional cross-encoder only when a caller requests reranking.
+
+        Uses HybridReranker which prefers Rust (PyO3 ONNX) and falls back to
+        Python sentence-transformers CrossEncoder.
+        """
+        if self._hybrid_reranker is None:
             with self._reranker_lock:
-                if self._reranker is None:
+                if self._hybrid_reranker is None:
                     print(f"[ModelRegistry] Loading reranker: {RERANK_MODEL}")
-                    reranker = CrossEncoder(RERANK_MODEL)
-                    probe = reranker.predict([["q", "a"]], batch_size=1)
-                    if not np.all(np.isfinite(np.asarray(probe, dtype=float))):
-                        raise RuntimeError(
-                            f"[ModelRegistry] Reranker '{RERANK_MODEL}' produced non-finite scores"
-                        )
-                    self._reranker = reranker
-                    print("[ModelRegistry] Reranker loaded and ready for reuse.")
-        return self._reranker
+                    self._hybrid_reranker = HybridReranker(model_name=RERANK_MODEL)
+                    backend = self._hybrid_reranker.active or "none"
+                    print(f"[ModelRegistry] Reranker loaded ({backend} backend).")
+        return self._hybrid_reranker
 
     @property
-    def reranker_loaded(self) -> bool:
-        """Report model state without triggering the optional model load."""
-        return self._reranker is not None
+    def reranker_backend(self) -> Optional[str]:
+        """Return 'rust', 'python', or None. Used by observability/logging."""
+        if self._hybrid_reranker is None:
+            return None
+        return self._hybrid_reranker.active
+
+    def backend_name(self) -> str:
+        """Human-readable backend name for log messages."""
+        backend = self.reranker_backend
+        return backend if backend else "none"
 
     @classmethod
     def get(cls) -> "ModelRegistry":

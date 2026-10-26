@@ -1,0 +1,1869 @@
+{
+  "dataset_name": "calibration_v1",
+  "description": "Labeled calibration dataset for confidence calibration (ERROR rows excluded from fitting; see excluded_samples)",
+  "total_samples": 214,
+  "supported_count": 126,
+  "unsupported_count": 88,
+  "samples": [
+    {
+      "query_id": "q01",
+      "query": "What statistic was used to measure inter-rater reliability (IRR) in the human evaluations, and what is the range of its score on the 7-point Likert scale helpfulness task?",
+      "ground_truth": "Gwet’s AC1/2 was used to measure inter-rater reliability. On the 7-point Likert scale helpfulness task, Gwet’s AC2 score varies between 0.37 and 0.55 depending on the specific model comparison.",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0086"
+      ],
+      "gold_doc_id": "tier3_llama2",
+      "is_supported": true,
+      "should_abstain": false,
+      "raw_confidence": 0.7112,
+      "raw_decision": "GENERATE",
+      "api_answer": "The human evaluations used Gwet’s AC1/2 statistic (specifically AC2) to measure inter‑rater reliability, and on the 7‑point Likert scale helpfulness task the Gwet AC2 score ranged from 0.37 to 0.55.",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q02",
+      "query": "What is a notable issue that large language models (LLMs) face when handling queries beyond their training data or requiring current information?",
+      "ground_truth": "They produce hallucinations when handling queries beyond their training data or requiring current information.",
+      "gold_chunk_ids": [
+        "tier1_advanced_rag_survey_rs_0002"
+      ],
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.5884,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT",
+      "api_failure_type": "unsupported_claims"
+    },
+    {
+      "query_id": "q03",
+      "query": "How are FEVER class labels mapped for training in the context of RAG models?",
+      "ground_truth": "FEVER class labels (supports, refutes, or not enough info) are mapped to single output tokens and directly trained with claim-class pairs.",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0023"
+      ],
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.749,
+      "raw_decision": "GENERATE",
+      "api_answer": "FEVER class labels are mapped to single output tokens for training. In the RAG framework the three FEVER labels – supports, refutes, and not enough info – are each represented by a distinct token, and",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q04",
+      "query": "How are high-confidence predictions filtered in the method described?",
+      "ground_truth": "Multiple CoT paths and answers are generated. The most consistent answer is selected by majority voting. High-confidence CoT reasoning paths leading to that answer are augmented with mixed formats as the final training samples.",
+      "gold_chunk_ids": [
+        "tier2_large_language_models_rs_0006"
+      ],
+      "gold_doc_id": "tier2_large_language_models",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer.",
+      "api_failure_type": "low_confidence"
+    },
+    {
+      "query_id": "q06",
+      "query": "How does RAG compare to Fine-tuning (FT) in terms of its suitability for specific tasks?",
+      "ground_truth": "RAG is ideal for precise information retrieval tasks, while fine-tuning (FT) is suitable for scenarios requiring replication of specific structures, styles, or formats.",
+      "gold_chunk_ids": [
+        "tier1_advanced_rag_survey_rs_0028"
+      ],
+      "gold_doc_id": "tier1_advanced_rag_survey",
+      "is_supported": true,
+      "should_abstain": false,
+      "raw_confidence": 0.7721,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG is more suitable for tasks that require precise information retrieval and dynamic, real‑time knowledge updates, whereas Fine‑tuning is better suited to tasks that need the model to internalize and",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q09",
+      "query": "What limitation do instruction-tuning with human annotation and SELFINSTRUCT share, according to the authors?",
+      "ground_truth": "Because of SELFINSTRUCT’s dependence on the inductive biases extracted from language models, it might work best for larger models. The paper says, “If true,” this may create barriers to access for those without large computing resources. Separately, it states that instruction-tuning with human annotation has a similar limitation: its gains are higher for larger models.",
+      "gold_chunk_ids": [
+        "tier2_self_instruct_rs_0062"
+      ],
+      "gold_doc_id": "tier2_self_instruct",
+      "is_supported": true,
+      "should_abstain": false,
+      "raw_confidence": 0.6716,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT",
+      "api_failure_type": "empty_output"
+    },
+    {
+      "query_id": "q10",
+      "query": "Why may RAG-Token perform best at generating Jeopardy questions?",
+      "ground_truth": "RAG-Token may perform best because it can generate responses that combine content from several documents.",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0027"
+      ],
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.672,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG-Token may perform best at generating Jeopardy questions because it can combine content from several documents, which is useful when the questions contain two separate pieces of information.",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q11",
+      "query": "What percentage of cases did evaluators indicate that RAG was more factual than BART?",
+      "ground_truth": "RAG was more factual than BART in 42.7% of cases.",
+      "gold_chunk_ids": [
+        "tier1_rag_lewis2020_rs_0026"
+      ],
+      "gold_doc_id": "tier1_rag_lewis2020",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.6674,
+      "raw_decision": "GENERATE",
+      "api_answer": "42.7%",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q13",
+      "query": "How do attention mechanisms typically function in sequence modeling and transduction models, according to the given text?",
+      "ground_truth": "Attention mechanisms allow modeling of dependencies without regard to their distance in the input or output sequences. In all but a few cases, such attention mechanisms are used in conjunction with a recurrent network.",
+      "gold_chunk_ids": [
+        "tier3_attention_all_you_need_rs_0008"
+      ],
+      "gold_doc_id": "tier3_attention_all_you_need",
+      "is_supported": true,
+      "should_abstain": false,
+      "raw_confidence": 0.6649,
+      "raw_decision": "GENERATE",
+      "api_answer": "Attention mechanisms in sequence modeling and transduction models are used to model dependencies between elements of a sequence regardless of their distance. They typically compute representations of ",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q14",
+      "query": "How does the margin component affect the Helpfulness reward model accuracy?",
+      "ground_truth": "The margin component can improve Helpfulness reward model accuracy, especially on samples where two responses are more separable.",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0043"
+      ],
+      "gold_doc_id": "tier3_llama2",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.7688,
+      "raw_decision": "GENERATE",
+      "api_answer": "The margin component improves the Helpfulness reward model accuracy, particularly on samples where the two responses are more separable.",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q16",
+      "query": "What are some limitations of human evaluations that can introduce noise into the results?",
+      "ground_truth": "Human evaluations can be noisy due to limitations of the prompt set, subjectivity of the review guidelines, subjectivity of individual raters, and the inherent difficulty of comparing generations.",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0007"
+      ],
+      "gold_doc_id": "tier3_llama2",
+      "is_supported": true,
+      "should_abstain": false,
+      "raw_confidence": 0.7014,
+      "raw_decision": "GENERATE",
+      "api_answer": "Human evaluations can be noisy because of several limitations: a limited prompt set that may not cover real‑world usage; the subjectivity of review guidelines and individual raters; the inherent diffi",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q19",
+      "query": "How does the HateBERT classifier assign a toxicity score to documents in the pretraining corpus?",
+      "ground_truth": "The HateBERT classifier scores each line of a document separately and averages the scores to assign a document score.",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0098"
+      ],
+      "gold_doc_id": "tier3_llama2",
+      "is_supported": false,
+      "should_abstain": true,
+      "raw_confidence": 0.7098,
+      "raw_decision": "GENERATE",
+      "api_answer": "The HateBERT classifier fine‑tuned on ToxiGen assigns a toxicity likelihood to each line of a document and then averages these line scores to produce a single toxicity score for the entire document.",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "q20",
+      "query": "How is the inter-rater reliability (IRR) measured among annotators for safety assessments, and what is the average IRR score for Llama 2-Chat annotations?",
+      "ground_truth": "Gwet’s AC1/2 statistic was used to measure inter-rater reliability. For Llama 2-Chat annotations, the average IRR is 0.92 according to Gwet’s AC2 measure.",
+      "gold_chunk_ids": [
+        "tier3_llama2_rs_0152"
+      ],
+      "gold_doc_id": "tier3_llama2",
+      "is_supported": true,
+      "should_abstain": false,
+      "raw_confidence": 0.6653,
+      "raw_decision": "GENERATE",
+      "api_answer": "Inter‑rater reliability for safety assessments was measured using Gwet’s AC1/2 statistic. The average IRR for Llama 2‑Chat annotations is 0.92 (Gwet’s AC2).",
+      "api_failure_type": "none"
+    },
+    {
+      "query_id": "cal_extra_01",
+      "query": "What is the Transformer architecture?",
+      "is_supported": true,
+      "raw_confidence": 0.6558,
+      "raw_decision": "GENERATE",
+      "api_answer": "The Transformer is a neural sequence‑transduction architecture that uses an encoder‑decoder structure. The encoder maps an input sequence to continuous representations using stacked self‑attention and"
+    },
+    {
+      "query_id": "cal_extra_02",
+      "query": "How does multi-head attention work?",
+      "is_supported": true,
+      "raw_confidence": 0.6669,
+      "raw_decision": "GENERATE",
+      "api_answer": "Multi‑head attention first projects the input vectors Q, K and V into h lower‑dimensional subspaces using learned matrices W_Q, W_K and W_V (each of size d_model×d_k, d_model×d_k and d_model×d_v respe"
+    },
+    {
+      "query_id": "cal_extra_03",
+      "query": "What is Gwet AC1/2 statistic?",
+      "is_supported": true,
+      "raw_confidence": 0.5457,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Gwet’s AC1/2 statistic is a measure of inter‑rater reliability (IRR) that the authors used because it was found to be the most stable metric across different me"
+    },
+    {
+      "query_id": "cal_extra_04",
+      "query": "What is the range of Gwet AC2 score?",
+      "is_supported": true,
+      "raw_confidence": 0.55,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_extra_05",
+      "query": "What is the weather on Mars tomorrow?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_extra_06",
+      "query": "Who won the 2030 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_extra_07",
+      "query": "What is the capital of Atlantis?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_extra_08",
+      "query": "How do unicorns fly?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_extra_09",
+      "query": "What is attention mechanism?",
+      "is_supported": true,
+      "raw_confidence": 0.6615,
+      "raw_decision": "GENERATE",
+      "api_answer": "An attention mechanism is a method that relates different positions in a sequence (or between input and output sequences) to compute representations, enabling modeling of dependencies regardless of di"
+    },
+    {
+      "query_id": "cal_extra_10",
+      "query": "What is quantum computing?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_01",
+      "query": "What is self-attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6702,
+      "raw_decision": "GENERATE",
+      "api_answer": "Self‑attention, also called intra‑attention, is an attention mechanism that relates different positions within a single sequence to compute a representation of that sequence."
+    },
+    {
+      "query_id": "cal_more_02",
+      "query": "What is positional encoding?",
+      "is_supported": true,
+      "raw_confidence": 0.7139,
+      "raw_decision": "GENERATE",
+      "api_answer": "Positional encoding is a method to inject information about the relative or absolute position of tokens into a model that has no recurrence or convolution. It is added to the input embeddings (having "
+    },
+    {
+      "query_id": "cal_more_03",
+      "query": "What is cross-entropy loss?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_04",
+      "query": "What is BLEU score?",
+      "is_supported": true,
+      "raw_confidence": 0.5087,
+      "raw_decision": "REJECT",
+      "api_answer": "[Low confidence — verify independently] I'm sorry, I couldn't find the answer in the provided context."
+    },
+    {
+      "query_id": "cal_more_05",
+      "query": "What is the attention mechanism?",
+      "is_supported": true,
+      "raw_confidence": 0.6385,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] An attention mechanism is a method that computes a weighted sum of values, where the weights are derived from the similarity between query and key vectors, allo"
+    },
+    {
+      "query_id": "cal_more_06",
+      "query": "What is the price of Bitcoin in 2025?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_07",
+      "query": "How to bake a chocolate cake?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_08",
+      "query": "What is the population of Tokyo in 2024?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_09",
+      "query": "Who is the president of France?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_10",
+      "query": "What is the speed of light?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_11",
+      "query": "What is a neural network?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_12",
+      "query": "What is deep learning?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_13",
+      "query": "What is machine learning?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_14",
+      "query": "What is artificial intelligence?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_more_15",
+      "query": "What is natural language processing?",
+      "is_supported": true,
+      "raw_confidence": 0.0918,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_080",
+      "query": "What is Retrieval-Augmented Generation and how does it work?",
+      "is_supported": true,
+      "raw_confidence": 0.6279,
+      "raw_decision": "GENERATE",
+      "api_answer": "Retrieval‑Augmented Generation (RAG) is a method that combines information retrieval with language‑m"
+    },
+    {
+      "query_id": "cal_exp_081",
+      "query": "How does self-attention work in Transformers?",
+      "is_supported": true,
+      "raw_confidence": 0.6495,
+      "raw_decision": "GENERATE",
+      "api_answer": "In a Transformer, each self‑attention layer generates query, key and value vectors from the same inp"
+    },
+    {
+      "query_id": "cal_exp_082",
+      "query": "What are the challenges in implementing RAG systems?",
+      "is_supported": true,
+      "raw_confidence": 0.6646,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_083",
+      "query": "What is multi-head attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6662,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_084",
+      "query": "What is LLaMA?",
+      "is_supported": true,
+      "raw_confidence": 0.6643,
+      "raw_decision": "GENERATE",
+      "api_answer": "LLaMA is an auto‑regressive language model that uses a transformer architecture and is available in "
+    },
+    {
+      "query_id": "cal_exp_085",
+      "query": "What is self-instruct for LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.6263,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] SELF‑INSTRUCT is a method that curates expert‑written instru"
+    },
+    {
+      "query_id": "cal_exp_086",
+      "query": "What is BM25 retrieval?",
+      "is_supported": true,
+      "raw_confidence": 0.5362,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] BM25 retrieval is a sparse keyword‑based retrieval method th"
+    },
+    {
+      "query_id": "cal_exp_087",
+      "query": "What is dense retrieval?",
+      "is_supported": true,
+      "raw_confidence": 0.7168,
+      "raw_decision": "GENERATE",
+      "api_answer": "Dense retrieval is a retrieval method that indexes text chunks as dense embeddings in a vector datab"
+    },
+    {
+      "query_id": "cal_exp_088",
+      "query": "How does cross-encoder reranking work?",
+      "is_supported": true,
+      "raw_confidence": 0.4914,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_089",
+      "query": "What is Reciprocal Rank Fusion (RRF)?",
+      "is_supported": true,
+      "raw_confidence": 0.5076,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Reciprocal Rank Fusion (RRF) is a common technique for mergi"
+    },
+    {
+      "query_id": "cal_exp_090",
+      "query": "How does RAG combine retrieval and generation?",
+      "is_supported": true,
+      "raw_confidence": 0.6292,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG first performs a retrieval step to fetch relevant documents from a knowledge base and then feeds"
+    },
+    {
+      "query_id": "cal_exp_091",
+      "query": "What is scaled dot-product attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6696,
+      "raw_decision": "GENERATE",
+      "api_answer": "Scaled dot-product attention is an attention mechanism that computes the dot product between queries"
+    },
+    {
+      "query_id": "cal_exp_092",
+      "query": "What is the weather forecast for Tokyo tomorrow?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_093",
+      "query": "Who won the 2026 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_094",
+      "query": "How do I bake a chocolate soufflé?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_095",
+      "query": "How does RAG use external knowledge sources?",
+      "is_supported": true,
+      "raw_confidence": 0.5935,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] RAG augments a language model by first retrieving relevant p"
+    },
+    {
+      "query_id": "cal_exp_096",
+      "query": "What are the evaluation metrics for RAG systems?",
+      "is_supported": true,
+      "raw_confidence": 0.6309,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] The RAGAS framework defines the following evaluation metrics"
+    },
+    {
+      "query_id": "cal_exp_097",
+      "query": "What is the Transformer architecture?",
+      "is_supported": true,
+      "raw_confidence": 0.6558,
+      "raw_decision": "GENERATE",
+      "api_answer": "The Transformer is a neural sequence‑transduction architecture that uses an encoder‑decoder structur"
+    },
+    {
+      "query_id": "cal_exp_098",
+      "query": "How does positional encoding work in Transformers?",
+      "is_supported": true,
+      "raw_confidence": 0.7063,
+      "raw_decision": "GENERATE",
+      "api_answer": "In Transformers, the order of tokens is injected by adding a positional encoding vector to each toke"
+    },
+    {
+      "query_id": "cal_exp_099",
+      "query": "What are Large Language Models?",
+      "is_supported": true,
+      "raw_confidence": 0.5949,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Large Language Models (LLMs) are large pre‑trained language "
+    },
+    {
+      "query_id": "cal_exp_100",
+      "query": "Who won the 2030 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_101",
+      "query": "How are LLMs trained?",
+      "is_supported": true,
+      "raw_confidence": 0.591,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Large language models are trained by first pretraining an au"
+    },
+    {
+      "query_id": "cal_exp_102",
+      "query": "What is instruction tuning?",
+      "is_supported": true,
+      "raw_confidence": 0.7264,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_103",
+      "query": "What are the limitations of Large Language Models?",
+      "is_supported": true,
+      "raw_confidence": 0.5559,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_104",
+      "query": "What are the different sizes of LLaMA models?",
+      "is_supported": true,
+      "raw_confidence": 0.6699,
+      "raw_decision": "GENERATE",
+      "api_answer": "The LLaMA models are available in the following parameter sizes: 7 B, 13 B, 30 B, and 70 B."
+    },
+    {
+      "query_id": "cal_exp_105",
+      "query": "How does self-instruct generate instruction data?",
+      "is_supported": true,
+      "raw_confidence": 0.6697,
+      "raw_decision": "GENERATE",
+      "api_answer": "SELF‑INSTRUCT begins with a small set of seed human‑written instructions. It repeatedly samples a fe"
+    },
+    {
+      "query_id": "cal_exp_106",
+      "query": "What is advanced RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6703,
+      "raw_decision": "GENERATE",
+      "api_answer": "Advanced RAG is a refinement of the naive RAG paradigm that introduces pre‑retrieval and post‑retrie"
+    },
+    {
+      "query_id": "cal_exp_107",
+      "query": "How does query expansion work in RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6205,
+      "raw_decision": "GENERATE",
+      "api_answer": "In RAG, query expansion creates multiple related queries from the original user query. This is done "
+    },
+    {
+      "query_id": "cal_exp_108",
+      "query": "Who won the 2030 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_109",
+      "query": "What is the capital of Australia?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_110",
+      "query": "How do I fix a leaking faucet?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_111",
+      "query": "What is hybrid search in RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6854,
+      "raw_decision": "GENERATE",
+      "api_answer": "Hybrid search in RAG combines dense vector search with sparse keyword‑based methods such as BM25 to "
+    },
+    {
+      "query_id": "cal_exp_112",
+      "query": "How does cross-encoder reranking work?",
+      "is_supported": true,
+      "raw_confidence": 0.4914,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Cross‑encoder reranking scores each candidate chunk by feedi"
+    },
+    {
+      "query_id": "cal_exp_113",
+      "query": "What is Reciprocal Rank Fusion (RRF)?",
+      "is_supported": true,
+      "raw_confidence": 0.5076,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Reciprocal Rank Fusion (RRF) is a common technique for mergi"
+    },
+    {
+      "query_id": "cal_exp_114",
+      "query": "How does vector similarity search work?",
+      "is_supported": true,
+      "raw_confidence": 0.7482,
+      "raw_decision": "GENERATE",
+      "api_answer": "Vector similarity search works by encoding a user query into a vector using the same model that enco"
+    },
+    {
+      "query_id": "cal_exp_115",
+      "query": "What is BM25 retrieval?",
+      "is_supported": true,
+      "raw_confidence": 0.5362,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] BM25 retrieval is a sparse keyword‑based retrieval method th"
+    },
+    {
+      "query_id": "cal_exp_116",
+      "query": "What is dense retrieval?",
+      "is_supported": true,
+      "raw_confidence": 0.7168,
+      "raw_decision": "GENERATE",
+      "api_answer": "Dense retrieval is a retrieval method that uses dense embeddings (vector representations) to search "
+    },
+    {
+      "query_id": "cal_exp_119",
+      "query": "Who is the president of France?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_120",
+      "query": "What is the population of Tokyo?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_121",
+      "query": "How does RAG compare to Fine-tuning?",
+      "is_supported": true,
+      "raw_confidence": 0.6306,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG can be fine‑tuned (e.g., the retriever or generator) and hybrid approaches combine RAG with fine"
+    },
+    {
+      "query_id": "cal_exp_122",
+      "query": "What is the attention mechanism?",
+      "is_supported": true,
+      "raw_confidence": 0.6385,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_123",
+      "query": "What is Gwet AC1/2 statistic?",
+      "is_supported": true,
+      "raw_confidence": 0.5457,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Gwet AC1/2 is a statistic used to measure inter‑rater reliab"
+    },
+    {
+      "query_id": "cal_exp_124",
+      "query": "What is the range of Gwet AC2 score?",
+      "is_supported": true,
+      "raw_confidence": 0.55,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] 0.37–0.55 (helpfulness task) and 0.70–0.95 (safety assessmen"
+    },
+    {
+      "query_id": "cal_exp_125",
+      "query": "How does the Transformer handle sequence-to-sequence tasks?",
+      "is_supported": true,
+      "raw_confidence": 0.5935,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_126",
+      "query": "What is the difference between naive RAG and advanced RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6688,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_127",
+      "query": "How does RAG improve LLM performance?",
+      "is_supported": true,
+      "raw_confidence": 0.67,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG improves LLM performance by transforming the retrieval process into instructions that the LLM ca"
+    },
+    {
+      "query_id": "cal_exp_128",
+      "query": "What is FEVER class labels mapping?",
+      "is_supported": true,
+      "raw_confidence": 0.5136,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] FEVER’s classification task uses three labels: \"supports\", \""
+    },
+    {
+      "query_id": "cal_exp_129",
+      "query": "What is the weather on Mars tomorrow?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_130",
+      "query": "How do unicorns fly?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_131",
+      "query": "How does attention mechanism work in neural networks?",
+      "is_supported": true,
+      "raw_confidence": 0.7461,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_132",
+      "query": "What are the advantages of Transformers over RNNs?",
+      "is_supported": true,
+      "raw_confidence": 0.425,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_133",
+      "query": "How does RLHF work in LLM training?",
+      "is_supported": true,
+      "raw_confidence": 0.6636,
+      "raw_decision": "GENERATE",
+      "api_answer": "RLHF in LLM training first fine‑tunes a pretrained model with supervised data, then uses reward mode"
+    },
+    {
+      "query_id": "cal_exp_134",
+      "query": "How do LLMs handle context windows?",
+      "is_supported": true,
+      "raw_confidence": 0.6107,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_135",
+      "query": "What is fine-tuning for LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.6313,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Fine‑tuning for LLMs is the process of further training a pr"
+    },
+    {
+      "query_id": "cal_exp_136",
+      "query": "How does instruction tuning work?",
+      "is_supported": true,
+      "raw_confidence": 0.6325,
+      "raw_decision": "GENERATE",
+      "api_answer": "Instruction tuning fine‑tunes a pretrained language model on a dataset of expert‑written instruction"
+    },
+    {
+      "query_id": "cal_exp_137",
+      "query": "What are the challenges in implementing RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6291,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Challenges in implementing Retrieval-Augmented Generation (R"
+    },
+    {
+      "query_id": "cal_exp_138",
+      "query": "How does RAG use vector databases?",
+      "is_supported": true,
+      "raw_confidence": 0.5853,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] RAG stores text chunks as dense embeddings in a vector datab"
+    },
+    {
+      "query_id": "cal_exp_139",
+      "query": "Who is the CEO of Tesla?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_140",
+      "query": "What is the capital of Australia?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_141",
+      "query": "How does RAG work with LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.6672,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_142",
+      "query": "What is the role of retriever in RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.5946,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] The retriever searches the document store for the most relev"
+    },
+    {
+      "query_id": "cal_exp_143",
+      "query": "How does positional encoding work?",
+      "is_supported": true,
+      "raw_confidence": 0.6265,
+      "raw_decision": "GENERATE",
+      "api_answer": "Positional encoding injects information about token order by adding a vector to each input embedding"
+    },
+    {
+      "query_id": "cal_exp_144",
+      "query": "What is scaled dot-product attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6696,
+      "raw_decision": "GENERATE",
+      "api_answer": "Scaled dot‑product attention is an attention mechanism that computes the dot product between each qu"
+    },
+    {
+      "query_id": "cal_exp_145",
+      "query": "What is RLHF?",
+      "is_supported": true,
+      "raw_confidence": 0.6642,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_146",
+      "query": "How do LLMs generate text?",
+      "is_supported": true,
+      "raw_confidence": 0.6277,
+      "raw_decision": "REJECT",
+      "api_answer": "I'm sorry, I couldn't find the answer in the provided context."
+    },
+    {
+      "query_id": "cal_exp_147",
+      "query": "What is the difference between base and instruction-tuned models?",
+      "is_supported": true,
+      "raw_confidence": 0.6386,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_149",
+      "query": "What is the speed of light?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_150",
+      "query": "Who painted the Mona Lisa?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_151",
+      "query": "What is the best smartphone?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_152",
+      "query": "Who directed Inception?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_153",
+      "query": "What is the population of NYC?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_154",
+      "query": "How do I learn guitar?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_155",
+      "query": "What is the tallest mountain?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_156",
+      "query": "Who wrote Harry Potter?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_157",
+      "query": "What is the chemical formula for water?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_158",
+      "query": "How do I change a tire?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_159",
+      "query": "How does multi-head attention work?",
+      "is_supported": true,
+      "raw_confidence": 0.6669,
+      "raw_decision": "GENERATE",
+      "api_answer": "Multi‑head attention first projects the input vectors Q, K, V into h lower‑dimensional subspaces usi"
+    },
+    {
+      "query_id": "cal_exp_160",
+      "query": "What is self-attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6702,
+      "raw_decision": "GENERATE",
+      "api_answer": "Self‑attention, also called intra‑attention, is an attention mechanism that relates different positi"
+    },
+    {
+      "query_id": "cal_exp_161",
+      "query": "What is cross-entropy loss?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_162",
+      "query": "What is BLEU score?",
+      "is_supported": true,
+      "raw_confidence": 0.5087,
+      "raw_decision": "REJECT",
+      "api_answer": "[Low confidence — verify independently] I'm sorry, I couldn't find the answer in the provided contex"
+    },
+    {
+      "query_id": "cal_exp_163",
+      "query": "What is a neural network?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_164",
+      "query": "What is deep learning?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_165",
+      "query": "What is machine learning?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_166",
+      "query": "What is artificial intelligence?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_167",
+      "query": "What is natural language processing?",
+      "is_supported": true,
+      "raw_confidence": 0.0918,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_168",
+      "query": "What is the price of Bitcoin in 2025?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_169",
+      "query": "How do I bake a chocolate cake?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_169b",
+      "query": "What is the population of Tokyo in 2024?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_170",
+      "query": "What is the context window of LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.7085,
+      "raw_decision": "GENERATE",
+      "api_answer": "LLMs can handle contexts exceeding 200,000 tokens."
+    },
+    {
+      "query_id": "cal_exp_171",
+      "query": "How do LLMs perform few-shot learning?",
+      "is_supported": true,
+      "raw_confidence": 0.6346,
+      "raw_decision": "GENERATE",
+      "api_answer": "LLMs perform few‑shot learning by in‑context learning: a prompt is constructed that contains only a "
+    },
+    {
+      "query_id": "cal_exp_172",
+      "query": "What is the difference between sparse and dense retrieval?",
+      "is_supported": true,
+      "raw_confidence": 0.5939,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Sparse retrieval uses keyword‑based methods such as BM25 tha"
+    },
+    {
+      "query_id": "cal_exp_173",
+      "query": "How does vector search work?",
+      "is_supported": true,
+      "raw_confidence": 0.4242,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Vector search encodes a user query into a dense vector using"
+    },
+    {
+      "query_id": "cal_exp_174",
+      "query": "What is advanced RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6703,
+      "raw_decision": "GENERATE",
+      "api_answer": "Advanced RAG is a refinement of the basic Retrieval-Augmented Generation paradigm that adds optimiza"
+    },
+    {
+      "query_id": "cal_exp_175",
+      "query": "How does contextual compression work?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_176",
+      "query": "What is the winner of 2026 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_177",
+      "query": "What is the weather in Volcano CA?",
+      "is_supported": false,
+      "raw_confidence": 0.4298,
+      "raw_decision": "REJECT",
+      "api_answer": "[Low confidence — verify independently] I'm sorry, I couldn't find the answer in the provided contex"
+    },
+    {
+      "query_id": "cal_exp_178",
+      "query": "How do I make coffee?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_179",
+      "query": "What is the currency of Japan?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_180",
+      "query": "Who is the CEO of Tesla?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_181",
+      "query": "What is the largest ocean?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_182",
+      "query": "How do I make coffee?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_183",
+      "query": "What is the boiling point of water?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_184",
+      "query": "How do I tie a tie?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_185",
+      "query": "What is the deepest lake?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_186",
+      "query": "Who invented the telephone?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_187",
+      "query": "What is the smallest country?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_188",
+      "query": "How do I swim?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_189",
+      "query": "What is the hottest desert?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_190",
+      "query": "Who discovered penicillin?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_191",
+      "query": "What is the longest river?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_192",
+      "query": "What is RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.621,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] RAG is a retrieval‑augmented generation system that combines"
+    },
+    {
+      "query_id": "cal_exp_193",
+      "query": "How does self-attention work?",
+      "is_supported": true,
+      "raw_confidence": 0.6672,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_194",
+      "query": "What is multi-head attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6662,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_195",
+      "query": "What is LLaMA?",
+      "is_supported": true,
+      "raw_confidence": 0.6643,
+      "raw_decision": "GENERATE",
+      "api_answer": "LLaMA is an auto‑regressive language model that uses an optimized transformer architecture. It comes"
+    },
+    {
+      "query_id": "cal_exp_196",
+      "query": "What is self-instruct?",
+      "is_supported": true,
+      "raw_confidence": 0.6693,
+      "raw_decision": "GENERATE",
+      "api_answer": "SELF‑INSTRUCT is a method that induces instruction‑following capabilities in pretrained language mod"
+    },
+    {
+      "query_id": "cal_exp_197",
+      "query": "What is hybrid search?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_198",
+      "query": "How does cross-encoder rerank?",
+      "is_supported": true,
+      "raw_confidence": 0.6015,
+      "raw_decision": "GENERATE",
+      "api_answer": "Cross‑encoder rerankers take each retrieved chunk together with the query as a single input, run it "
+    },
+    {
+      "query_id": "cal_exp_199",
+      "query": "What is RRF?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_200",
+      "query": "What is BM25?",
+      "is_supported": true,
+      "raw_confidence": 0.4882,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] BM25 is a fixed retrieval system that uses word overlap-base"
+    },
+    {
+      "query_id": "cal_exp_201",
+      "query": "What is dense retrieval?",
+      "is_supported": true,
+      "raw_confidence": 0.7168,
+      "raw_decision": "GENERATE",
+      "api_answer": "Dense retrieval is a retrieval method that uses dense vector embeddings to search a document store f"
+    },
+    {
+      "query_id": "cal_exp_202",
+      "query": "How does query expansion work?",
+      "is_supported": true,
+      "raw_confidence": 0.5971,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Query expansion transforms a single user query into multiple"
+    },
+    {
+      "query_id": "cal_exp_203",
+      "query": "What is contextual compression?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_204",
+      "query": "How does RAG compare to fine-tuning?",
+      "is_supported": true,
+      "raw_confidence": 0.6306,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG can be fine‑tuned itself (e.g., the retriever or generator) and is often combined with fine‑tuni"
+    },
+    {
+      "query_id": "cal_exp_205",
+      "query": "What is the attention mechanism?",
+      "is_supported": true,
+      "raw_confidence": 0.6385,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] An attention mechanism is a method that relates different po"
+    },
+    {
+      "query_id": "cal_exp_206",
+      "query": "What is Gwet AC1/2?",
+      "is_supported": true,
+      "raw_confidence": 0.5031,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Gwet’s AC1/2 statistic is a measure of inter‑rater reliabili"
+    },
+    {
+      "query_id": "cal_exp_207",
+      "query": "What is the range of Gwet AC2?",
+      "is_supported": true,
+      "raw_confidence": 0.5412,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] 0.37 to 0.55"
+    },
+    {
+      "query_id": "cal_exp_208",
+      "query": "Who won the 2030 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_209",
+      "query": "What is the capital of Australia?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_210",
+      "query": "How do I fix a leaking faucet?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_211",
+      "query": "What is the best smartphone in 2026?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_212",
+      "query": "Who directed Inception?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_213",
+      "query": "What is the population of NYC?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_214",
+      "query": "How do I learn guitar?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_215",
+      "query": "What is the tallest mountain?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_216",
+      "query": "Who wrote Harry Potter?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_217",
+      "query": "What is the chemical formula for water?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_218",
+      "query": "How do I change a tire?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_220",
+      "query": "How does the Transformer handle seq2seq?",
+      "is_supported": true,
+      "raw_confidence": 0.6766,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_221",
+      "query": "What are advantages of Transformers over RNNs?",
+      "is_supported": true,
+      "raw_confidence": 0.4232,
+      "raw_decision": "REJECT",
+      "api_answer": "[Low confidence — verify independently] I'm sorry, I couldn't find the answer in the provided contex"
+    },
+    {
+      "query_id": "cal_exp_222",
+      "query": "How does attention work in neural networks?",
+      "is_supported": true,
+      "raw_confidence": 0.7481,
+      "raw_decision": "GENERATE",
+      "api_answer": "Attention in neural networks computes a weighted sum of value vectors, where the weights are derived"
+    },
+    {
+      "query_id": "cal_exp_223",
+      "query": "What is the Attention Is All You Need paper?",
+      "is_supported": true,
+      "raw_confidence": 0.5817,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] Attention Is All You Need is a research paper by Ashish Vasw"
+    },
+    {
+      "query_id": "cal_exp_224",
+      "query": "How are LLMs trained?",
+      "is_supported": true,
+      "raw_confidence": 0.591,
+      "raw_decision": "PARTIAL_TRUST",
+      "api_answer": "[Low confidence — verify independently] LLMs are trained by first pretraining an auto‑regressive tra"
+    },
+    {
+      "query_id": "cal_exp_226",
+      "query": "How does instruction tuning work?",
+      "is_supported": true,
+      "raw_confidence": 0.7577,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_228",
+      "query": "How do LLMs handle context windows?",
+      "is_supported": true,
+      "raw_confidence": 0.6299,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_229",
+      "query": "What are LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.6801,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_230",
+      "query": "How do I bake a chocolate cake?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_231",
+      "query": "What is the price of Bitcoin?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_232",
+      "query": "Who is the prime minister of Canada?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_233",
+      "query": "What is the capital of Australia?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_234",
+      "query": "How do I fix a leaking faucet?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_235",
+      "query": "What is the best smartphone?",
+      "is_supported": false,
+      "raw_confidence": 0.7131,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_236",
+      "query": "Who directed Inception?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_237",
+      "query": "What is the population of NYC?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_238",
+      "query": "How do I learn guitar?",
+      "is_supported": false,
+      "raw_confidence": 0.6334,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_exp_239",
+      "query": "What is the tallest mountain?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_exp_240",
+      "query": "Who wrote Harry Potter?",
+      "is_supported": false,
+      "raw_confidence": 0.35,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_001",
+      "query": "What is the purpose of RAG in LLM applications?",
+      "is_supported": true,
+      "raw_confidence": 0.6687,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_val_002",
+      "query": "How does RAG reduce hallucination in language models?",
+      "is_supported": true,
+      "raw_confidence": 0.6346,
+      "raw_decision": "GENERATE",
+      "api_answer": "RAG reduces hallucination by retrieving relevant passages and conditioning the language model on them, using hybrid retrieval and reranking to ensure high‑quality context, and by enforcing strict prom"
+    },
+    {
+      "query_id": "cal_val_003",
+      "query": "What are the key components of a RAG pipeline?",
+      "is_supported": true,
+      "raw_confidence": 0.6314,
+      "raw_decision": "GENERATE",
+      "api_answer": "A RAG pipeline consists of three main components: a document store or vector database that indexes text chunks as dense embeddings, a retriever that searches the store for relevant chunks, and a gener"
+    },
+    {
+      "query_id": "cal_val_004",
+      "query": "How does the retriever in RAG select relevant documents?",
+      "is_supported": true,
+      "raw_confidence": 0.6265,
+      "raw_decision": "GENERATE",
+      "api_answer": "The retriever searches the document store for the most relevant chunks by computing semantic similarity or performing keyword matching between the query and stored embeddings."
+    },
+    {
+      "query_id": "cal_val_005",
+      "query": "What is the difference between dense and sparse retrieval in RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.6114,
+      "raw_decision": "GENERATE",
+      "api_answer": "Dense retrieval in RAG uses semantic similarity between query and document embeddings (vector search) to find relevant chunks, while sparse retrieval relies on keyword‑based methods such as BM25 that "
+    },
+    {
+      "query_id": "cal_val_006",
+      "query": "What is the Transformer architecture and how does it work?",
+      "is_supported": true,
+      "raw_confidence": 0.6899,
+      "raw_decision": "GENERATE",
+      "api_answer": "The Transformer is a sequence‑to‑sequence model that replaces recurrent or convolutional layers with multi‑headed self‑attention. It has an encoder‑decoder structure. The encoder takes an input sequen"
+    },
+    {
+      "query_id": "cal_val_007",
+      "query": "How does self-attention differ from cross-attention?",
+      "is_supported": true,
+      "raw_confidence": 0.6541,
+      "raw_decision": "REJECT",
+      "api_answer": "I'm sorry, I couldn't find the answer in the provided context."
+    },
+    {
+      "query_id": "cal_val_008",
+      "query": "What is multi-head attention and why is it useful?",
+      "is_supported": true,
+      "raw_confidence": 0.6968,
+      "raw_decision": "GENERATE",
+      "api_answer": "Multi‑head attention is a variant of self‑attention in which the input is projected into several parallel sub‑spaces (heads). For each head the attention is computed independently and the resulting ve"
+    },
+    {
+      "query_id": "cal_val_009",
+      "query": "What are Large Language Models and how are they trained?",
+      "is_supported": true,
+      "raw_confidence": 0.5573,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_val_010",
+      "query": "What is instruction tuning and how does it work?",
+      "is_supported": true,
+      "raw_confidence": 0.6689,
+      "raw_decision": "REJECT",
+      "api_answer": "I'm sorry, I couldn't find the answer in the provided context."
+    },
+    {
+      "query_id": "cal_val_011",
+      "query": "What is RLHF and how does it align LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.6283,
+      "raw_decision": "REJECT",
+      "api_answer": "INSUFFICIENT_CONTEXT"
+    },
+    {
+      "query_id": "cal_val_012",
+      "query": "What is Self-Instruct and how does it work?",
+      "is_supported": true,
+      "raw_confidence": 0.6671,
+      "raw_decision": "GENERATE",
+      "api_answer": "Self‑Instruct is a method that induces instruction‑following abilities in pretrained language models with minimal human labeling. It generates a large synthetic set of instruction–response pairs by pr"
+    },
+    {
+      "query_id": "cal_val_013",
+      "query": "What is LLaMA 2 and how does it compare to other LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.6654,
+      "raw_decision": "GENERATE",
+      "api_answer": "LLaMA 2 is a family of open‑source large language models released by Meta, with sizes ranging from 7 billion to 70 billion parameters. The fine‑tuned LLaMA 2‑Chat variant shows the lowest toxicity and"
+    },
+    {
+      "query_id": "cal_val_014",
+      "query": "What is the weather forecast for Tokyo tomorrow?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_015",
+      "query": "Who won the 2026 World Cup?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_016",
+      "query": "How do I bake a chocolate soufflé?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_017",
+      "query": "What is the current price of Bitcoin?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_018",
+      "query": "Who is the prime minister of Canada?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_019",
+      "query": "What is the capital of Australia?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    },
+    {
+      "query_id": "cal_val_020",
+      "query": "How do I fix a leaking faucet?",
+      "is_supported": false,
+      "raw_confidence": 0.0,
+      "raw_decision": "REJECT",
+      "api_answer": "The available information is not sufficient to provide a reliable answer."
+    }
+  ],
+  "excluded_count": 6,
+  "excluded_samples": [
+    {
+      "query_id": "cal_exp_117",
+      "query": "How does query expansion work in RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "ERROR",
+      "api_answer": null,
+      "exclusion_reason": "pipeline error: sentinel raw_confidence=0.0, api_answer=null; not a confidence observation"
+    },
+    {
+      "query_id": "cal_exp_118",
+      "query": "What is contextual compression in RAG?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "ERROR",
+      "api_answer": null,
+      "exclusion_reason": "pipeline error: sentinel raw_confidence=0.0, api_answer=null; not a confidence observation"
+    },
+    {
+      "query_id": "cal_exp_148",
+      "query": "How do LLMs perform few-shot learning?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "ERROR",
+      "api_answer": null,
+      "exclusion_reason": "pipeline error: sentinel raw_confidence=0.0, api_answer=null; not a confidence observation"
+    },
+    {
+      "query_id": "cal_exp_219",
+      "query": "How does the Transformer handle seq2seq?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "ERROR",
+      "api_answer": null,
+      "exclusion_reason": "pipeline error: sentinel raw_confidence=0.0, api_answer=null; not a confidence observation"
+    },
+    {
+      "query_id": "cal_exp_225",
+      "query": "What is fine-tuning for LLMs?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "ERROR",
+      "api_answer": null,
+      "exclusion_reason": "pipeline error: sentinel raw_confidence=0.0, api_answer=null; not a confidence observation"
+    },
+    {
+      "query_id": "cal_exp_227",
+      "query": "What is RLHF?",
+      "is_supported": true,
+      "raw_confidence": 0.0,
+      "raw_decision": "ERROR",
+      "api_answer": null,
+      "exclusion_reason": "pipeline error: sentinel raw_confidence=0.0, api_answer=null; not a confidence observation"
+    }
+  ]
+}

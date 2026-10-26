@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     bm25_chunks_path: str = "data/processed/chunks_semantic_v2.json"
     candidate_k: int = 50
     hybrid_rrf_k: int = 60
+    # Ablation switch, measured 2026-10-26 on the two retrieval eval sets
+    # (14 + 13 queries, reranker off). Removing references before RRF was
+    # neutral at dense/bm25 = 0.2/0.8 (identical recall and MRR with or without
+    # it) and lowered MRR@10 at 0.5/0.5 (0.857->0.821 on v1, 0.923->0.885 on
+    # v2) without gaining recall. Default off; enable only for a corpus where
+    # reference chunks demonstrably crowd out body evidence.
+    prefusion_reference_exclusion: bool = False
     reranker_model: str = Field(
         default="cross-encoder/ms-marco-MiniLM-L-6-v2",
         validation_alias=AliasChoices("RAG_RERANK_MODEL", "RERANKER_MODEL"),
@@ -66,6 +73,15 @@ class Settings(BaseSettings):
     # src/controller/confidence_engine.py.
     confidence_reject_threshold: float = 0.35
     confidence_partial_threshold: float = 0.65
+    # Calibrated decision thresholds (applied to calibrated probability).
+    # Defaults mirror heuristic thresholds; after calibration these can be
+    # re-tuned to the calibrated probability distribution.
+    calibrated_reject_threshold: float = 0.35
+    calibrated_partial_threshold: float = 0.65
+    # Calibration method: "isotonic" or "platt"
+    calibration_method: str = "isotonic"
+    # Path to a saved calibration model (joblib). If set, loaded at startup.
+    calibration_model_path: str = "models/calibration_isotonic.joblib"
     groq_model: str = "openai/gpt-oss-20b"
     groq_model_fast: str = "openai/gpt-oss-20b"
     generation_max_tokens: int = 768

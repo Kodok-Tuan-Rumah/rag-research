@@ -1,8 +1,8 @@
 # RAG SYSTEM — ENGINEERING GOALS & PRODUCTION SPEC
 > **Version:** 2.2
 > **Repo:** `rag-research`  
-> **Status:** Historical Phase 1 snapshot passed on 2026-10-15. The v3 current-runtime run completed on 2026-10-23 and passed runtime gates, but has four provider errors due to exhausted Groq quota and has not had human review (`quality_pass: false`, `phase1_pass: false`). Phase 1 remains open; Phase 2 work is not an acceptance substitute.
-> **Last Updated:** 2026-10-23
+> **Status:** Historical Phase 1 snapshot passed on 2026-10-15. The v3 current-runtime run completed on 2026-10-26 and passed runtime gates, but has four provider errors due to exhausted Groq quota and has not had human review (`quality_pass: false`, `phase1_pass: false`). Phase 1 remains open; Phase 2 work is not an acceptance substitute.
+> **Last Updated:** 2026-10-26
 
 > **Current evidence note:** The K7.10–K7.13 retrieval audits use the 13-query `data/evaluation/retrieval_eval_dataset_v2.json`. This is distinct from the older 14-query `data/evaluation/retrieval_eval_dataset.json` summarized in the historical README baseline. The 13-query K7 set does not satisfy the Phase 2 target of at least 200 labeled samples, and its results do not establish production readiness or confidence calibration.
 
@@ -383,7 +383,7 @@ This must be implemented as a circuit breaker, not a manual toggle.
 ---
 
 ### Phase 1 — Pipeline Stabilization
-**Status: historical snapshot passed (2026-10-15); v3 current-runtime acceptance is INCOMPLETE (2026-10-23)**
+**Status: historical snapshot passed (2026-10-15); v3 current-runtime acceptance is INCOMPLETE (2026-10-26)**
 
 **Goal:** Every query produces either a valid answer or a clean abstain. No crashes, no silent failures, no infinite loops.
 
@@ -398,7 +398,7 @@ This must be implemented as a circuit breaker, not a manual toggle.
 
 **Acceptance procedure:** Run the v3 workflow in [`docs/evaluation_guide.md`](docs/evaluation_guide.md), using `QDRANT_COLLECTION=rag_research_phase1_v3` and `BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json`. The report path is `results/metrics/phase1_smoke_v3.json`; prior reports are archived. Review the fresh run with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json`, then run `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json`. The checker exits successfully only when runtime, dataset, Qdrant, complete review, failure reasons, 18/20, and zero-confident-wrong gates all pass. A run with `SMOKE_STOP_BEFORE_GEN` is not acceptance evidence.
 
-**Current runtime run (2026-10-23):** `results/metrics/phase1_smoke_v3.json` completed all 20 runtime rows against `rag_research_phase1_v3` (642 vectors), with `runtime_pass: true`. Four records are classified as provider errors after Groq quota exhaustion; `human_review_complete: false`, `quality_pass: false`, and `phase1_pass: false`. The next valid acceptance step is to rerun after quota reset, then review the resulting report. A gold-blind sample pack is available at `results/metrics/phase1_blind_review_v3.json` for independent spot-checking; it does not replace reviewing all answerable cases.
+**Current runtime run (2026-10-26):** `results/metrics/phase1_smoke_v3.json` completed all 20 runtime rows against `rag_research_phase1_v3` (642 vectors), with `runtime_pass: true`. Four records are classified as provider errors after Groq quota exhaustion; `human_review_complete: false`, `quality_pass: false`, and `phase1_pass: false`. The next valid acceptance step is to rerun after quota reset, then review the resulting report. A gold-blind sample pack is available at `results/metrics/phase1_blind_review_v3.json` for independent spot-checking; it does not replace reviewing all answerable cases.
 
 ---
 
@@ -805,7 +805,7 @@ System does NOT:
 ## 17. Proposed Product Differentiators — "Forensic AI"
 
 > **Status: PROPOSED — not implemented, not committed, and not a phase-gate
-> change.** Added 2026-10-23. This section records a product-direction
+> change.** Added 2026-10-26. This section records a product-direction
 > proposal. None of the capabilities below exist in the current runtime unless
 > a subsection explicitly says otherwise. Do not use them in README claims,
 > demos, sales material, or evaluation reports until the acceptance evidence in
@@ -855,7 +855,7 @@ contract:
    `bbox` is unavailable, fall back to page plus sentence text rather than
    claiming an exact visual highlight.
 
-**Current gap (source-verified 2026-10-23).** The 642-chunk v3 corpus stores
+**Current gap (source-verified 2026-10-26).** The 642-chunk v3 corpus stores
 `doc_id`, `chunk_id`, and chunk-relative sentence fields, but all 642 rows record
 `start_sentence_idx = end_sentence_idx = 0` and no page, character-offset, or
 bbox field. `document_loader.py` joins cleaned page text with `"\n\n"` and

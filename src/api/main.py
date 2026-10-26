@@ -16,8 +16,10 @@ from src.api.config import settings
 from src.api.cache import cache
 from src.controller.policy_engine import PolicyEngine
 from src.controller.agent_state import MAX_RETRIEVAL_RETRIES
+from src.controller.calibrated_confidence_engine import CalibratedConfidenceEngine
 from src.generation.generator import PARTIAL_TRUST_CHUNK_LIMIT, apply_partial_trust_policy
 from typing import Optional
+from src.api.tracing import init_tracing, instrument_fastapi, shutdown_tracing, get_trace_id, get_span_id
 
 load_dotenv()
 
@@ -195,7 +197,16 @@ async def lifespan(app: FastAPI):
         # is missing, so a deferred check could start a degraded service.
         canonical_chunks = _load_canonical_corpus(settings.bm25_chunks_path)
 
-        confidence_engine = ConfidenceEngine()
+        confidence_engine = CalibratedConfidenceEngine(
+            calibrated_reject_threshold=settings.calibrated_reject_threshold,
+            calibrated_partial_threshold=settings.calibrated_partial_threshold,
+        )
+        # Load saved calibration model if configured
+        if settings.calibration_model_path and Path(settings.calibration_model_path).is_file():
+            confidence_engine.load_calibration(settings.calibration_model_path)
+            logger.info(
+                f"[STARTUP] Loaded calibration model from {settings.calibration_model_path}"
+            )
         store = QdrantVectorStore()
         retriever = MasterHybridRetriever(
             vector_store=store,
@@ -232,6 +243,9 @@ async def lifespan(app: FastAPI):
         raise e
     yield
 
+    # Shutdown tracing
+    shutdown_tracing()
+
     if store:
         logger.info("[SHUTDOWN] Closing Vector Store connections...")
         store.close()
@@ -240,11 +254,15 @@ app = FastAPI(
     title="RAG Research Master Engine",
     description=(
         "Single-turn research RAG QA. The frozen Phase 1 acceptance set passes; "
-        "confidence remains heuristic and is not calibrated."
+        "confidence calibration available via CalibratedConfidenceEngine."
     ),
     version="1.0.0-baseline",
     lifespan=lifespan,
 )
+
+# Initialize OpenTelemetry tracing
+init_tracing()
+instrument_fastapi(app)
 
 # Pydantic Models 
 class ChunkResult(BaseModel):
@@ -275,33 +293,25 @@ class GenerateResponse(BaseModel):
     post_generation_decision: str | None = None
     retry_triggered: bool = False
     cache_hit: bool = False
-    # Complete ordered retrieval IDs, including abstentions whose user-facing
-    # `retrieved_chunks` list is intentionally shortened. This keeps evaluation
-    # metrics tied to the same retrieval call without a second search.
     retrieval_chunk_ids: list[str] = Field(default_factory=list)
-    # Category of the failure, e.g. retrieval_miss / low_confidence /
-    # insufficient_context / pipeline_error.
     failure_type: str = "none"
-    # Specific cause behind failure_type, taken from RAGResponse.reason.
-    # PROJECT_GOALS.md §4 requires structured failure observability; without this
-    # a caller cannot distinguish a provider rejection from a model refusal or a
-    # sanity-check rejection.
     abstain_reason: str | None = None
-    # When failure_type == "provider_error": rate_limit | connection | auth |
-    # invalid_json | not_configured | provider. Mirrors the generator's
-    # provider_error_kind so callers can classify operational failures without
-    # parsing abstain_reason.
     provider_error_kind: str | None = None
     generator_status: str = "UNKNOWN"
     generator_confidence: float | None = None
     llm_confidence: float | None = None
-    # Optional lexical self-reflection metadata. None means the generator did
-    # not evaluate an answer (for example, retrieval abstained first).
     reflection_passed: bool | None = None
     reflection_score: float | None = None
     unsupported_claims_count: int | None = None
     generation_chunk_ids: list[str] = Field(default_factory=list)
     context_chunk_ids: list[str] = Field(default_factory=list)
+    claim_attributions: list[dict] = Field(default_factory=list)
+    calibrated_confidence: float | None = None
+    calibrated_decision: str | None = None
+    is_calibrated: bool | None = None
+    calibration_method: str | None = None
+    trace_id: str | None = None
+    span_id: str | None = None
 
 # Helpers 
 def _format_chunks(chunks: list, limit: int | None = None) -> list[ChunkResult]:
@@ -375,6 +385,8 @@ def _abstain_response(
         failure_type=failure_type,
         abstain_reason=abstain_reason,
         generator_status="INSUFFICIENT_CONTEXT",
+        trace_id=get_trace_id(),
+        span_id=get_span_id(),
     )
 
 # Endpoints
@@ -543,6 +555,10 @@ async def generate_answer(req: GenerateRequest):
         latency_retrieval_ms = round((time.time() - t_retrieval_start) * 1000, 2)
         confidence = conf_eval["confidence_score"]
         decision   = conf_eval["decision"]
+        calibrated_confidence = conf_eval.get("calibrated_confidence")
+        calibrated_decision = conf_eval.get("calibrated_decision")
+        is_calibrated = conf_eval.get("is_calibrated")
+        calibration_method = conf_eval.get("calibration_method")
 
         logger.info(
             f"[{rid}] RETRIEVAL DONE | "
@@ -687,9 +703,6 @@ async def generate_answer(req: GenerateRequest):
                 latency_total_ms=round((time.time() - t_api_start) * 1000, 2),
                 model=response.model,
                 confidence=confidence,
-                # Keep the retrieval decision in retrieval_confidence and the
-                # generator's confidence metadata. The public decision must
-                # reflect an abstention produced after retrieval as well.
                 decision="REJECT" if generation_abstained else decision,
                 retrieval_confidence=confidence,
                 post_generation_confidence=getattr(
@@ -719,6 +732,13 @@ async def generate_answer(req: GenerateRequest):
                     else None
                 ),
                 provider_error_kind=getattr(response, "provider_error_kind", None),
+                claim_attributions=attribute_claims_to_chunks(response.answer, chunks) if not generation_abstained else [],
+                calibrated_confidence=calibrated_confidence,
+                calibrated_decision=calibrated_decision,
+                is_calibrated=is_calibrated,
+                calibration_method=calibration_method,
+                trace_id=get_trace_id(),
+                span_id=get_span_id(),
             )
             used_chunks = chunks[:PARTIAL_TRUST_CHUNK_LIMIT]
             _log_query_event(
@@ -807,9 +827,6 @@ async def generate_answer(req: GenerateRequest):
             unsupported_claims_count=getattr(response, "unsupported_claims_count", None),
             generation_chunk_ids=_chunk_ids(getattr(response, "retrieved_chunks", [])),
             context_chunk_ids=getattr(response, "context_chunk_ids", []),
-            # Retrieval succeeded but the generator declined to answer. Without
-            # this the response reported failure_type="none" for a query that
-            # produced no answer, which PROJECT_GOALS.md §4 forbids.
             failure_type=failure_type,
             abstain_reason=(
                 getattr(response, "reason", None)
@@ -817,6 +834,13 @@ async def generate_answer(req: GenerateRequest):
                 else None
             ),
             provider_error_kind=getattr(response, "provider_error_kind", None),
+            claim_attributions=attribute_claims_to_chunks(response.answer, chunks) if not generation_abstained else [],
+            calibrated_confidence=calibrated_confidence,
+            calibrated_decision=calibrated_decision,
+            is_calibrated=is_calibrated,
+            calibration_method=calibration_method,
+            trace_id=get_trace_id(),
+            span_id=get_span_id(),
         )
         _log_query_event(
             query_id=rid, query=req.query,

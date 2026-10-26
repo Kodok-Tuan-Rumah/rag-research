@@ -393,7 +393,7 @@ recorded in `ACKNOWLEDGED_DEAD_PATHS` rather than silently tolerated.
 python3 -m pytest tests/ -q
 ```
 
-Working-tree snapshot: **449 passed** with the `semantic_chunker_rust` extension built (`maturin develop`). An earlier bootstrap snapshot recorded **399 passed, 1 failed**; the failure was `tests/test_ci_contracts.py::test_every_src_module_imports`, which imports `src.ingestion.semantic_chunker` and fails when that extension is missing. Run the test command above to reconfirm.
+Working-tree snapshot: **495 passed** with the `semantic_chunker_rust` extension built (`maturin develop`). An earlier bootstrap snapshot recorded **399 passed, 1 failed**; the failure was `tests/test_ci_contracts.py::test_every_src_module_imports`, which imports `src.ingestion.semantic_chunker` and fails when that extension is missing. Run the test command above to reconfirm.
 
 > **If a test fails with** `ImportError: cannot load module more than once per process` **from `numpy/fft/_pocketfft.py`** — that is a test-harness problem, not a numpy or Python 3.14 defect. `unittest.mock.patch.dict(sys.modules, ...)` snapshots `sys.modules` and restores it wholesale on exit, evicting modules first imported *inside* the block. `numpy.fft._pocketfft_umath` is a C extension, and CPython forbids re-initialising the same extension twice in one process. Fix: pre-import `numpy.fft` above the `patch.dict` block. See `tests/test_qdrant_store.py` and `tests/test_semantic_chunker.py`.
 
@@ -461,7 +461,7 @@ rag-research/
 │       ├── main.py                   # FastAPI endpoint
 │       └── config.py                 # Settings (pydantic-settings)
 ├── scripts/                          # 40 classified scripts (10.6k LOC)
-├── tests/                            # pytest suite (449 passed with rust ext built)
+├── tests/                            # pytest suite (476 passed with rust ext built)
 ├── experiments/                      # Phase 1 ablation (legacy stack)
 ├── archive/
 │   └── legacy_2026_10/               # Zero-import modules + provenance README
@@ -481,7 +481,7 @@ rag-research/
 │   ├── debug/failure_analysis.json   # Failure mode breakdown
 │   └── qdrant_storage/               # Local Qdrant persistent (796 vectors)
 ├── results/
-│   ├── metrics/                      # 135 artifacts + INDEX.md (see results/metrics/INDEX.md)
+│   ├── metrics/                      # 160 artifacts + INDEX.md (see results/metrics/INDEX.md)
 │   ├── debug/
 │   └── logs/
 ├── cmd/server/main.go                # Go dashboard server
