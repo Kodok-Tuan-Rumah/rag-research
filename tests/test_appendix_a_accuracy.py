@@ -1,33 +1,9 @@
-"""Appendix A of PROJECT_GOALS.md must match the runtime.
-
-Appendix A is the project's systematical description of its own runtime, which
-is why §5 defines the confidence thresholds as calibration parameters and Phase 3
-depends on being able to change them.
-
-It was made false on 2026-10-11 and nothing noticed. `confidence_reject_threshold`
-and `confidence_partial_threshold` were moved out of `ConfidenceEngine.__init__`
-into `Settings` so Phase 3 could calibrate them without editing source, and the
-Appendix A row still read `| ConfidenceEngine.__init__ | **no** |` — asserting
-the opposite of what the change was for.
-
-That is the same failure `test_readme_accuracy.py` was written for, in a
-document nobody guarded. This is the guard.
-
-Two things are checked:
-
-1. the JSON block's values equal the live runtime values
-2. the "Env-overridable" column matches reality for the keys it lists, by
-   asking the code rather than by hardcoding an expectation
-"""
-
 from __future__ import annotations
 
 import inspect
 import json
 import pathlib
 import re
-
-import pytest
 
 import src._compat  # noqa: F401  must precede qdrant_client on 3.14
 
@@ -46,7 +22,7 @@ def _appendix_a() -> str:
 
 
 def _snapshot() -> dict:
-    block = re.search(r"```json\n(\{.*?\})\n```", _appendix_a(), re.S)
+    block = re.search(r"```json\n(\{.*?\})\n```", _appendix_a(), re.DOTALL)
     assert block, "Appendix A no longer contains a json snapshot block"
     return json.loads(block.group(1))
 
@@ -80,10 +56,7 @@ def test_confidence_thresholds_are_documented_as_configurable():
     """The row that went stale on 2026-10-11."""
     appendix = _appendix_a()
     for key in ("confidence_reject_threshold", "confidence_partial_threshold"):
-        row = next(
-            line for line in appendix.splitlines()
-            if line.startswith(f"| `{key}`")
-        )
+        row = next(line for line in appendix.splitlines() if line.startswith(f"| `{key}`"))
         assert "| **yes**" in row or "| yes" in row, (
             f"Appendix A says `{key}` is not env-overridable, but it now comes "
             f"from Settings. Row: {row}"
@@ -118,7 +91,7 @@ def test_retriever_takes_expansion_flags_per_call_not_per_instance():
 def test_appendix_a_carries_a_verification_date():
     """An unverified snapshot is indistinguishable from a stale one."""
     appendix = _appendix_a()
-    assert re.search(r"re-verified against source on \d{4}-\d{2}-\d{2}", appendix, re.I), (
+    assert re.search(r"re-verified against source on \d{4}-\d{2}-\d{2}", appendix, re.IGNORECASE), (
         "Appendix A must record when it was last checked against source"
     )
 

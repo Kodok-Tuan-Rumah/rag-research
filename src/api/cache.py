@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
 import json
 import logging
-from typing import Any, Optional
+import os
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -11,6 +11,7 @@ logger = logging.getLogger("rag.cache")
 
 try:
     import redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -18,9 +19,6 @@ except ImportError:
 
 class RedisCache:
     def __init__(self):
-        # `main.py` imports this module before calling load_dotenv(), so loading
-        # here is required for REDIS_ENABLED/REDIS_URL from a local .env to take
-        # effect. Existing process environment variables still win.
         load_dotenv()
         self.client = None
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -28,16 +26,20 @@ class RedisCache:
 
         if REDIS_AVAILABLE and enabled:
             try:
-                self.client = redis.Redis.from_url(redis_url, socket_timeout=1.0, socket_connect_timeout=1.0)
+                self.client = redis.Redis.from_url(
+                    redis_url, socket_timeout=1.0, socket_connect_timeout=1.0
+                )
                 self.client.ping()
                 logger.info("[CACHE] Connected to Redis successfully at %s", redis_url)
             except Exception as e:
-                logger.warning("[CACHE] Redis connection failed (%s). Caching disabled (fallback mode).", e)
+                logger.warning(
+                    "[CACHE] Redis connection failed (%s). Caching disabled (fallback mode).", e
+                )
                 self.client = None
         else:
             logger.info("[CACHE] Redis caching disabled or package unavailable.")
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         if not self.client:
             return None
         try:

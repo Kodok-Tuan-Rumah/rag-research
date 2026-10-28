@@ -1,62 +1,12 @@
-#!/usr/bin/env python3
-"""Review Phase 1 acceptance answers against the evidence the LLM actually read.
-
-`phase1_smoke.py --review-report` renders `debug_full_chunks[].text`, which
-`run_single_query.py` truncates to 300 characters, and it renders all of them as
-though each one were evidence. Both are wrong for a grounding judgement:
-
-    p1_answer_02   gold chunk 415 chars  -> shown 300  ("We map FEVER clas...")
-    p1_answer_10   gold chunk 2075 chars -> shown 300  (14% of the evidence)
-
-The truncation point lands mid-answer. In that case the reviewer sees
-"supports, refutes, not enough info" as absent, when chunk
-tier1_rag_lewis2020_rs_0023 contains it verbatim:
-
-    We map FEVER class labels (supports, refutes, or not enough info) to single
-    output tokens and directly train with claim-class pairs.
-
-11 of the 15 answerable cases have a gold chunk longer than 300 characters, so
-the Phase 1 exit criterion that depends on this review -- "human review
-confirms at least 18/20 correct final decisions" -- was being decided on
-partial evidence.
-
-The second problem is larger. Ten chunks were retrieved, but the generator's
-diversity filter keeps at most two per document, so only five reached the
-prompt:
-
-    retrieved 10 -> filter_chunks_by_score 10 -> filter_chunks_by_diversity 5
-                  -> build_context_with_ids 5 (2,470 of 3,000 chars)
-
-tier1_rag_lewis2020_rs_0024 was dropped, and it carries "claim-class pairs" --
-one of the two claims in the answer. A reviewer who sees it listed cannot tell
-the model never read it, so "grounded=yes" can be recorded for a claim the
-generator could not have grounded.
-
-This script does neither of those things. It makes no LLM call, replays the
-generator's own deterministic chunk-selection chain to recover which chunks
-reached the prompt, and shows full corpus text for those chunks. Chunks that
-were retrieved but dropped are listed separately and cannot ground a claim.
-
-    python scripts/phase1_smoke_review.py                    # review what is pending
-    python scripts/phase1_smoke_review.py --list             # pending ids, no prompts
-    python scripts/phase1_smoke_review.py --show p1_answer_03
-    python scripts/phase1_smoke_review.py --reviewer mayzar
-    python scripts/phase1_smoke_review.py --all              # re-review everything
-    python scripts/phase1_smoke_review.py --no-write         # dry run
-
-After it finishes, evaluate the real gate with the script that owns it:
-
-    python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke.json
-"""
-
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -85,13 +35,6 @@ RUBRIC = (
 
 
 def load_corpus(dataset: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Load the frozen corpus, refusing to review against a different one.
-
-    The report does not carry the corpus fingerprint; the dataset does. If the
-    corpus on disk no longer matches the hash the acceptance set was frozen
-    against, every chunk_id lookup below would silently resolve to the wrong
-    text or to nothing at all.
-    """
     if not CORPUS_PATH.exists():
         raise ValueError(f"Canonical corpus {CORPUS_PATH} not found")
     actual = hashlib.sha256(CORPUS_PATH.read_bytes()).hexdigest()
@@ -127,20 +70,7 @@ def load_report(report_path: Path, dataset_path: Path) -> tuple[dict[str, Any], 
     return report, dataset
 
 
-def _replay_chunk(
-    reported: dict[str, Any], corpus_entry: dict[str, Any]
-) -> dict[str, Any]:
-    """Rebuild one chunk as the generator would have received it.
-
-    `text` and `metadata` come from the corpus, not the report: the report's
-    copy is truncated to 300 characters. `rerank_score` is taken from the
-    report's recorded score because the corpus does not store ranking output.
-
-    `filter_chunks_by_score` reads only rerank_score, and with the cross-encoder
-    active its threshold is -3.0 against scores that rarely go below it, so the
-    score stage is a near no-op; the binding constraint is the per-document
-    diversity cap, which depends only on order and doc_id -- both exact.
-    """
+def _replay_chunk(reported: dict[str, Any], corpus_entry: dict[str, Any]) -> dict[str, Any]:
     score = reported.get("score")
     return {
         "chunk_id": reported.get("chunk_id"),
@@ -154,21 +84,18 @@ def _replay_chunk(
 def replay_prompt_selection(
     result: dict[str, Any], corpus: dict[str, dict[str, Any]]
 ) -> dict[str, Any]:
-    """Recover which chunks the generator actually placed in the LLM prompt.
-
-    Mirrors GroqGenerator.generate(): PARTIAL_TRUST truncation, then
-    filter_chunks_by_score, filter_chunks_by_diversity(max_per_doc=2), then
-    build_context_with_ids under the character budget.
-    """
     reported = result.get("debug_full_chunks") or result.get("reranked_chunks") or []
     usable = [row for row in reported if isinstance(row, dict) and row.get("chunk_id")]
     if not usable:
-        return {"prompt_ids": [], "dropped_ids": [], "unresolved": [], "chars": 0, "note": "no chunks recorded"}
+        return {
+            "prompt_ids": [],
+            "dropped_ids": [],
+            "unresolved": [],
+            "chars": 0,
+            "note": "no chunks recorded",
+        }
 
-    unresolved = [
-        row["chunk_id"] for row in usable
-        if row["chunk_id"] not in corpus
-    ]
+    unresolved = [row["chunk_id"] for row in usable if row["chunk_id"] not in corpus]
     if unresolved:
         return {
             "prompt_ids": [],
@@ -256,16 +183,12 @@ def render_case(
             entry = corpus.get(chunk_id, {})
             section = (entry.get("metadata") or {}).get("section", "General")
             marker = " [GOLD]" if chunk_id == row.get("gold_chunk_id") else ""
-            output_fn(
-                f"- [DROPPED] {chunk_id} | {entry.get('doc_id')} | {section}{marker}"
-            )
+            output_fn(f"- [DROPPED] {chunk_id} | {entry.get('doc_id')} | {section}{marker}")
             output_fn(f"  {entry.get('text', '')}")
     return selection
 
 
-def pending_rows(
-    report: dict[str, Any], include_reviewed: bool = False
-) -> list[dict[str, Any]]:
+def pending_rows(report: dict[str, Any], include_reviewed: bool = False) -> list[dict[str, Any]]:
     pending = []
     for row in report.get("records", []):
         if row.get("should_abstain") is not False:
@@ -277,9 +200,11 @@ def pending_rows(
             and isinstance(review.get("reviewer"), str)
             and bool(review["reviewer"].strip())
         )
-        needs_categories = labelled and (
-            review["answer_correct"] is False or review["grounded"] is False
-        ) and not smoke._valid_failure_categories(review.get("failure_categories"))
+        needs_categories = (
+            labelled
+            and (review["answer_correct"] is False or review["grounded"] is False)
+            and not smoke._valid_failure_categories(review.get("failure_categories"))
+        )
         if include_reviewed or not labelled or needs_categories:
             pending.append(row)
     return pending
@@ -288,7 +213,7 @@ def pending_rows(
 def review(
     report_path: Path,
     dataset_path: Path,
-    reviewer: Optional[str] = None,
+    reviewer: str | None = None,
     include_reviewed: bool = False,
     write: bool = True,
     input_fn: Callable[[str], str] = input,
@@ -378,7 +303,9 @@ def main() -> int:
     parser.add_argument("--reviewer", help="Reviewer name; prompted for when omitted")
     parser.add_argument("--all", action="store_true", help="Re-review already labelled cases")
     parser.add_argument("--list", action="store_true", help="Print pending case ids and exit")
-    parser.add_argument("--show", metavar="QUERY_ID", help="Print one case with full evidence and exit")
+    parser.add_argument(
+        "--show", metavar="QUERY_ID", help="Print one case with full evidence and exit"
+    )
     parser.add_argument("--no-write", action="store_true", help="Do not save annotations")
     args = parser.parse_args()
 
@@ -394,9 +321,7 @@ def main() -> int:
 
         if args.show:
             corpus = load_corpus(dataset)
-            target = next(
-                (r for r in report["records"] if r.get("query_id") == args.show), None
-            )
+            target = next((r for r in report["records"] if r.get("query_id") == args.show), None)
             if target is None:
                 print(f"[phase1_smoke_review] no case with query_id {args.show!r}", file=sys.stderr)
                 return 1

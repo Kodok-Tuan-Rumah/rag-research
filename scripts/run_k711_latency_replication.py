@@ -1,5 +1,3 @@
-"""Replicate K7.9 latency comparisons with paired, interleaved measurements."""
-
 from __future__ import annotations
 
 import argparse
@@ -11,7 +9,7 @@ import statistics
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +59,11 @@ def summarize(values: list[float]) -> dict[str, float | int | None]:
         "p95_ms": round(percentile(values, 0.95), 3) if values else None,
         "min_ms": round(min(values), 3) if values else None,
         "max_ms": round(max(values), 3) if values else None,
-        "stdev_ms": round(statistics.stdev(values), 3) if len(values) > 1 else 0.0 if values else None,
+        "stdev_ms": round(statistics.stdev(values), 3)
+        if len(values) > 1
+        else 0.0
+        if values
+        else None,
     }
 
 
@@ -145,15 +147,18 @@ def update_summary(report: dict[str, Any]) -> None:
     for mode, rows in grouped.items():
         summaries[mode] = {
             stage: summarize(
-                [float(row["latency_ms"][stage]) for row in rows if row["latency_ms"].get(stage) is not None]
+                [
+                    float(row["latency_ms"][stage])
+                    for row in rows
+                    if row["latency_ms"].get(stage) is not None
+                ]
             )
             for stage in ("total", "dense", "bm25", "fusion", "reranker", "filtering")
         }
     report["summary"] = summaries
 
     lookup = {
-        (row["repetition"], row["query_id"], row["mode"]): row
-        for row in report["measurements"]
+        (row["repetition"], row["query_id"], row["mode"]): row for row in report["measurements"]
     }
     comparisons = {
         "reranker5_minus_rrf_only": ("reranker5", "rrf_only"),
@@ -162,7 +167,9 @@ def update_summary(report: dict[str, Any]) -> None:
     paired: dict[str, Any] = {}
     for label, (left_mode, right_mode) in comparisons.items():
         deltas = {stage: [] for stage in ("total", "reranker")}
-        for rep, query_id in sorted({(row["repetition"], row["query_id"]) for row in report["measurements"]}):
+        for rep, query_id in sorted(
+            {(row["repetition"], row["query_id"]) for row in report["measurements"]}
+        ):
             left = lookup.get((rep, query_id, left_mode))
             right = lookup.get((rep, query_id, right_mode))
             if left is None or right is None:
@@ -179,13 +186,17 @@ def update_summary(report: dict[str, Any]) -> None:
     for mode, rows in grouped.items():
         hits = [row["hit_at_10"] for row in rows]
         reciprocal_ranks = [
-            1.0 / row["final_gold_rank"] if row["final_gold_rank"] is not None and row["final_gold_rank"] <= TOP_K else 0.0
+            1.0 / row["final_gold_rank"]
+            if row["final_gold_rank"] is not None and row["final_gold_rank"] <= TOP_K
+            else 0.0
             for row in rows
         ]
         quality[mode] = {
             "measurement_count": len(rows),
             "hit_at_10_rate": round(sum(hits) / len(hits), 4) if hits else None,
-            "mrr_at_10": round(sum(reciprocal_ranks) / len(reciprocal_ranks), 4) if reciprocal_ranks else None,
+            "mrr_at_10": round(sum(reciprocal_ranks) / len(reciprocal_ranks), 4)
+            if reciprocal_ranks
+            else None,
         }
     report["quality_sanity"] = quality
 
@@ -214,7 +225,7 @@ def main() -> None:
     if not QDRANT_PATH.exists() or not (QDRANT_PATH / "meta.json").exists():
         parser.error(f"Local Qdrant storage is unavailable at {QDRANT_PATH}")
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     run_id = f"K7.11-{stamp}"
     json_path = args.out_json or ROOT / f"results/metrics/k711_latency_replication_{stamp}.json"
     markdown_path = args.out_md or ROOT / f"results/metrics/k711_latency_replication_{stamp}.md"
@@ -240,7 +251,9 @@ def main() -> None:
         "chunks": sha256(CHUNKS_PATH),
     }
     if actual != expected:
-        parser.error("Dataset or corpus hashes differ from the K7.9 reference; refusing incomparable run")
+        parser.error(
+            "Dataset or corpus hashes differ from the K7.9 reference; refusing incomparable run"
+        )
 
     from src.api.config import settings
     from src.retrieval.model_registry import ModelRegistry
@@ -260,8 +273,8 @@ def main() -> None:
     if "cpu" not in device.lower():
         parser.error(f"Reranker is not on CPU: {device}")
 
-    from src.retrieval.qdrant_store import QdrantVectorStore
     from src.retrieval.hybrid_retriever import MasterHybridRetriever
+    from src.retrieval.qdrant_store import QdrantVectorStore
 
     store = QdrantVectorStore()
     retriever = MasterHybridRetriever(vector_store=store, bm25_chunks_path=str(CHUNKS_PATH))
@@ -274,7 +287,7 @@ def main() -> None:
         "run_label": "K7.11_PAIRED_INTERLEAVED_LATENCY_REPLICATION",
         "run_id": run_id,
         "status": "running",
-        "started_at_utc": datetime.now(timezone.utc).isoformat(),
+        "started_at_utc": datetime.now(UTC).isoformat(),
         "reference_run_id": k79.get("run_id"),
         "identity": {
             "git_head": subprocess.run(
@@ -283,7 +296,11 @@ def main() -> None:
             "working_tree": (
                 "dirty"
                 if subprocess.run(
-                    ["git", "status", "--porcelain"], cwd=ROOT, check=True, capture_output=True, text=True
+                    ["git", "status", "--porcelain"],
+                    cwd=ROOT,
+                    check=True,
+                    capture_output=True,
+                    text=True,
                 ).stdout.strip()
                 else "clean"
             ),
@@ -340,8 +357,13 @@ def main() -> None:
     retriever._rerank = capped_rerank
     active_mode_count[0] = 20
     warmup = retriever.search_with_trace(
-        warmup_query["question"], top_k=TOP_K, dense_weight=0.5, bm25_weight=0.5, rerank=True,
-        use_multi_query=False, use_hyde=False,
+        warmup_query["question"],
+        top_k=TOP_K,
+        dense_weight=0.5,
+        bm25_weight=0.5,
+        rerank=True,
+        use_multi_query=False,
+        use_hyde=False,
     )
     retriever._rerank = original_rerank
     report["warmup"] = {
@@ -397,7 +419,9 @@ def main() -> None:
                             f"{item['query_id']} {mode}: reranker did not succeed: {reranker_status}"
                         )
                     if cap and len(actual_input_ids) > cap:
-                        raise RuntimeError(f"{item['query_id']} {mode}: reranker input exceeded cap {cap}")
+                        raise RuntimeError(
+                            f"{item['query_id']} {mode}: reranker input exceeded cap {cap}"
+                        )
 
                     latency = trace.get("latency_ms") or {}
                     row = {
@@ -413,13 +437,23 @@ def main() -> None:
                         "reranker_input_count": len(actual_input_ids),
                         "rrf_gold_rank": rank_of(rrf_ids, gold_ids),
                         "final_gold_rank": rank_of(final_ids, gold_ids),
-                        "hit_at_10": rank_of(final_ids, gold_ids) is not None and rank_of(final_ids, gold_ids) <= TOP_K,
+                        "hit_at_10": rank_of(final_ids, gold_ids) is not None
+                        and rank_of(final_ids, gold_ids) <= TOP_K,
                         "reranker_status": reranker_status,
                         "ranking_mode": trace.get("ranking_mode"),
                         "filter_stage": trace.get("filter_stage"),
                         "latency_ms": {
-                            name: round(float(latency[name]), 3) if latency.get(name) is not None else None
-                            for name in ("dense", "bm25", "fusion", "reranker", "filtering", "total")
+                            name: round(float(latency[name]), 3)
+                            if latency.get(name) is not None
+                            else None
+                            for name in (
+                                "dense",
+                                "bm25",
+                                "fusion",
+                                "reranker",
+                                "filtering",
+                                "total",
+                            )
                         },
                         "wall_elapsed_ms": wall_ms,
                         "rrf_order_stable": stable_rrf,
@@ -441,17 +475,21 @@ def main() -> None:
                 f"Expected {expected_measurements} measurements, got {len(report['measurements'])}"
             )
         if not all(row["rrf_order_stable"] for row in report["measurements"]):
-            report["quality_comparison_validity"] = "RRF candidate order varied; compare latency, interpret quality cautiously"
+            report["quality_comparison_validity"] = (
+                "RRF candidate order varied; compare latency, interpret quality cautiously"
+            )
         else:
-            report["quality_comparison_validity"] = "RRF candidate order identical across modes/repetitions"
+            report["quality_comparison_validity"] = (
+                "RRF candidate order identical across modes/repetitions"
+            )
         report["status"] = "completed"
-        report["completed_at_utc"] = datetime.now(timezone.utc).isoformat()
+        report["completed_at_utc"] = datetime.now(UTC).isoformat()
         report["measurement_wall_elapsed_ms"] = round_ms(time.perf_counter() - measurement_started)
         write_report(report, json_path, markdown_path)
     except Exception as exc:
         report["status"] = "failed"
         report["error"] = f"{type(exc).__name__}: {exc}"
-        report["completed_at_utc"] = datetime.now(timezone.utc).isoformat()
+        report["completed_at_utc"] = datetime.now(UTC).isoformat()
         write_report(report, json_path, markdown_path)
         raise
     finally:
@@ -460,7 +498,9 @@ def main() -> None:
 
     print(f"[saved] {json_path}")
     print(f"[saved] {markdown_path}")
-    print(f"[complete] {len(report['measurements'])} measurements; elapsed_ms={report['measurement_wall_elapsed_ms']}")
+    print(
+        f"[complete] {len(report['measurements'])} measurements; elapsed_ms={report['measurement_wall_elapsed_ms']}"
+    )
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
 import json
 import re
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from dataclasses import dataclass, asdict
+
 from src.ingestion.document_loader import Document, load_documents
+
 
 @dataclass
 class Chunk:
@@ -33,21 +35,22 @@ MIN_INDEXABLE_WORDS = 20
 # Reference detector
 # ---------------------------------------------------------------------------
 
+
 def is_reference(text: str) -> bool:
     t = text.lower()
-    
+
     # Hitung berapa banyak citation bracket di teks
-    bracket_matches = re.findall(r'\[\d+\]', text)
-    
+    bracket_matches = re.findall(r"\[\d+\]", text)
+
     # Body text punya 1-2 citation, reference list punya banyak
     # Threshold: lebih dari 3 bracket dalam satu chunk = reference list
     too_many_brackets = len(bracket_matches) > 3
-    
+
     # Hard signals — kalau ada ini pasti reference
     has_doi = "doi:" in t
     has_arxiv = "arxiv:" in t  # lebih spesifik dari "arxiv"
-    has_url = bool(re.search(r'https?://', text))
-    
+    has_url = bool(re.search(r"https?://", text))
+
     return has_doi or has_arxiv or has_url or too_many_brackets
 
 
@@ -83,6 +86,7 @@ def detect_section(text: str, position: float = 1.0) -> str:
 
     return "body"
 
+
 # ---------------------------------------------------------------------------
 # Hard-limit splitter (safety net for FIX 1)
 # ---------------------------------------------------------------------------
@@ -90,6 +94,7 @@ def detect_section(text: str, position: float = 1.0) -> str:
 # ---------------------------------------------------------------------------
 # Chunking strategies
 # ---------------------------------------------------------------------------
+
 
 def chunk_by_size(
     doc: Document,
@@ -108,22 +113,24 @@ def chunk_by_size(
         if len(chunk_text) < 50:
             break
 
-        chunks.append(Chunk(
-            chunk_id=f"{doc.doc_id}_c{idx:04d}",
-            doc_id=doc.doc_id,
-            text=chunk_text,
-            start_char=start,
-            end_char=end,
-            tier=doc.tier,
-            chunk_index=idx,
-            total_chunks=-1,
-            metadata={
-                "chunk_size": chunk_size,
-                "overlap": overlap,
-                "strategy": "fixed_size",
-                "section": detect_section(chunk_text),
-            }
-        ))
+        chunks.append(
+            Chunk(
+                chunk_id=f"{doc.doc_id}_c{idx:04d}",
+                doc_id=doc.doc_id,
+                text=chunk_text,
+                start_char=start,
+                end_char=end,
+                tier=doc.tier,
+                chunk_index=idx,
+                total_chunks=-1,
+                metadata={
+                    "chunk_size": chunk_size,
+                    "overlap": overlap,
+                    "strategy": "fixed_size",
+                    "section": detect_section(chunk_text),
+                },
+            )
+        )
 
         start += chunk_size - overlap
         idx += 1
@@ -134,7 +141,7 @@ def chunk_by_size(
 
 
 def chunk_by_paragraph(doc: Document, min_len: int = 100, max_len: int = 1000) -> list[Chunk]:
-    paragraphs = re.split(r'\n\s*\n', doc.text)
+    paragraphs = re.split(r"\n\s*\n", doc.text)
     chunks = []
     buffer = ""
     idx = 0
@@ -149,65 +156,72 @@ def chunk_by_paragraph(doc: Document, min_len: int = 100, max_len: int = 1000) -
         if len(buffer) >= min_len:
             if len(buffer) > max_len:
                 chunk_text = buffer[:max_len].strip()
-                chunks.append(Chunk(
-                    chunk_id=f"{doc.doc_id}_p{idx:04d}",
-                    doc_id=doc.doc_id,
-                    text=chunk_text,
-                    start_char=0,
-                    end_char=max_len,
-                    tier=doc.tier,
-                    chunk_index=idx,
-                    total_chunks=-1,
-                    metadata={
-                        "strategy": "paragraph",
-                        "min_len": min_len,
-                        "max_len": max_len,
-                        "section": detect_section(chunk_text),
-                    }
-                ))
+                chunks.append(
+                    Chunk(
+                        chunk_id=f"{doc.doc_id}_p{idx:04d}",
+                        doc_id=doc.doc_id,
+                        text=chunk_text,
+                        start_char=0,
+                        end_char=max_len,
+                        tier=doc.tier,
+                        chunk_index=idx,
+                        total_chunks=-1,
+                        metadata={
+                            "strategy": "paragraph",
+                            "min_len": min_len,
+                            "max_len": max_len,
+                            "section": detect_section(chunk_text),
+                        },
+                    )
+                )
                 buffer = buffer[max_len:]
                 idx += 1
             else:
-                chunks.append(Chunk(
-                    chunk_id=f"{doc.doc_id}_p{idx:04d}",
-                    doc_id=doc.doc_id,
-                    text=buffer,
-                    start_char=0,
-                    end_char=len(buffer),
-                    tier=doc.tier,
-                    chunk_index=idx,
-                    total_chunks=-1,
-                    metadata={
-                        "strategy": "paragraph",
-                        "min_len": min_len,
-                        "max_len": max_len,
-                        "section": detect_section(buffer),
-                    }
-                ))
+                chunks.append(
+                    Chunk(
+                        chunk_id=f"{doc.doc_id}_p{idx:04d}",
+                        doc_id=doc.doc_id,
+                        text=buffer,
+                        start_char=0,
+                        end_char=len(buffer),
+                        tier=doc.tier,
+                        chunk_index=idx,
+                        total_chunks=-1,
+                        metadata={
+                            "strategy": "paragraph",
+                            "min_len": min_len,
+                            "max_len": max_len,
+                            "section": detect_section(buffer),
+                        },
+                    )
+                )
                 buffer = ""
                 idx += 1
 
     if buffer and len(buffer) >= 150:
-        chunks.append(Chunk(
-            chunk_id=f"{doc.doc_id}_p{idx:04d}",
-            doc_id=doc.doc_id,
-            text=buffer,
-            start_char=0,
-            end_char=len(buffer),
-            tier=doc.tier,
-            chunk_index=idx,
-            total_chunks=-1,
-            metadata={
-                "strategy": "paragraph",
-                "min_len": min_len,
-                "max_len": max_len,
-                "section": detect_section(buffer),
-            }
-        ))
+        chunks.append(
+            Chunk(
+                chunk_id=f"{doc.doc_id}_p{idx:04d}",
+                doc_id=doc.doc_id,
+                text=buffer,
+                start_char=0,
+                end_char=len(buffer),
+                tier=doc.tier,
+                chunk_index=idx,
+                total_chunks=-1,
+                metadata={
+                    "strategy": "paragraph",
+                    "min_len": min_len,
+                    "max_len": max_len,
+                    "section": detect_section(buffer),
+                },
+            )
+        )
 
     for chunk in chunks:
         chunk.total_chunks = len(chunks)
     return chunks
+
 
 def _split_sentences_with_offsets(text: str) -> list[tuple[str, int, int]]:
     protected = re.sub(
@@ -241,13 +255,14 @@ def _is_reference_heading(text: str) -> bool:
         )
     )
 
-_REFERENCE_SECTION = re.compile(
-    r"(?im)^\s*(?:\d+\.?\s*)?(?:references|bibliography)\s*$"
-)
+
+_REFERENCE_SECTION = re.compile(r"(?im)^\s*(?:\d+\.?\s*)?(?:references|bibliography)\s*$")
+
 
 def _body_text_before_references(text: str) -> str:
     match = _REFERENCE_SECTION.search(text)
-    return text[:match.start()].rstrip() if match else text
+    return text[: match.start()].rstrip() if match else text
+
 
 def chunk_semantic(
     doc: Document,
@@ -335,9 +350,11 @@ def chunk_semantic(
 
     return chunks
 
+
 # ---------------------------------------------------------------------------
 # Pipeline entry point
 # ---------------------------------------------------------------------------
+
 
 def chunk_documents(
     docs: list[Document],
@@ -367,10 +384,11 @@ def chunk_documents(
 # Utilities
 # ---------------------------------------------------------------------------
 
+
 def save_chunks(chunks: list[Chunk], output_path: str):
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     data = [c.to_dict() for c in chunks]
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     print(f"[OK] Saved {len(chunks)} chunks → {output_path}")
 
@@ -384,16 +402,16 @@ def print_stats(chunks: list[Chunk]):
 
     over_limit = [c for c in chunks if len(c.text) > SEMANTIC_MAX_CHARS]
 
-    print(f"\n=== Chunk Statistics ===")
+    print("\n=== Chunk Statistics ===")
     print(f"Total chunks      : {len(chunks)}")
-    print(f"Avg length        : {sum(lengths)/len(lengths):.0f} chars")
+    print(f"Avg length        : {sum(lengths) / len(lengths):.0f} chars")
     print(f"Min length        : {min(lengths)} chars")
     print(f"Max length        : {max(lengths)} chars")
     print(f"Over {SEMANTIC_MAX_CHARS} chars    : {len(over_limit)}  ← target: 0")
-    print(f"\nSection breakdown:")
+    print("\nSection breakdown:")
     for sec, count in sorted(sections.items()):
         print(f"  {sec:<15}: {count} chunks")
-    print(f"\nTier breakdown:")
+    print("\nTier breakdown:")
     for tier in [1, 2, 3]:
         tier_chunks = [c for c in chunks if c.tier == tier]
         print(f"  Tier {tier}: {len(tier_chunks)} chunks")
@@ -404,7 +422,7 @@ def print_samples(chunks: list[Chunk], n_body: int = 3, n_ref: int = 1):
     import random
 
     body_chunks = [c for c in chunks if c.metadata.get("section") != "references"]
-    ref_chunks  = [c for c in chunks if c.metadata.get("section") == "references"]
+    ref_chunks = [c for c in chunks if c.metadata.get("section") == "references"]
 
     print(f"\n=== Sample Body Chunks (n={n_body}) ===")
     for c in random.sample(body_chunks, min(n_body, len(body_chunks))):
@@ -423,6 +441,7 @@ def print_samples(chunks: list[Chunk], n_body: int = 3, n_ref: int = 1):
 
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, str(Path(__file__).parent))
 
     docs = load_documents("data/processed/documents.json")
@@ -434,21 +453,10 @@ if __name__ == "__main__":
     print_stats(chunks)
     print_samples(chunks, n_body=3, n_ref=1)
 
-    # NOT data/processed/chunks_semantic_v2.json.
-    #
-    # That path is the live corpus. It is read by src/api/config.py
-    # (bm25_chunks_path), indexed by src/retrieval/qdrant_store.py, and its
-    # sha256 is recorded as corpus_chunks_sha256 in the v2 dataset envelope.
-    # This module's chunk_semantic emits a different corpus from the production
-    # path: 582 chunks with {doc_id}_s0000 ids, against 796 chunks with
-    # {doc_id}_rs_0000 ids, zero overlap, and it strips the references section
-    # that semantic_chunker.py keeps. Writing here replaced the whole index.
-    #
-    # The name carries the distinction because a log line does not: this block
-    # prints stats and samples for ~15 lines before the write, so any warning
-    # emitted here would scroll past the moment it mattered.
     output = "data/processed/chunks_legacy_chunker.json"
     if Path(output).exists():
-        print(f"[WARNING] Overwriting {output}. This is NOT the corpus the "
-              f"retriever and the dataset envelopes use.")
+        print(
+            f"[WARNING] Overwriting {output}. This is NOT the corpus the "
+            f"retriever and the dataset envelopes use."
+        )
     save_chunks(chunks, output)

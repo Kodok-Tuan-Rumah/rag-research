@@ -12,38 +12,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.build_eval_dataset_v4 import match_gold_chunk  # noqa: E402
+from scripts.build_eval_dataset_v4 import match_gold_chunk
 
 CHUNKS_PATH = ROOT / "data" / "processed" / "chunks_semantic_v2.json"
 OUT_PATH = ROOT / "data" / "evaluation" / "llm_generated_questions.json"
 
 DEFAULT_MODEL = "openai/gpt-oss-20b"
 SEED = 42
-
-# Measured 2026-10-13 against openai/gpt-oss-20b on a real passage:
-#   max_tokens=  32 -> empty string, finish_reason="length", no error
-#   max_tokens= 768 -> truncated on one chunk, valid JSON on another
-#   max_tokens=1024 -> finish_reason="stop", parseable JSON (single chunk)
-#   max_tokens=1536 -> truncated on a two-chunk multihop prompt
-#   max_tokens=2048 -> finish_reason="stop", parseable JSON (two chunks)
-# The reasoning channel consumes the budget silently and the amount varies per
-# prompt, so the budget has to clear the worst case rather than the average.
-# The multihop prompt carries two passages and costs more thinking than the
-# single-chunk one; measured 2026-10-13.
 MAX_TOKENS = 2048
-
-# Ceiling for the truncation escalation. Unbounded doubling reaches 8192 on the
-# third retry, and since Groq counts max_tokens against the rate limit, a
-# bigger retry budget makes the limiter more likely to fire — the opposite of
-# what the escalation is for. 4096 was observed to clear every prompt measured.
 MAX_ESCALATION = 4096
-
-# Floor on seconds between API attempts. See _complete: the limiter is
-# token-based, so pacing is the lever that actually matters.
 MIN_INTERVAL = 8.0
-
-# Bibliography chunks are retrievable-looking but contain no answer. Asking a
-# model to write a question about "PMLR, 2023, pp." yields nothing usable.
 REFERENCE_SECTIONS = {"references", "bibliography"}
 
 PROMPT = """You are writing evaluation questions for a retrieval system.
@@ -78,35 +56,22 @@ The answer must be a self-contained fact from the subject matter:
 Reply with JSON only, exactly these keys:
 {{"question": "...", "answer": "..."}}"""
 
-# A question that points at the carrier rather than the content tests string
-# extraction, not retrieval: the answer is in the wording of the question, so
-# any retriever that returns the chunk wins regardless of ranking quality.
-# Measured 2026-10-13: 6 of 28 generated questions (21%) were of this shape.
 _META_QUESTION = re.compile(
     r"\b(passage|passages|excerpt|the text|this text|the document|this document"
     r"|the paper|this paper|the article|this article|the chunk|this chunk"
     r"|mentioned|referred to|described in|stated in|according to the (text|paper|passage))\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 # "Fig. 1" answers the question "which figure" and nothing else. It is a
-# pointer into layout, not a fact about the subject.
 _LABEL_ONLY_ANSWER = re.compile(
     r"^\s*[\(\[]?\s*(fig|figure|table|tab|eq|equation|section|sec|chapter|appendix"
     r"|scheme|algorithm|listing)\s*\.?\s*\d*\s*[\)\]]?\s*[:.]?\s*$",
-    re.I,
+    re.IGNORECASE,
 )
 
 
 def quality_reject_reason(question: str, answer: str) -> str | None:
-    """Return why this pair is not usable evaluation data, or None if it is.
-
-    Kept deliberately narrow. Short answers are usually good answers — "42.7%",
-    "Chatlaw", "davinci" are precise, checkable values, and a blanket length
-    rule would throw away exactly the samples Exact Match is best at. Only
-    three shapes are rejected, all of which make the metric meaningless
-    rather than merely terse.
-    """
     q, a = question.strip(), answer.strip()
 
     if _META_QUESTION.search(q):
@@ -115,9 +80,6 @@ def quality_reject_reason(question: str, answer: str) -> str | None:
         return "answer_is_a_figure_or_table_pointer"
     if not any(ch.isalnum() for ch in a):
         return "answer_has_no_substantive_content"
-    # A bare number is a real answer — "8" heads, "42.7%" — so a length floor
-    # would reject the most precisely checkable samples there are. A single
-    # letter or symbol is not.
     if len(a) == 1 and not a.isdigit():
         return "answer_is_a_single_non_numeric_character"
     return None
@@ -156,13 +118,6 @@ def balanced_sample(chunks: list[dict], per_doc: int, rng: random.Random) -> lis
 
 
 def balanced_pairs(chunks: list[dict], per_doc: int, rng: random.Random) -> list[tuple[dict, dict]]:
-    """Chunk pairs from the same document.
-
-    Same-document pairing is not a shortcut, it is a contract:
-    validate_dataset() compares gold_doc_id against the corpus doc_id of every
-    declared gold, so a cross-document pair fails INVALID_MAPPING and never
-    reaches the dataset.
-    """
     by_doc: dict[str, list[dict]] = {}
     for chunk in chunks:
         by_doc.setdefault(chunk["doc_id"], []).append(chunk)
@@ -175,10 +130,6 @@ def balanced_pairs(chunks: list[dict], per_doc: int, rng: random.Random) -> list
         for i in range(len(pool) - 1):
             if taken >= per_doc:
                 break
-            # Skip near-identical chunks: a pair that restates the same text
-            # cannot force a genuine two-hop answer, since one half already
-            # contains everything. Note the pool was shuffled above, so this
-            # compares arbitrary pairs rather than document neighbours.
             a, b = pool[i], pool[i + 1]
             if _jaccard(a.get("text", ""), b.get("text", "")) > 0.5:
                 continue
@@ -226,45 +177,18 @@ Reply with JSON only, exactly these keys:
 
 
 def parse_multihop_reply(text: str) -> tuple[str, str] | None:
-    """Same shape as parse_reply; `uses` is optional and not scored."""
     return parse_reply(text)
 
 
 def _sleep_for_api_error(exc: Exception, attempt: int) -> float:
-    """Back off long enough to clear a 429, briefly for anything else.
-
-    Measured 2026-10-13: a 21-pair run returned nothing but RateLimitError for
-    nearly six minutes, retrying after 2s then 4s. A short fixed pause just
-    re-hits a limit that is already exhausted, so it burns the remaining quota
-    and yields zero records. Rate limits get exponential backoff from 15s;
-    connection-level faults get the short pause they actually need.
-    """
     if type(exc).__name__ == "RateLimitError":
-        return 15.0 * (2 ** attempt)
+        return 15.0 * (2**attempt)
     return 2.0 * (attempt + 1)
 
 
 def _complete(client, model: str, prompt: str, retries: int = 2):
-    """One completion, escalating the token budget when the reply truncates.
-
-    gpt-oss-20b reasons before answering, and how much it reasons about a
-    given prompt is not predictable from the prompt's length: measured
-    2026-10-13 on the two-chunk multihop prompt, some pairs finished inside
-    1024 while others were still truncated at 2048. A fixed constant is
-    therefore either wasteful on the easy ones or still failing on the hard
-    ones, so the budget doubles on each truncation instead.
-
-    Returns (parsed, finish_reason). parsed is None when nothing usable came
-    back; the caller decides whether that is fatal.
-    """
     budget = MAX_TOKENS
     for _ in range(retries + 1):
-        # Throttle before every call, not only after a failure. Measured
-        # 2026-10-13: a 21-pair run spent 33 minutes returning nothing but
-        # 429s, while a single cheap call moments later succeeded. Groq's limit
-        # is token-based and counts max_tokens, so backoff alone does not help —
-        # the pacing itself has to stay under the ceiling. MIN_INTERVAL is the
-        # floor between attempts, which is the only control we have over that.
         time.sleep(MIN_INTERVAL)
         response = client.chat.completions.create(
             model=model,
@@ -297,8 +221,7 @@ def generate_multihop(
             content, finish = _complete(client, model, prompt)
         except Exception as exc:  # noqa: BLE001
             wait = _sleep_for_api_error(exc, attempt)
-            print(f"    API error ({type(exc).__name__}): {str(exc)[:90]} "
-                  f"— retry in {wait:.0f}s")
+            print(f"    API error ({type(exc).__name__}): {str(exc)[:90]} — retry in {wait:.0f}s")
             time.sleep(wait)
             continue
         if finish == "length":
@@ -312,7 +235,7 @@ def generate_multihop(
 def parse_reply(text: str) -> tuple[str, str] | None:
     if not text:
         return None
-    match = re.search(r"\{.*\}", text, re.S)
+    match = re.search(r"\{.*\}", text, re.DOTALL)
     if not match:
         return None
     try:
@@ -338,15 +261,11 @@ def generate(client, model: str, chunk: dict, retries: int = 2) -> tuple[str, st
             )
         except Exception as exc:  # noqa: BLE001 - report and continue
             wait = _sleep_for_api_error(exc, attempt)
-            print(f"    API error ({type(exc).__name__}): {str(exc)[:90]} "
-                  f"— retry in {wait:.0f}s")
+            print(f"    API error ({type(exc).__name__}): {str(exc)[:90]} — retry in {wait:.0f}s")
             time.sleep(wait)
             continue
 
         choice = response.choices[0]
-        # A truncated completion ends mid-JSON and parses as nothing. Without
-        # this check the row is merely "rejected: no_valid_reply", which hides
-        # that the real cause was the token budget rather than the model.
         if choice.finish_reason == "length":
             rejected_reason = f"truncated_at_max_tokens({MAX_TOKENS})"
             print(f"    {rejected_reason} — raise MAX_TOKENS")
@@ -361,15 +280,24 @@ def generate(client, model: str, chunk: dict, retries: int = 2) -> tuple[str, st
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--per-doc", type=int, default=30,
-                        help="questions per document (7 documents in this corpus)")
-    parser.add_argument("--mode", choices=["lexical", "multihop"], default="lexical",
-                        help="lexical = one chunk per question; "
-                             "multihop = a same-document pair, answer must need both")
+    parser.add_argument(
+        "--per-doc",
+        type=int,
+        default=30,
+        help="questions per document (7 documents in this corpus)",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["lexical", "multihop"],
+        default="lexical",
+        help="lexical = one chunk per question; "
+        "multihop = a same-document pair, answer must need both",
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--out", type=Path, default=OUT_PATH)
-    parser.add_argument("--dry-run", type=int, default=0,
-                        help="stop after N chunks and write nothing useful")
+    parser.add_argument(
+        "--dry-run", type=int, default=0, help="stop after N chunks and write nothing useful"
+    )
     args = parser.parse_args()
 
     key = os.getenv("GROQ_API_KEY")
@@ -377,9 +305,6 @@ def main() -> int:
         print("GROQ_API_KEY is not set.", file=sys.stderr)
         return 2
 
-    # A placeholder that looks like a key produces the same 401 as an expired
-    # key, and the 401 does not show which it was. Saying so up front saves a
-    # round trip to the console.
     lowered = key.lower()
     if any(marker in lowered for marker in ("your", "here", "xxx", "changeme", "placeholder")):
         print(
@@ -394,17 +319,9 @@ def main() -> int:
         return 2
 
     from groq import Groq
+
     client = Groq(api_key=key)
 
-# Preflight. Without this the loop fails the same way on every chunk, the
-    # script exits 0 and writes a file containing zero rows, and a bad API key
-    # looks exactly like "the model refused to answer anything".
-    #
-    # The budget is not arbitrary. gpt-oss-20b is a reasoning model: below
-    # ~512 max_tokens it spends the whole allowance thinking and returns an
-    # empty string with finish_reason="length" and NO error. A preflight on a
-    # small budget would therefore pass against a model that cannot produce
-    # output, which is worse than no preflight at all.
     try:
         probe = client.chat.completions.create(
             model=args.model,
@@ -455,10 +372,12 @@ def main() -> int:
         for pair in targets[:limit]:
             parsed = generate_multihop(client, args.model, pair)
             if parsed is None:
-                rejected.append({
-                    "reason": "no_valid_reply",
-                    "chunks": [c["chunk_id"] for c in pair],
-                })
+                rejected.append(
+                    {
+                        "reason": "no_valid_reply",
+                        "chunks": [c["chunk_id"] for c in pair],
+                    }
+                )
                 continue
 
             question, answer = parsed
@@ -476,45 +395,49 @@ def main() -> int:
             # the model, which for this mode is the pair.
             matched, match_type = match_gold_chunk(answer, list(pair))
             if matched is None:
-                rejected.append({
-                    "reason": f"answer_not_in_evidence({match_type})",
-                    "question": question, "answer": answer,
-                })
+                rejected.append(
+                    {
+                        "reason": f"answer_not_in_evidence({match_type})",
+                        "question": question,
+                        "answer": answer,
+                    }
+                )
                 continue
 
-            # The defining property. An answer fully contained in one chunk can
-            # be reached without the other, so the row is a single-chunk
-            # question wearing a multihop label — and it would score recall
-            # without ever exercising multi-chunk retrieval.
             alone_a, _ = match_gold_chunk(answer, [pair[0]])
             alone_b, _ = match_gold_chunk(answer, [pair[1]])
             single_chunk = alone_a is not None or alone_b is not None
             if single_chunk:
-                rejected.append({
-                    "reason": "answer_resolvable_from_one_chunk",
-                    "question": question, "answer": answer,
-                    "chunks": [c["chunk_id"] for c in pair],
-                })
+                rejected.append(
+                    {
+                        "reason": "answer_resolvable_from_one_chunk",
+                        "question": question,
+                        "answer": answer,
+                        "chunks": [c["chunk_id"] for c in pair],
+                    }
+                )
                 continue
 
             seen_questions.add(key_q)
-            kept.append({
-                "query_id": f"mh_{len(kept):03d}",
-                "question": question,
-                "gold_answer": answer,
-                "ground_truth": answer,
-                "gold_chunk_ids": [pair[0]["chunk_id"], pair[1]["chunk_id"]],
-                "gold_doc_id": pair[0]["doc_id"],
-                "question_type": "multihop",
-                "difficulty": "hard",
-                "should_abstain": False,
-                "provenance": {
-                    "source": "llm_multihop_pair_verified",
-                    "model": args.model,
-                    "match_type": match_type,
-                    "single_chunk_resolvable": False,
-                },
-            })
+            kept.append(
+                {
+                    "query_id": f"mh_{len(kept):03d}",
+                    "question": question,
+                    "gold_answer": answer,
+                    "ground_truth": answer,
+                    "gold_chunk_ids": [pair[0]["chunk_id"], pair[1]["chunk_id"]],
+                    "gold_doc_id": pair[0]["doc_id"],
+                    "question_type": "multihop",
+                    "difficulty": "hard",
+                    "should_abstain": False,
+                    "provenance": {
+                        "source": "llm_multihop_pair_verified",
+                        "model": args.model,
+                        "match_type": match_type,
+                        "single_chunk_resolvable": False,
+                    },
+                }
+            )
             if len(kept) % 10 == 0 or len(kept) == limit:
                 print(f"  [{len(kept)}/{limit}] kept={len(kept)} rejected={len(rejected)}")
         return _finish(args, kept, rejected, limit)
@@ -527,17 +450,16 @@ def main() -> int:
 
         question, answer = parsed
 
-        # Quality gate before the grounding gate: a pair that fails either is
-        # unusable, but a meta-question is a defect of the prompt rather than
-        # of grounding, so it is reported separately.
         bad = quality_reject_reason(question, answer)
         if bad:
-            rejected.append({
-                "chunk_id": chunk["chunk_id"],
-                "reason": bad,
-                "question": question,
-                "answer": answer,
-            })
+            rejected.append(
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "reason": bad,
+                    "question": question,
+                    "answer": answer,
+                }
+            )
             continue
 
         key_q = question.lower().strip()
@@ -547,33 +469,35 @@ def main() -> int:
 
         matched, match_type = match_gold_chunk(answer, [chunk])
         if matched is None:
-            # The model stated an answer the passage does not contain. This is
-            # the case that manufactured gold would slip through.
-            rejected.append({
-                "chunk_id": chunk["chunk_id"],
-                "reason": f"answer_not_in_chunk({match_type})",
-                "question": question,
-                "answer": answer,
-            })
+            rejected.append(
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "reason": f"answer_not_in_chunk({match_type})",
+                    "question": question,
+                    "answer": answer,
+                }
+            )
             continue
 
         seen_questions.add(key_q)
-        kept.append({
-            "query_id": f"llm_{len(kept):03d}",
-            "question": question,
-            "gold_answer": answer,
-            "ground_truth": answer,
-            "gold_chunk_id": chunk["chunk_id"],
-            "gold_doc_id": chunk["doc_id"],
-            "question_type": "lexical",
-            "difficulty": "medium",
-            "should_abstain": False,
-            "provenance": {
-                "source": "llm_generated_span_verified",
-                "model": args.model,
-                "match_type": match_type,
-            },
-        })
+        kept.append(
+            {
+                "query_id": f"llm_{len(kept):03d}",
+                "question": question,
+                "gold_answer": answer,
+                "ground_truth": answer,
+                "gold_chunk_id": chunk["chunk_id"],
+                "gold_doc_id": chunk["doc_id"],
+                "question_type": "lexical",
+                "difficulty": "medium",
+                "should_abstain": False,
+                "provenance": {
+                    "source": "llm_generated_span_verified",
+                    "model": args.model,
+                    "match_type": match_type,
+                },
+            }
+        )
         if i % 10 == 0 or i == limit:
             print(f"  [{i}/{limit}] kept={len(kept)} rejected={len(rejected)}")
 
@@ -581,7 +505,6 @@ def main() -> int:
 
 
 def _finish(args, kept: list[dict], rejected: list[dict], limit: int) -> int:
-    """Shared tail for both modes: dry-run short-circuit, then the report."""
     if args.dry_run:
         print("\n[dry run] — nothing written")
         return 0
@@ -595,15 +518,21 @@ def _finish(args, kept: list[dict], rejected: list[dict], limit: int) -> int:
         return 1
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps({
-        "generated_by": args.model,
-        "mode": args.mode,
-        "per_doc_target": args.per_doc,
-        "kept": len(kept),
-        "rejected": len(rejected),
-        "records": kept,
-        "rejected_detail": rejected,
-    }, indent=2, ensure_ascii=False))
+    args.out.write_text(
+        json.dumps(
+            {
+                "generated_by": args.model,
+                "mode": args.mode,
+                "per_doc_target": args.per_doc,
+                "kept": len(kept),
+                "rejected": len(rejected),
+                "records": kept,
+                "rejected_detail": rejected,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
 
     print(f"\nkept     : {len(kept)}")
     print(f"rejected : {len(rejected)}")

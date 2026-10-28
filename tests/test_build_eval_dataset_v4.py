@@ -1,31 +1,13 @@
-"""Merge protections for scripts/build_eval_dataset_v4.py.
-
-The fragment this guards is `llm_generated_questions.json`, which no CI glob
-reads — DATASET_GLOBS matches retrieval_eval_dataset*.json, the train and
-holdout sets, and nothing else. A fragment with a duplicate id, a gold chunk
-absent from the corpus, or a query that restates its chunk would reach the
-dataset unexamined and be discovered only by a later gate run.
-
-The embedder is injected throughout. The real encoder costs seconds to load
-and needs the model on disk; what is under test is the guard logic.
-"""
-
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.build_eval_dataset_v4 import (
-    _record_key,
-    check_category_floor,
-    merge_fragment,
-)
+from scripts.build_eval_dataset_v4 import _record_key, check_category_floor, merge_fragment
 
 CHUNKS = [
     {"chunk_id": "c1", "text": "Attention compares query and key vectors."},
@@ -49,9 +31,7 @@ def row(qid="x1", question="q?", gold="c1", **extra):
     return base
 
 
-# --- 1. merge combines the right number --------------------------------------
-
-
+# 1. merge combines the right number
 def test_merge_appends_the_fragment():
     out = merge_fragment([row("b1")], [row("f1", question="other?")], CHUNKS, embedder=SAFE)
 
@@ -172,8 +152,15 @@ def test_multihop_row_with_one_unknown_gold_is_dropped():
 
 
 def test_abstain_row_without_gold_survives():
-    frag = [{"query_id": "a1", "question": "capital of Peru?", "should_abstain": True,
-             "gold_chunk_id": "", "gold_answer": ""}]
+    frag = [
+        {
+            "query_id": "a1",
+            "question": "capital of Peru?",
+            "should_abstain": True,
+            "gold_chunk_id": "",
+            "gold_answer": "",
+        }
+    ]
 
     out = merge_fragment([], frag, CHUNKS, embedder=SAFE)
 
@@ -185,10 +172,12 @@ def test_abstain_row_without_gold_survives():
 
 
 def test_a_leaking_fragment_row_is_dropped():
-    embed = embedder_for({
-        "What does the passage say?": UNIT_X,
-        "Attention compares query and key vectors.": UNIT_X,
-    })
+    embed = embedder_for(
+        {
+            "What does the passage say?": UNIT_X,
+            "Attention compares query and key vectors.": UNIT_X,
+        }
+    )
     frag = [row("leaky", question="What does the passage say?", gold="c1")]
 
     out = merge_fragment([], frag, CHUNKS, embedder=embed)

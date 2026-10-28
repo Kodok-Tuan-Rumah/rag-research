@@ -19,18 +19,24 @@ ARG PYTHON_IMAGE=python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c6032
 FROM ${PYTHON_IMAGE} AS builder
 
 ENV PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_RETRIES=10 \
+    PIP_TIMEOUT=60
 
 WORKDIR /build
 COPY requirements/runtime.txt ./requirements/runtime.txt
 
-# torch CPU dulu supaya sentence-transformers tidak menarik wheel CUDA dari PyPI.
 RUN python -m venv /opt/venv \
-    && /opt/venv/bin/pip install --upgrade pip \
-    && /opt/venv/bin/pip install \
+    && /opt/venv/bin/pip install --upgrade pip
+
+# torch CPU dulu supaya sentence-transformers tidak menarik wheel CUDA dari PyPI.
+# Setiap langkah dipisah menjadi layer sendiri: kegagalan jaringan saat
+# me-resolve requirements tidak boleh memaksa unduh ulang torch (~200 MB).
+RUN /opt/venv/bin/pip install \
         --index-url https://download.pytorch.org/whl/cpu \
-        "torch==2.14.1+cpu" \
-    && /opt/venv/bin/pip install -r requirements/runtime.txt
+        "torch==2.14.1+cpu"
+
+RUN /opt/venv/bin/pip install -r requirements/runtime.txt
 
 # ── Stage 2: runtime ────────────────────────────────────────────────────────
 FROM ${PYTHON_IMAGE} AS runtime
@@ -44,6 +50,17 @@ COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY src/ /app/src/
 COPY data/processed/ /app/data/processed/
+
+# Calibration artifacts are build outputs, not tracked inputs: models/ is not in
+# git, so a clone that only ran `docker compose build` used to start with no
+# model and silently fall back to raw heuristic confidence. Fit them here from
+# the labeled dataset; the script refuses ERROR rows instead of training on
+# failed pipeline runs.
+COPY data/evaluation/calibration_dataset.json /app/data/evaluation/calibration_dataset.json
+COPY scripts/fit_calibration.py /app/scripts/fit_calibration.py
+RUN PYTHONPATH=/app python scripts/fit_calibration.py \
+        --dataset data/evaluation/calibration_dataset.json \
+        --out models
 
 # Download the models into the image so a fresh clone needs no host cache.
 # The reranker is included because `use_reranker=true` is a documented feature.

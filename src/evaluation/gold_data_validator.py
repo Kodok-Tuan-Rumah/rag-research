@@ -1,21 +1,3 @@
-"""Gold-label / ground-truth dataset validator.
-
-Membuktikan apakah dataset ground truth untuk retrieval evaluation valid:
-- setiap item punya question + gold chunk id
-- gold chunk benar-benar ada di corpus
-- doc_id gold konsisten dengan chunk di corpus
-- tidak ada duplicate question / gold chunk yang ambigu
-
-Item yang invalid diklasifikasikan ``evaluation_data_error`` dan HARUS tidak
-dihitung sebagai retrieval failure biasa maupun menguntungkan metric.
-
-CLI:
-    python -m src.evaluation.gold_data_validator \
-        --dataset data/evaluation/retrieval_eval_dataset.json \
-        --chunks data/processed/chunks_semantic_v2.json \
-        --out results/metrics/gold_data_audit.json
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -23,20 +5,16 @@ import json
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from src.evaluation.gold_schema import (
-    dataset_records,
-    is_abstain_row,
-    normalize_gold_chunk_ids,
-)
+from src.evaluation.gold_schema import dataset_records, is_abstain_row, normalize_gold_chunk_ids
 
 logger = logging.getLogger("rag.gold_data_validator")
 
 ITEM_ERROR = "evaluation_data_error"
 
 
-def _get_question(item: Dict[str, Any]) -> Optional[str]:
+def _get_question(item: dict[str, Any]) -> str | None:
     for key in ("question", "query"):
         value = item.get(key)
         if value and str(value).strip():
@@ -44,7 +22,7 @@ def _get_question(item: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _get_answer(item: Dict[str, Any]) -> Optional[str]:
+def _get_answer(item: dict[str, Any]) -> str | None:
     for key in ("gold_answer", "answer", "ground_truth"):
         value = item.get(key)
         if value and str(value).strip():
@@ -53,13 +31,13 @@ def _get_answer(item: Dict[str, Any]) -> Optional[str]:
 
 
 def validate_dataset(
-    items: List[Dict[str, Any]] | Dict[str, Any],
-    chunks: List[Dict[str, Any]],
+    items: list[dict[str, Any]] | dict[str, Any],
+    chunks: list[dict[str, Any]],
     *,
     require_answer: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     items = dataset_records(items)
-    chunk_index: Dict[str, Dict[str, Any]] = {}
+    chunk_index: dict[str, dict[str, Any]] = {}
     for c in chunks:
         cid = c.get("chunk_id")
         if cid:
@@ -71,7 +49,7 @@ def validate_dataset(
         if q:
             question_counts[q.lower()] += 1
 
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     counts = {
         "TOTAL_QA": len(items),
         "VALID_QA": 0,
@@ -99,7 +77,7 @@ def validate_dataset(
             gold_ids = []
             gold_error = str(exc)
         answer = _get_answer(it)
-        row: Dict[str, Any] = {
+        row: dict[str, Any] = {
             "question": q,
             "gold_chunk_id": gold_ids[0] if len(gold_ids) == 1 else None,
             "gold_chunk_ids": gold_ids,
@@ -108,11 +86,6 @@ def validate_dataset(
             "details": [],
         }
 
-        # An abstain row declares no gold answer and no supporting chunk; that
-        # is its definition, not a defect. It still needs a question, and it
-        # still has to be counted as a valid row so abstain accuracy has a
-        # denominator. Everything below that checks the gold answer or the gold
-        # chunk is therefore skipped for these rows only.
         abstain = is_abstain_row(it)
 
         if not q:
@@ -186,7 +159,7 @@ def validate_dataset(
     return report
 
 
-def main(argv: Optional[List[str]] = None) -> Dict[str, Any]:
+def main(argv: list[str] | None = None) -> dict[str, Any]:
     parser = argparse.ArgumentParser(description="Validate gold annotations against corpus chunks.")
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--chunks", required=True)
@@ -207,12 +180,7 @@ def main(argv: Optional[List[str]] = None) -> Dict[str, Any]:
     return report
 
 
-def _exit_code(report: Dict[str, Any]) -> int:
-    """Non-zero when any row is an evaluation_data_error.
-
-    Without this the CLI always exited 0, so wiring it into CI produced a gate
-    that could not fail no matter what the data contained.
-    """
+def _exit_code(report: dict[str, Any]) -> int:
     invalid = report["summary"].get("TOTAL_QA", 0) - report["summary"].get("VALID_QA", 0)
     if invalid:
         logger.error("%s of %s rows are invalid", invalid, report["summary"]["TOTAL_QA"])

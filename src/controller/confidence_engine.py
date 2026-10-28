@@ -67,7 +67,7 @@ class ConfidenceEngine:
         entropy = -np.sum(probs * np.log(probs + 1e-9))
         return float(entropy / np.log(len(probs)))
 
-    def _select_chunk_score(self, chunk: Any) -> tuple[Optional[float], str]:
+    def _select_chunk_score(self, chunk: Any, use_retrieval_score: bool = False) -> tuple[Optional[float], str]:
         """Eksplisit: pilih skor mana dari chunk dan jenis score-space-nya.
 
         Precedence (canonical):
@@ -84,6 +84,21 @@ class ConfidenceEngine:
         else:
             def get(key, default=None):
                 return getattr(chunk, key, default)
+
+        if use_retrieval_score:
+            retrieval = get("retrieval_score")
+            if retrieval is not None:
+                try:
+                    return float(retrieval), "rrf"
+                except (TypeError, ValueError):
+                    return None, "rrf"
+            legacy = get("score")
+            if legacy is not None:
+                try:
+                    return float(legacy), "rrf"
+                except (TypeError, ValueError):
+                    return None, "rrf"
+            return None, "unknown"
 
         rerank = get("rerank_score")
         if rerank is not None:
@@ -105,8 +120,8 @@ class ConfidenceEngine:
                 return None, "rrf"
         return None, "unknown"
 
-    def _get_chunk_score(self, chunk: Any) -> float:
-        score, _kind = self._select_chunk_score(chunk)
+    def _get_chunk_score(self, chunk: Any, use_retrieval_score: bool = False) -> float:
+        score, _kind = self._select_chunk_score(chunk, use_retrieval_score=use_retrieval_score)
         return score
 
     def _source_agreement(self, chunks) -> float:
@@ -238,6 +253,7 @@ class ConfidenceEngine:
         contexts: Optional[List[str]] = None,
         query_type: Optional[str] = None,
         query: Optional[str] = None,
+        use_retrieval_score: bool = False,
     ) -> Dict[str, Any]:
         if not chunks:
             return {
@@ -261,7 +277,7 @@ class ConfidenceEngine:
         scored_chunks = []
         invalid_count = 0
         for chunk in chunks:
-            score = self._get_chunk_score(chunk)
+            score = self._get_chunk_score(chunk, use_retrieval_score=use_retrieval_score)
             if isinstance(score, (int, float)) and np.isfinite(score):
                 scored_chunks.append((chunk, float(score)))
             else:
@@ -285,7 +301,7 @@ class ConfidenceEngine:
         logger.info(f"[RAW_SCORES] {raw_scores[:10]}")
 
         selected_kinds = [
-            self._select_chunk_score(chunk)[1]
+            self._select_chunk_score(chunk, use_retrieval_score=use_retrieval_score)[1]
             for chunk in valid_chunks
         ]
 

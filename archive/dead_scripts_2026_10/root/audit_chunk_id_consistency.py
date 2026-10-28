@@ -1,9 +1,10 @@
 from __future__ import annotations
-import json
+
 import argparse
+import json
 import re
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 # Config
 CHUNKS_FILE = "data/processed/chunks_semantic.json"
@@ -32,6 +33,7 @@ FOCUS_FILES = {
     "data/processed/train_eval_v2.json",
     "data/processed/holdout_eval_v2.json",
 }
+
 
 # Helpers
 def load_json(path: str):
@@ -95,7 +97,7 @@ def extract_entries(gt_data):
 def get_chunk_refs(entry: dict) -> list[str]:
     refs = []
     for field in CHUNK_ID_FIELD_CANDIDATES:
-        if field in entry and entry[field]:
+        if entry.get(field):
             val = entry[field]
             if isinstance(val, list):
                 refs.extend([v for v in val if isinstance(v, str)])
@@ -118,7 +120,7 @@ def audit(base_dir: str = ".") -> dict:
     print(f"[OK] {len(doc_to_chunk_ids)} unique doc_id ditemukan di corpus\n")
 
     results = {}
-    example_pool = []  
+    example_pool = []
 
     print(f"{'FILE':<45} {'TOTAL':>7} {'VALID':>7} {'INVALID':>8} {'%INVALID':>9}")
     print("-" * 80)
@@ -149,10 +151,12 @@ def audit(base_dir: str = ".") -> dict:
             else:
                 invalid_count += 1
                 bad_refs = [r for r in refs if r not in valid_ids]
-                invalid_samples.append({
-                    "query": e.get("query") or e.get("question") or "",
-                    "bad_chunk_ids": bad_refs,
-                })
+                invalid_samples.append(
+                    {
+                        "query": e.get("query") or e.get("question") or "",
+                        "bad_chunk_ids": bad_refs,
+                    }
+                )
 
         pct_invalid = round(100 * invalid_count / total, 2) if total else 0.0
         print(f"{rel_path:<45} {total:>7} {valid_count:>7} {invalid_count:>8} {pct_invalid:>8}%")
@@ -171,13 +175,15 @@ def audit(base_dir: str = ".") -> dict:
                 doc_guess = extract_doc_id_from_chunk_id(bad_id)
                 candidates = doc_to_chunk_ids.get(doc_guess, [])
                 if candidates:
-                    example_pool.append({
-                        "file": rel_path,
-                        "query": sample["query"][:80],
-                        "old_chunk_id": bad_id,
-                        "doc_id_guess": doc_guess,
-                        "current_chunk_ids_for_doc": candidates[:5],
-                    })
+                    example_pool.append(
+                        {
+                            "file": rel_path,
+                            "query": sample["query"][:80],
+                            "old_chunk_id": bad_id,
+                            "doc_id_guess": doc_guess,
+                            "current_chunk_ids_for_doc": candidates[:5],
+                        }
+                    )
                 if len(example_pool) >= 5:
                     break
             if len(example_pool) >= 5:
@@ -187,8 +193,10 @@ def audit(base_dir: str = ".") -> dict:
     print("CONTOH KASUS: doc_id masih ada, chunk_id berubah (rename/rebuild)")
     print("=" * 80)
     if not example_pool:
-        print("(Tidak ditemukan contoh otomatis — kemungkinan doc_id encoding berbeda "
-              "dari asumsi script, cek manual beberapa invalid id di atas)")
+        print(
+            "(Tidak ditemukan contoh otomatis — kemungkinan doc_id encoding berbeda "
+            "dari asumsi script, cek manual beberapa invalid id di atas)"
+        )
     for ex in example_pool[:5]:
         print(f"\n  file       : {ex['file']}")
         print(f"  query      : {ex['query']}")
@@ -205,8 +213,10 @@ def audit(base_dir: str = ".") -> dict:
             print(f"  {f}: {r['error']}")
         else:
             flag = "⚠️  SIGNIFICANT" if r.get("pct_invalid", 0) >= 5 else "✅ minor/noise"
-            print(f"  {f}: {r.get('invalid',0)}/{r.get('total',0)} invalid "
-                  f"({r.get('pct_invalid',0)}%) -> {flag}")
+            print(
+                f"  {f}: {r.get('invalid', 0)}/{r.get('total', 0)} invalid "
+                f"({r.get('pct_invalid', 0)}%) -> {flag}"
+            )
 
     return {"per_file": results, "examples": example_pool}
 

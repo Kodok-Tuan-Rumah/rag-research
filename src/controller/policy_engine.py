@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
+
 from src.api.config import settings
 
-QueryType = str   
+QueryType = str
+
 
 @dataclass
 class PlanHints:
@@ -33,19 +36,19 @@ class PolicyEngine:
     def retrieval_strategy(self, query_type: QueryType) -> dict:
         _STRATEGIES: dict[QueryType, dict] = {
             "factual": {
-                "use_hyde":        settings.use_hyde,
+                "use_hyde": settings.use_hyde,
                 "use_multi_query": settings.use_multi_query,
-                "top_k":           5,
+                "top_k": 5,
             },
             "general": {
-                "use_hyde":        settings.use_hyde,
+                "use_hyde": settings.use_hyde,
                 "use_multi_query": settings.use_multi_query,
-                "top_k":           8,
+                "top_k": 8,
             },
             "reasoning": {
-                "use_hyde":        settings.use_hyde,
+                "use_hyde": settings.use_hyde,
                 "use_multi_query": settings.use_multi_query,
-                "top_k":           10,
+                "top_k": 10,
             },
         }
 
@@ -58,9 +61,17 @@ class PolicyEngine:
 
     def reference_policy(self, query: str, query_type: QueryType) -> dict:
         CITATION_SIGNALS = {
-            "author", "authors", "who wrote", "published by",
-            "citation", "cite", "reference", "bibliography",
-            "journal", "proceedings", "paper by",
+            "author",
+            "authors",
+            "who wrote",
+            "published by",
+            "citation",
+            "cite",
+            "reference",
+            "bibliography",
+            "journal",
+            "proceedings",
+            "paper by",
         }
         q_lower = query.lower()
         has_citation_signal = any(signal in q_lower for signal in CITATION_SIGNALS)
@@ -68,21 +79,21 @@ class PolicyEngine:
         if has_citation_signal:
             return {
                 "allow_references": True,
-                "max_ref_ratio":    0.4,
+                "max_ref_ratio": 0.4,
             }
 
         _POLICIES: dict[QueryType, dict] = {
             "factual": {
                 "allow_references": True,
-                "max_ref_ratio":    0.4,
+                "max_ref_ratio": 0.4,
             },
             "reasoning": {
                 "allow_references": False,
-                "max_ref_ratio":    0.0,
+                "max_ref_ratio": 0.0,
             },
             "general": {
                 "allow_references": False,
-                "max_ref_ratio":    0.0,
+                "max_ref_ratio": 0.0,
             },
         }
 
@@ -96,15 +107,15 @@ class PolicyEngine:
         configured_max_tokens = settings.generation_max_tokens
         _POLICIES: dict[QueryType, dict] = {
             "factual": {
-                "max_tokens":  min(256, configured_max_tokens),
+                "max_tokens": min(256, configured_max_tokens),
                 "temperature": 0.0,
             },
             "general": {
-                "max_tokens":  min(512, configured_max_tokens),
+                "max_tokens": min(512, configured_max_tokens),
                 "temperature": 0.2,
             },
             "reasoning": {
-                "max_tokens":  configured_max_tokens,
+                "max_tokens": configured_max_tokens,
                 "temperature": 0.3,
             },
         }
@@ -119,14 +130,12 @@ class PolicyEngine:
         q_type = self.decide_query_type(query)
         return {
             "query_type": q_type,
-            "retrieval":  self.retrieval_strategy(q_type),
-            "reference":  self.reference_policy(query, q_type),
+            "retrieval": self.retrieval_strategy(q_type),
+            "reference": self.reference_policy(query, q_type),
             "generation": self.generation_policy(q_type),
         }
 
     def initial_plan(self, query: str) -> PlanHints:
-        # Resolve the shared policy once so the CLI's dict contract and the
-        # API/Agent's typed plan cannot drift in how query policy is computed.
         resolved = self.resolve(query)
         q_type = resolved["query_type"]
         retrieval = resolved["retrieval"]

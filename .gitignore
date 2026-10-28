@@ -143,3 +143,45 @@ kirocli/
 .aider*
 .zai/
 hf-cache/
+
+# Generated model artifacts
+models/*.onnx
+
+# Build/runtime artifacts (do not commit)
+models/*.json
+!models/calibration_report.json
+results/metrics/archive/
+services/inference/target/
+services/inference/models/
+
+models/*.data
+models/vocab.txt
+models/special_tokens_map.json
+models/tokenizer*.json
+models/tokenizer_config.json
+models/config.json
+
+# =============================================================================
+# Research artifacts & dead code (keep in git history via tags, not main)
+# =============================================================================
+archive/
+decision_unused.py
+
+# =============================================================================
+# Confidence/calibration experiment outputs (generated, not source)
+# =============================================================================
+results/metrics/p0_*.json
+results/metrics/p0_*.md
+results/metrics/*_before.json
+results/metrics/*_sweep.md
+results/metrics/reranker_benchmark.json
+results/metrics/confidence_gate_diagnosis.json
+
+# =============================================================================
+# Generated model artifacts (build outputs — Dockerfile regenerates these)
+# =============================================================================
+models/*.joblib
+models/*.onnx.data
+
+# Rust build artifacts
+src/reranking_rust/target/

@@ -22,7 +22,6 @@ OTEL_SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "rag-research")
 _tracer = None
 _tracer_provider = None
 
-
 def init_tracing() -> bool:
     """Initialize OpenTelemetry tracing. Returns True if enabled."""
     global _tracer, _tracer_provider
@@ -54,19 +53,6 @@ def init_tracing() -> bool:
         logger.warning(f"[TRACING] Failed to initialize: {e}")
         return False
 
-
-def get_tracer():
-    """Get the global tracer instance."""
-    global _tracer
-    if _tracer is None:
-        try:
-            from opentelemetry import trace
-            _tracer = trace.get_tracer(OTEL_SERVICE_NAME)
-        except Exception:
-            pass
-    return _tracer
-
-
 def instrument_fastapi(app):
     """Instrument a FastAPI app with OpenTelemetry."""
     if not OTEL_ENABLED:
@@ -77,47 +63,6 @@ def instrument_fastapi(app):
         logger.info("[TRACING] FastAPI instrumented")
     except Exception as e:
         logger.warning(f"[TRACING] FastAPI instrumentation failed: {e}")
-
-
-def create_span(name: str, attributes: dict[str, Any] | None = None):
-    """Create a child span context manager."""
-    tracer = get_tracer()
-    if tracer is None:
-        # Return a no-op context manager
-        from contextlib import nullcontext
-        return nullcontext()
-
-    from opentelemetry import trace
-    span = tracer.start_as_current_span(name)
-    if attributes:
-        for k, v in attributes.items():
-            span.set_attribute(k, v)
-    return span
-
-
-def get_trace_id() -> str:
-    """Get the current trace ID from context."""
-    try:
-        from opentelemetry import trace
-        span = trace.get_current_span()
-        if span and span.get_span_context().is_valid:
-            return span.get_span_context().trace_id.to_bytes().hex()
-    except Exception:
-        pass
-    return ""
-
-
-def get_span_id() -> str:
-    """Get the current span ID from context."""
-    try:
-        from opentelemetry import trace
-        span = trace.get_current_span()
-        if span and span.get_span_context().is_valid:
-            return span.get_span_context().span_id.to_bytes().hex()
-    except Exception:
-        pass
-    return ""
-
 
 def shutdown_tracing():
     """Shutdown the tracer provider."""

@@ -1,20 +1,3 @@
-"""Generate and verify the script manifest.
-
-scripts/ is 8,453 lines against 5,281 in src/ — the operational surface is
-larger than the product. 29 of 38 scripts were referenced by no document, CI
-workflow or Makefile target, and nothing ever noticed, because 248 tests
-execute no script at all. The pile-up is not caused by copy-paste; exact
-cross-layer duplication is only 3 cases. It is caused by scripts being written,
-run once, and never revisited.
-
-The recurrence guard is this manifest. Every script must declare what it is,
-and CI fails when one has no entry. An unclassified script is the condition
-that produced 124 artifacts for a 14-query dataset.
-
-    python scripts/check_script_manifest.py            # verify (CI uses this)
-    python scripts/check_script_manifest.py --write    # regenerate
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -23,7 +6,6 @@ import json
 import pathlib
 import re
 import sys
-from typing import Iterable
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -35,41 +17,22 @@ ARCHIVED_DIR = REPO_ROOT / "archive"
 
 STATUSES = ("canonical", "library", "diagnostic", "forensic", "dead")
 
-# Statuses assigned by hand, because they encode intent that no static scan can
-# recover. Anything unlisted here falls back to "diagnostic" and must be
-# reviewed.
 STATUS_OVERRIDES = {
-    # The documented entrypoints. Anything here should be reachable from
-    # README.md, a Makefile target, or a workflow.
     "run_eval.py": "canonical",
     "run_retrieval_eval.py": "canonical",
     "run_single_query.py": "canonical",
     "check_ci_contracts.py": "canonical",
     "check_script_manifest.py": "canonical",
     "measure_reference_impact.py": "canonical",
-    # Phase 1 acceptance. phase1_smoke.py runs the 20-case set and owns the
-    # --check-report gate; phase1_smoke_review.py collects the human annotations
-    # that gate requires. Both were absent here while MANIFEST.json listed them
-    # as canonical, so `--write` silently demoted them to diagnostic and the
-    # requirement that a canonical script be discoverable disappeared with them.
     "phase1_smoke.py": "canonical",
     "phase1_smoke_review.py": "canonical",
-    # Imported by tests for its metric functions (normalize, exact_match,
-    # token_f1). Its CLI entrypoint is dead but the module is not.
     "run_eval_phase2.py": "library",
-    # Reads data/processed/holdout_eval_v2.json, which no longer exists. The
-    # functions are still used; only the entrypoint is broken.
     "coverage_metric.py": "diagnostic",
     "eval_ci.py": "diagnostic",
 }
 
-# Missing data a script is allowed to reference, and why. Anything not listed
-# here is treated as a defect.
 ACKNOWLEDGED_DEAD_PATHS = {
-    "run_single_query.py": (
-        # Only reachable behind --from_gt. Its default and --dataset paths work.
-        "data/processed/ground_truth_qa.json",
-    ),
+    "run_single_query.py": ("data/processed/ground_truth_qa.json",),
 }
 
 _DOC_REFS = None
@@ -89,16 +52,6 @@ def doc_references() -> str:
 
 
 def module_level_paths(path: pathlib.Path) -> tuple[set[str], set[str]]:
-    """Split module-level data paths into (read, write).
-
-    A bare scan of module-level constants is not enough: build_ground_truth.py
-    assigned the very paths that no longer exist, because they are the files it
-    CREATES. Flagging those would report a healthy generator as broken. The
-    constant is only interesting once it is consumed, and only `open(..., 'r')`
-    / `.read_text()` make it a dependency.
-
-    Returns (reads, writes) of repo-relative path literals.
-    """
     try:
         tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
     except SyntaxError:
@@ -106,10 +59,13 @@ def module_level_paths(path: pathlib.Path) -> tuple[set[str], set[str]]:
 
     const_paths: dict[str, str] = {}
     for node in tree.body:
-        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant)
-                and isinstance(node.value.value, str)
-                and re.match(r"^(data|results|configs|reports)/", node.value.value)
-                and "{" not in node.value.value):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+            and re.match(r"^(data|results|configs|reports)/", node.value.value)
+            and "{" not in node.value.value
+        ):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     const_paths[target.id] = node.value.value
@@ -119,8 +75,11 @@ def module_level_paths(path: pathlib.Path) -> tuple[set[str], set[str]]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
-        fname = (node.func.attr if isinstance(node.func, ast.Attribute)
-                 else (node.func.id if isinstance(node.func, ast.Name) else ""))
+        fname = (
+            node.func.attr
+            if isinstance(node.func, ast.Attribute)
+            else (node.func.id if isinstance(node.func, ast.Name) else "")
+        )
         first = node.args[0] if node.args else None
 
         if fname == "open" and isinstance(first, ast.Name):
@@ -145,8 +104,11 @@ def module_level_paths(path: pathlib.Path) -> tuple[set[str], set[str]]:
     # inline literals passed straight to open()/read_text()
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
-            fname = (node.func.attr if isinstance(node.func, ast.Attribute)
-                     else (node.func.id if isinstance(node.func, ast.Name) else ""))
+            fname = (
+                node.func.attr
+                if isinstance(node.func, ast.Attribute)
+                else (node.func.id if isinstance(node.func, ast.Name) else "")
+            )
             if fname not in ("open", "read_text", "read_bytes") or not node.args:
                 continue
             mode = "r"
@@ -154,9 +116,12 @@ def module_level_paths(path: pathlib.Path) -> tuple[set[str], set[str]]:
                 mode = node.args[1].value or "r"
             bucket = writes if "w" in str(mode) or "a" in str(mode) else reads
             for sub in ast.walk(node):
-                if (isinstance(sub, ast.Constant) and isinstance(sub.value, str)
-                        and re.match(r"^(data|results|configs|reports)/", sub.value)
-                        and "{" not in sub.value):
+                if (
+                    isinstance(sub, ast.Constant)
+                    and isinstance(sub.value, str)
+                    and re.match(r"^(data|results|configs|reports)/", sub.value)
+                    and "{" not in sub.value
+                ):
                     bucket.add(sub.value)
 
     return reads, writes
@@ -175,32 +140,21 @@ def build_manifest() -> dict:
     entries = {}
     for p in live_scripts():
         reads, _writes = module_level_paths(p)
-        missing = sorted(
-            v for v in reads if not pathlib.Path(REPO_ROOT / v).exists()
-        )
+        missing = sorted(v for v in reads if not pathlib.Path(REPO_ROOT / v).exists())
         acknowledged = [v for v in missing if v in ACKNOWLEDGED_DEAD_PATHS.get(p.name, ())]
         entries[p.name] = {
             "status": classify(p.name),
-            # Whether a script is documented is deliberately NOT stored here.
-            # It is derived at verify time from README.md, the Makefile, the
-            # workflows and bootstrap_env.sh. Caching it in the manifest made
-            # the gate stale the moment any of those changed, which is how a
-            # "documented" script can be reported undocumented with no code
-            # change involved.
             "read_paths_missing": missing,
             "acknowledged_dead_paths": acknowledged,
         }
 
-    archived = sorted(
-        str(p.relative_to(REPO_ROOT))
-        for p in ARCHIVED_DIR.rglob("*.py")
-    )
+    archived = sorted(str(p.relative_to(REPO_ROOT)) for p in ARCHIVED_DIR.rglob("*.py"))
     return {
         "_doc": (
             "Every scripts/*.py must have an entry here. Statuses: "
             + ", ".join(STATUSES)
             + ". A new script with no entry fails CI — that absence is exactly "
-              "how scripts/ grew past src/."
+            "how scripts/ grew past src/."
         ),
         "scripts": entries,
         "archived": archived,
@@ -225,9 +179,6 @@ def verify(manifest: dict) -> list[str]:
         if status not in STATUSES:
             failures.append(f"scripts/{name}: status {status!r} not in {STATUSES}")
 
-        # A script that reads data which does not exist cannot do its job. That
-        # is a hard failure, not a warning: it means the script is dead but
-        # still sitting in scripts/ looking available.
         acknowledged = set(entry.get("acknowledged_dead_paths", []))
         for missing in entry.get("read_paths_missing", []):
             if missing in acknowledged:
@@ -273,8 +224,7 @@ def main() -> int:
         return 0
 
     if not MANIFEST_PATH.exists():
-        print(f"FAIL: {MANIFEST_PATH} does not exist. "
-              f"Run with --write.", file=sys.stderr)
+        print(f"FAIL: {MANIFEST_PATH} does not exist. Run with --write.", file=sys.stderr)
         return 1
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
@@ -282,8 +232,10 @@ def main() -> int:
     entries = manifest.get("scripts", {})
     docs = doc_references()
     documented = sum(1 for name in entries if name in docs)
-    print(f"    {len(entries)} scripts classified, {documented} documented, "
-          f"{len(manifest.get('archived', []))} archived")
+    print(
+        f"    {len(entries)} scripts classified, {documented} documented, "
+        f"{len(manifest.get('archived', []))} archived"
+    )
 
     if failures:
         for line in failures:

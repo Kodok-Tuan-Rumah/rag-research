@@ -1,4 +1,6 @@
+from __future__ import annotations
 from enum import Enum
+from typing import Literal
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
@@ -71,12 +73,12 @@ class Settings(BaseSettings):
     # and Appendix A recorded them as not overridable. Same values, now
     # configurable. Adjusted per query type by TYPE_ADJUSTMENTS in
     # src/controller/confidence_engine.py.
-    confidence_reject_threshold: float = 0.35
+    confidence_reject_threshold: float = 0.25
     confidence_partial_threshold: float = 0.65
     # Calibrated decision thresholds (applied to calibrated probability).
     # Defaults mirror heuristic thresholds; after calibration these can be
     # re-tuned to the calibrated probability distribution.
-    calibrated_reject_threshold: float = 0.35
+    calibrated_reject_threshold: float = 0.25
     calibrated_partial_threshold: float = 0.65
     # Calibration method: "isotonic" or "platt"
     calibration_method: str = "isotonic"
@@ -89,6 +91,15 @@ class Settings(BaseSettings):
     generation_max_chars: int = 6000
     use_multi_query: bool = False
     use_hyde: bool = False
+    inference_backend: Literal["local", "service", "shadow"] = "local"
+    inference_service_url: str = "http://127.0.0.1:8081"
+    inference_required: bool = False
+    inference_timeout_ms: int = 5000
+    inference_connect_timeout_ms: int = 500
+    inference_max_retries: int = 1
+    embedding_dim: int = 384
+    embedding_batch_size: int = 64
+    reranker_max_length: int = 256
 
     model_config = {
         "env_file": ".env",

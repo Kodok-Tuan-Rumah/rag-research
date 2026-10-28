@@ -1,10 +1,3 @@
-"""Evaluate evidence artifacts available in repo.
-
-Output:
-  results/metrics/evidence_inventory.json
-  results/metrics/evidence_inventory.md
-"""
-
 from __future__ import annotations
 
 import glob
@@ -24,7 +17,7 @@ TARGET_GLOBS = [
 
 
 def _iter_json():
-    for pat, in TARGET_GLOBS:
+    for (pat,) in TARGET_GLOBS:
         yield from glob.glob(pat, recursive=True)
 
 
@@ -124,7 +117,7 @@ def main() -> None:
     ]
     for row in rows:
         lines.append(
-            f"| `{row['path']}` | {row.get('num_items','')} | {row['category']} | {row['has_gold_chunk_id']} | {row['has_answer']} | {row['has_answer_span']} | {row['recoverable']} |"
+            f"| `{row['path']}` | {row.get('num_items', '')} | {row['category']} | {row['has_gold_chunk_id']} | {row['has_answer']} | {row['has_answer_span']} | {row['recoverable']} |"
         )
     INV_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"[saved] {INV} and {INV_MD}")

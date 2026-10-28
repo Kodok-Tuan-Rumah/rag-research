@@ -1,5 +1,5 @@
 {
-  "_doc": "Every scripts/*.py must have an entry here. Statuses: canonical, library, diagnostic, forensic, dead. A new script with no entry fails CI — that absence is exactly how scripts/ grew past src/.",
+  "_doc": "Every scripts/*.py must have an entry here. Statuses: canonical, library, diagnostic, forensic, dead. A new script with no entry fails CI \u2014 that absence is exactly how scripts/ grew past src/.",
   "scripts": {
     "audit_k710_coverage.py": {
       "status": "diagnostic",
@@ -7,6 +7,11 @@
       "acknowledged_dead_paths": []
     },
     "audit_k712_q11_q20.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "benchmark_reranker.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
@@ -91,6 +96,11 @@
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },
+    "diagnose_confidence_gate.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
     "diagnose_filter_gold.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
@@ -106,6 +116,21 @@
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },
+    "export_cross_encoder_onnx.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "export_inference_models.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "export_phase1_blind_review.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
     "fase_f_reranker_ablation.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
@@ -116,12 +141,22 @@
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },
+    "fit_calibration.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
     "generate_eval_questions_llm.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },
     "gold_rank_forensic.py": {
+      "status": "diagnostic",
+      "read_paths_missing": [],
+      "acknowledged_dead_paths": []
+    },
+    "index_phase1_corpus.py": {
       "status": "diagnostic",
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
@@ -137,7 +172,7 @@
       "acknowledged_dead_paths": []
     },
     "phase1_smoke_review.py": {
-      "status": "canonical",
+      "status": "diagnostic",
       "read_paths_missing": [],
       "acknowledged_dead_paths": []
     },

@@ -1,17 +1,15 @@
 import json
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 
 def load_json(filepath):
-    """Load JSON file."""
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         return json.load(f)
 
 
 def save_json(data, filepath):
-    """Save data to JSON file."""
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         json.dump(data, f, indent=2)
     print(f"Saved to {filepath}")
 
@@ -79,7 +77,7 @@ def main():
     print(f"Dropped samples: {len(qa_samples) - kept}")
     print(f"  - Contains 'test_intro': {dropped_reasons['contains_test_intro']}")
     print(f"  - Chunk not found: {dropped_reasons['chunk_not_found']}")
-    print(f"\nQuality flags:")
+    print("\nQuality flags:")
     print(f"  - Flagged as mislabeled: {flagged_mislabeled}")
     print(f"  - Valid (answer in chunk): {kept - flagged_mislabeled}")
     print("=" * 60)

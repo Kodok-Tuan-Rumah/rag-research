@@ -1,8 +1,3 @@
-"""Fase A: diagnosis gold yang hilang di final filter (read-only).
-
-Menghasilkan: results/debug/filter_gold_diagnosis.json
-"""
-
 from __future__ import annotations
 
 import json
@@ -14,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 import src._compat  # noqa: F401
-from src.evaluation.gold_matching import chunk_ids_match, gold_rank
+from src.evaluation.gold_matching import chunk_ids_match
 from src.retrieval.chunk_filters import (
     FRAGMENT_STARTERS,
     classify_chunk,
@@ -130,8 +125,8 @@ def main() -> None:
     chunks = json.loads(CHUNKS_PATH.read_text(encoding="utf-8"))
     chunk_index = {c["chunk_id"]: c for c in chunks}
 
-    from src.retrieval.qdrant_store import QdrantVectorStore
     from src.retrieval.hybrid_retriever import MasterHybridRetriever
+    from src.retrieval.qdrant_store import QdrantVectorStore
 
     store = QdrantVectorStore()
     retriever = MasterHybridRetriever(vector_store=store)
@@ -225,7 +220,9 @@ def main() -> None:
             "rrf_rank": rank_of(gold, rrf_ids),
             "reranked_rank": rank_of(gold, reranked_ids),
             "final_rank": rank_of(gold, final_ids),
-            "filter_verdict": (trace_result["diagnostics"]["classify_chunk"] if trace_result else None),
+            "filter_verdict": (
+                trace_result["diagnostics"]["classify_chunk"] if trace_result else None
+            ),
             "filter_reasons": (trace_result["reasons"] if trace_result else []),
             "first_reason": first_reason,
             "classification": classification,
@@ -234,8 +231,12 @@ def main() -> None:
                 "word_count": (trace_result["diagnostics"]["word_count"] if trace_result else None),
                 "char_count": (trace_result["diagnostics"]["char_count"] if trace_result else None),
                 "cap_ratio": (trace_result["diagnostics"]["cap_ratio"] if trace_result else None),
-                "ends_complete": (trace_result["diagnostics"]["ends_complete"] if trace_result else None),
-                "starts_fragment": (trace_result["diagnostics"]["starts_fragment"] if trace_result else None),
+                "ends_complete": (
+                    trace_result["diagnostics"]["ends_complete"] if trace_result else None
+                ),
+                "starts_fragment": (
+                    trace_result["diagnostics"]["starts_fragment"] if trace_result else None
+                ),
                 "text": (gold_chunk["text"][:200] if gold_chunk else None),
             },
         }

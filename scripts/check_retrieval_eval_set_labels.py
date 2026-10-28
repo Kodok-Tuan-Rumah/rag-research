@@ -1,10 +1,3 @@
-"""Label retrieval eval dataset items: question_type, difficulty, should_abstain.
-
-Deterministic and evidence-aware: only the canonical derivation script
-assigns these fields; this check ensures completeness and updates nothing
-unless fields are missing.
-"""
-
 from __future__ import annotations
 
 import json

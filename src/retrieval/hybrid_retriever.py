@@ -171,6 +171,59 @@ class MasterHybridRetriever:
         return _cf_is_reference_chunk(chunk)
 
     @staticmethod
+    def _split_reference_hits(hits, *, allow_references: bool):
+        """Return ``(kept, removed_count)`` for one retrieval source.
+
+        When references are forbidden, dropping them before RRF stops
+        bibliography chunks from occupying candidate slots that body evidence
+        would otherwise fill. The caller keeps the original list for tracing.
+        """
+        if allow_references or not settings.prefusion_reference_exclusion:
+            return list(hits), 0
+        kept = [hit for hit in hits if not _cf_is_reference_chunk(hit)]
+        return kept, len(hits) - len(kept)
+
+    @staticmethod
+    def _anchor_bm25_order(
+        candidates, bm25_hit_lists, anchor_k, *, allow_references: bool
+    ):
+        """Promote the top BM25 hits that survived RRF to the front.
+
+        RRF can bury an exact lexical match under several dense-only candidates.
+        Anchoring gives BM25's best hits guaranteed slots while leaving the rest
+        of the list in RRF order. Hits missing from ``candidates`` (filtered as
+        low quality, or dropped before fusion) are skipped, so the anchor can
+        never re-introduce a chunk the pipeline rejected.
+        """
+        if anchor_k <= 0:
+            return list(candidates), []
+
+        def _cid(chunk):
+            if isinstance(chunk, dict):
+                return chunk.get("chunk_id")
+            return getattr(chunk, "chunk_id", None)
+
+        by_id = {_cid(chunk): chunk for chunk in candidates}
+        anchor_ids = []
+        seen = set()
+        for hits in bm25_hit_lists:
+            for hit in hits:
+                cid = _cid(hit)
+                if cid is None or cid in seen or cid not in by_id:
+                    continue
+                if not allow_references and _cf_is_reference_chunk(hit):
+                    continue
+                seen.add(cid)
+                anchor_ids.append(cid)
+                if len(anchor_ids) >= anchor_k:
+                    break
+            if len(anchor_ids) >= anchor_k:
+                break
+
+        rest = [chunk for chunk in candidates if _cid(chunk) not in seen]
+        return [by_id[cid] for cid in anchor_ids] + rest, anchor_ids
+
+    @staticmethod
     def _section_boost(metadata: dict) -> float:
         section = str(metadata.get("section", "")).lower()
 
@@ -421,6 +474,7 @@ class MasterHybridRetriever:
         use_multi_query: Optional[bool] = None,
         use_hyde: Optional[bool] = None,
         min_score_threshold: Optional[float] = None,
+        bm25_anchor_k: int = 0,
     ) -> List[Dict[str, Any]]:
         formatted, _trace = self._run_search(
             query, top_k=top_k, dense_weight=dense_weight,
@@ -428,6 +482,7 @@ class MasterHybridRetriever:
             allow_references=allow_references, max_ref_ratio=max_ref_ratio,
             use_multi_query=use_multi_query, use_hyde=use_hyde,
             min_score_threshold=min_score_threshold,
+            bm25_anchor_k=bm25_anchor_k,
         )
         return formatted
 
@@ -443,6 +498,7 @@ class MasterHybridRetriever:
         use_multi_query: Optional[bool] = None,
         use_hyde: Optional[bool] = None,
         min_score_threshold: Optional[float] = None,
+        bm25_anchor_k: int = 0,
     ) -> Dict[str, Any]:
         """Jalankan pipeline canonical dan kembalikan hasil + trace per stage."""
         formatted, trace = self._run_search(
@@ -451,6 +507,7 @@ class MasterHybridRetriever:
             allow_references=allow_references, max_ref_ratio=max_ref_ratio,
             use_multi_query=use_multi_query, use_hyde=use_hyde,
             min_score_threshold=min_score_threshold,
+            bm25_anchor_k=bm25_anchor_k,
         )
         return {"results": formatted, "trace": trace}
 
@@ -466,6 +523,7 @@ class MasterHybridRetriever:
         use_multi_query: Optional[bool] = None,
         use_hyde: Optional[bool] = None,
         min_score_threshold: Optional[float] = None,
+        bm25_anchor_k: int = 0,
     ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
         t_search_start = time.time()
         top_k = self._resolve_top_k(query, top_k)
@@ -514,7 +572,24 @@ class MasterHybridRetriever:
         t_bm25 = time.time() - t_bm25_start
 
         t_fuse_start = time.time()
-        fused_results = self._rrf_fuse(all_dense_hits, all_bm25_hits, candidate_k, dense_weight, bm25_weight)
+        # References must not consume fusion slots when the query policy forbids
+        # them. They are removed from the lists handed to RRF, not from the raw
+        # hit lists, so per-stage traces still measure what each retriever found.
+        prefusion_references_removed = 0
+        fusion_dense_hits = []
+        fusion_bm25_hits = []
+        for hits in all_dense_hits:
+            kept, removed = self._split_reference_hits(hits, allow_references=allow_references)
+            fusion_dense_hits.append(kept)
+            prefusion_references_removed += removed
+        for hits in all_bm25_hits:
+            kept, removed = self._split_reference_hits(hits, allow_references=allow_references)
+            fusion_bm25_hits.append(kept)
+            prefusion_references_removed += removed
+
+        fused_results = self._rrf_fuse(
+            fusion_dense_hits, fusion_bm25_hits, candidate_k, dense_weight, bm25_weight
+        )
 
         effective_min_score = settings.min_score_threshold if min_score_threshold is None else min_score_threshold
         fused_results = [
@@ -528,6 +603,12 @@ class MasterHybridRetriever:
         )
 
         candidates = [c for c in fused_results if not _cf_is_low_quality_chunk(c)]
+        candidates, bm25_anchor_ids = self._anchor_bm25_order(
+            candidates,
+            fusion_bm25_hits,
+            bm25_anchor_k,
+            allow_references=allow_references,
+        )
         rerank_candidates = candidates[:20] if rerank else []
         t_fuse = time.time() - t_fuse_start
         t_rerank_start = time.time()
@@ -555,6 +636,7 @@ class MasterHybridRetriever:
         logger.info(
             "[RETRIEVAL_STAGE] fused=%d | candidates=%d | "
             "rerank_candidates=%d | reranked=%d | filtered=%d | "
+            "prefusion_refs_removed=%d | "
             "blocked_ref=%d | blocked_title_author=%d | blocked_fragment=%d | "
             "blocked_low_quality=%d | blocked_not_informative=%d",
             len(fused_results),
@@ -562,6 +644,7 @@ class MasterHybridRetriever:
             len(rerank_candidates),
             len(reranked),
             len(filtered_chunks),
+            prefusion_references_removed,
             bd["reference"],
             bd["title_author"],
             bd["fragment"],
@@ -725,6 +808,9 @@ class MasterHybridRetriever:
             "should_abstain": should_abstain,
             "filter_stage": filter_stage,
             "reference_budget_removed": reference_budget_removed,
+            "prefusion_references_removed": prefusion_references_removed,
+            "bm25_anchor_k": bm25_anchor_k,
+            "bm25_anchor_ids": bm25_anchor_ids,
             "latency_ms": {
                 "dense": round(t_dense * 1000, 2),
                 "bm25": round(t_bm25 * 1000, 2),

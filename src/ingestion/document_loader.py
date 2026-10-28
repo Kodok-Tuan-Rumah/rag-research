@@ -1,21 +1,23 @@
 import json
 import re
 import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from dataclasses import dataclass, asdict
-from typing import Optional
+
 import pymupdf as fitz
+
 
 @dataclass
 class Document:
     doc_id: str
     text: str
     source: str
-    tier: int          
+    tier: int
     metadata: dict
 
     def to_dict(self) -> dict:
         return asdict(self)
+
 
 def clean_text(text: str) -> str:
     import unicodedata
@@ -24,31 +26,32 @@ def clean_text(text: str) -> str:
     text = unicodedata.normalize("NFKD", text)
 
     # fix broken hyphen across lines
-    text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
+    text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", text)
 
     # normalize newlines (jaga paragraph)
-    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
 
     # remove standalone page numbers
-    text = re.sub(r'^\s*\d+\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r"^\s*\d+\s*$", "", text, flags=re.MULTILINE)
 
     # remove emails
-    text = re.sub(r'\S+@\S+', '', text)
+    text = re.sub(r"\S+@\S+", "", text)
 
     # remove figure/table captions (full line)
-    text = re.sub(r'(Table|Figure)\s+\d+.*', '', text)
+    text = re.sub(r"(Table|Figure)\s+\d+.*", "", text)
 
     # spacing normalization
-    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r"[ \t]+", " ", text)
     # remove author lines (heuristic)
-    text = re.sub(r'.*University.*\n', '', text)
-    text = re.sub(r'.*Facebook AI Research.*\n', '', text)
-        # remove symbol-heavy lines
-    text = re.sub(r'.*[†‡⋆].*\n', '', text)
+    text = re.sub(r".*University.*\n", "", text)
+    text = re.sub(r".*Facebook AI Research.*\n", "", text)
+    # remove symbol-heavy lines
+    text = re.sub(r".*[†‡⋆].*\n", "", text)
 
     return text.strip()
 
-def load_pdf(filepath: str, tier: int) -> Optional[Document]:
+
+def load_pdf(filepath: str, tier: int) -> Document | None:
     path = Path(filepath)
     try:
         doc = fitz.open(filepath)
@@ -83,14 +86,15 @@ def load_pdf(filepath: str, tier: int) -> Optional[Document]:
                 "filename": path.name,
                 "engine": "pymupdf",
                 "section_titles": [s["section_name"] for s in sections],
-                "processed_at": time.strftime("%Y-%m-%d %H:%M:%S")
-            }
+                "processed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            },
         )
 
     except Exception as e:
         print(f"[ERROR] PyMuPDF failed for {filepath}: {e}")
         return None
-    
+
+
 def remove_table_noise(text: str) -> str:
     lines = text.split("\n")
     cleaned_lines = []
@@ -113,14 +117,15 @@ def remove_table_noise(text: str) -> str:
 
     return "\n".join(cleaned_lines)
 
-def load_text(filepath: str, tier: int) -> Optional[Document]:
+
+def load_text(filepath: str, tier: int) -> Document | None:
     path = Path(filepath)
     if not path.exists():
         print(f"[ERROR] File tidak ditemukan: {filepath}")
         return None
 
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             full_text = f.read()
 
         return Document(
@@ -128,98 +133,116 @@ def load_text(filepath: str, tier: int) -> Optional[Document]:
             text=full_text,
             source=str(filepath),
             tier=tier,
-            metadata={
-                "char_count": len(full_text),
-                "filename": path.name
-            }
+            metadata={"char_count": len(full_text), "filename": path.name},
         )
     except Exception as e:
         print(f"[ERROR] Gagal load {filepath}: {e}")
         return None
 
+
 def save_documents(docs: list[Document], output_path: str):
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     data = [doc.to_dict() for doc in docs]
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
     print(f"[OK] Saved {len(docs)} documents → {output_path}")
 
+
 def load_documents(input_path: str) -> list[Document]:
-    with open(input_path, 'r', encoding='utf-8') as f:
+    with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     docs = []
     for d in data:
-        docs.append(Document(
-            doc_id=d["doc_id"],
-            text=d["text"],
-            source=d["source"],
-            tier=d["tier"],
-            metadata=d["metadata"]
-        ))
+        docs.append(
+            Document(
+                doc_id=d["doc_id"],
+                text=d["text"],
+                source=d["source"],
+                tier=d["tier"],
+                metadata=d["metadata"],
+            )
+        )
     return docs
 
+
 def extract_sections(text: str) -> list[dict]:
-    lines = text.split('\n')
+    lines = text.split("\n")
     sections = []
     current_section = "body"
     current_content = []
 
     exact_headings = {
-        "abstract", "introduction", "background", "related work", "conclusion",
-        "conclusions", "references", "bibliography", "methodology", "methods",
-        "proposed method", "experiments", "results", "discussion", "safety",
-        "pretraining", "fine-tuning", "appendix", "limitations", "acknowledgments",
-        "acknowledgements", "data", "evaluation", "model architecture",
+        "abstract",
+        "introduction",
+        "background",
+        "related work",
+        "conclusion",
+        "conclusions",
+        "references",
+        "bibliography",
+        "methodology",
+        "methods",
+        "proposed method",
+        "experiments",
+        "results",
+        "discussion",
+        "safety",
+        "pretraining",
+        "fine-tuning",
+        "appendix",
+        "limitations",
+        "acknowledgments",
+        "acknowledgements",
+        "data",
+        "evaluation",
+        "model architecture",
     }
 
-    def candidate_heading(value: str) -> Optional[str]:
-        value = re.sub(r'\s+', ' ', value.strip())
-        if not value or len(value) > 90 or value.endswith(('.', '?', '!')):
+    def candidate_heading(value: str) -> str | None:
+        value = re.sub(r"\s+", " ", value.strip())
+        if not value or len(value) > 90 or value.endswith((".", "?", "!")):
             return None
-        value = re.sub(r'\s*\.\.\.\s*\d+\s*$', '', value).strip()
+        value = re.sub(r"\s*\.\.\.\s*\d+\s*$", "", value).strip()
         # Only a short, explicit numbered heading qualifies. Numbered prose,
         # examples, and list entries are common throughout these PDFs.
-        numbered = re.match(r'^(?:[1-9]\d?(?:\.[1-9]\d?)*|[IVX]{1,5})\.?\s+([A-Z][^.!?]{1,65})$', value)
+        numbered = re.match(
+            r"^(?:[1-9]\d?(?:\.[1-9]\d?)*|[IVX]{1,5})\.?\s+([A-Z][^.!?]{1,65})$", value
+        )
         title = numbered.group(1).strip() if numbered else value
         normalized = title.casefold().strip()
         if normalized in exact_headings:
             return title.upper()
         words = title.split()
         minor_words = {"and", "or", "of", "for", "in", "on", "to", "with", "the", "a", "an"}
-        title_case = all(
-            word[:1].isupper() or word.casefold() in minor_words
-            for word in words
-        )
+        title_case = all(word[:1].isupper() or word.casefold() in minor_words for word in words)
         if numbered and len(words) <= 6 and title_case:
             return title.upper()
         return None
 
     def next_content_line(index: int) -> str:
         parts = []
-        for following in lines[index + 1:index + 5]:
+        for following in lines[index + 1 : index + 5]:
             candidate = following.strip()
             if candidate:
                 parts.append(candidate)
             if sum(len(part) for part in parts) >= 80:
                 break
-        return ' '.join(parts)
+        return " ".join(parts)
 
     for index, line in enumerate(lines):
         clean_line = line.strip()
         heading = candidate_heading(clean_line)
         if heading:
-            next_line = next((item.strip() for item in lines[index + 1:] if item.strip()), "")
+            next_line = next((item.strip() for item in lines[index + 1 :] if item.strip()), "")
             following = next_content_line(index)
-            # Table-of-contents entries are followed by another short heading,
-            # page number, or dot leaders rather than body prose.
             following_is_heading = candidate_heading(next_line) is not None
             looks_like_toc = bool(
-                re.search(r'\.{3,}\s*\d+\s*$', clean_line)
-                or re.search(r'\.{3,}\s*\d+\s*$', next_line)
-                or re.fullmatch(r'(?:\d+(?:\.\d+)*|[A-Z])', next_line)
+                re.search(r"\.{3,}\s*\d+\s*$", clean_line)
+                or re.search(r"\.{3,}\s*\d+\s*$", next_line)
+                or re.fullmatch(r"(?:\d+(?:\.\d+)*|[A-Z])", next_line)
             )
             is_body_header = (
                 len(next_line) >= 35
@@ -227,8 +250,8 @@ def extract_sections(text: str) -> list[dict]:
                 and len(following) >= 45
                 and not following_is_heading
                 and not looks_like_toc
-                and not re.search(r'\.{3,}', next_line)
-                and not re.match(r'^(?:\d+(?:\.\d+)*|[A-Z])\s*$', following)
+                and not re.search(r"\.{3,}", next_line)
+                and not re.match(r"^(?:\d+(?:\.\d+)*|[A-Z])\s*$", following)
             )
             if is_body_header:
                 content_str = "\n".join(current_content).strip()
@@ -241,6 +264,7 @@ def extract_sections(text: str) -> list[dict]:
 
     sections.append({"section_name": current_section, "text": "\n".join(current_content).strip()})
     return [s for s in sections if len(s["text"]) > 20]
+
 
 if __name__ == "__main__":
     raw_dir = Path("data/raw")

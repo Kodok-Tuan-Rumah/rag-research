@@ -36,13 +36,13 @@ class CalibratedConfidenceEngine:
         self,
         base_engine: ConfidenceEngine | None = None,
         calibration_engine: CalibrationEngine | None = None,
-        calibrated_reject_threshold: float = 0.35,
-        calibrated_partial_threshold: float = 0.65,
+        calibrated_reject_threshold: float | None = None,
+        calibrated_partial_threshold: float | None = None,
         calibration_method: str | None = None,
     ):
-        from src.api.config import settings
-
         self.base_engine = base_engine or ConfidenceEngine()
+
+        from src.api.config import settings
 
         # Wire calibration_method from settings if not explicitly passed
         if calibration_method is None:
@@ -55,20 +55,22 @@ class CalibratedConfidenceEngine:
         self.calibration_engine = calibration_engine or CalibrationEngine(
             method=calibration_method
         )
-        self.calibrated_reject_threshold = calibrated_reject_threshold
-        self.calibrated_partial_threshold = calibrated_partial_threshold
 
-        # Allow settings override
-        self.calibrated_reject_threshold = (
-            settings.calibrated_reject_threshold
-            if hasattr(settings, "calibrated_reject_threshold")
-            else calibrated_reject_threshold
-        )
-        self.calibrated_partial_threshold = (
-            settings.calibrated_partial_threshold
-            if hasattr(settings, "calibrated_partial_threshold")
-            else calibrated_partial_threshold
-        )
+        if calibrated_reject_threshold is None:
+            calibrated_reject_threshold = (
+                settings.calibrated_reject_threshold
+                if hasattr(settings, "calibrated_reject_threshold")
+                else 0.25
+            )
+        if calibrated_partial_threshold is None:
+            calibrated_partial_threshold = (
+                settings.calibrated_partial_threshold
+                if hasattr(settings, "calibrated_partial_threshold")
+                else 0.65
+            )
+
+        self.calibrated_reject_threshold = float(calibrated_reject_threshold)
+        self.calibrated_partial_threshold = float(calibrated_partial_threshold)
 
     # ------------------------------------------------------------------ #
     # Calibration fitting
@@ -83,13 +85,58 @@ class CalibratedConfidenceEngine:
         )
         return result
 
-    def load_calibration(self, path: str) -> None:
-        """Load a previously fitted calibration model."""
-        self.calibration_engine = CalibrationEngine.load(path)
+    def load_calibration(self, path: str) -> bool:
+        """Load a previously fitted calibration model.
+
+        Returns True on success. Missing or unloadable files are logged and
+        leave the engine uncalibrated instead of raising.
+        """
+        try:
+            self.calibration_engine = CalibrationEngine.load(path)
+        except Exception as exc:  # pragma: no cover - exercised in tests
+            logger.warning(
+                "[CALIBRATION] model unavailable at %s (%s: %s); using uncalibrated engine",
+                path,
+                type(exc).__name__,
+                exc,
+                exc_info=True,
+            )
+            method = getattr(self.calibration_engine, "method", "isotonic")
+            self.calibration_engine = CalibrationEngine(method=method)
+            return False
+        logger.info("[CALIBRATION] model loaded from %s", path)
+        return True
 
     def save_calibration(self, path: str) -> None:
         """Save the fitted calibration model."""
         self.calibration_engine.save(path)
+
+    def load_from_settings(self, path: str | None = None) -> "CalibratedConfidenceEngine":
+        """Load calibration from Settings (or an explicit path).
+
+        Works both as an instance method and as a factory classmethod:
+        ``CalibratedConfidenceEngine.load_from_settings()`` returns a new
+        calibrated engine.
+        """
+        if isinstance(self, str) and path is None:
+            path = self
+            self = None
+
+        if isinstance(self, type):
+            instance = self()
+            instance.load_from_settings(path=path)
+            return instance
+
+        if self is None:
+            self = CalibratedConfidenceEngine()
+
+        from src.api.config import settings
+
+        if path is None:
+            path = getattr(settings, "calibration_model_path", None)
+        if path:
+            self.load_calibration(path)
+        return self
 
     @property
     def is_calibrated(self) -> bool:
@@ -105,6 +152,7 @@ class CalibratedConfidenceEngine:
         contexts: list[str] | None = None,
         query_type: str | None = None,
         query: str | None = None,
+        use_retrieval_score: bool = False,
     ) -> dict[str, Any]:
         """Calculate confidence with calibration applied.
 
@@ -118,6 +166,7 @@ class CalibratedConfidenceEngine:
             contexts=contexts,
             query_type=query_type,
             query=query,
+            use_retrieval_score=use_retrieval_score,
         )
 
         raw_confidence = raw_result["confidence_score"]

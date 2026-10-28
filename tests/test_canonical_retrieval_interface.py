@@ -49,4 +49,10 @@ def test_consumer_uses_shared_rrf():
 
 def test_stage_evaluator_explicitly_keeps_reranker_stage():
     text = (ROOT / "scripts" / "run_retrieval_eval.py").read_text(encoding="utf-8")
-    assert 'search_with_trace(item["question"], top_k=top_k, rerank=True)' in text
+    assert "search_with_trace(" in text
+    assert "rerank=rerank" in text
+    assert '"--no-rerank"' in text
+    assert "dense_weight=dense_weight" in text
+    assert "bm25_weight=bm25_weight" in text
+    assert "bm25_anchor_k=bm25_anchor_k" in text
+    assert '"--bm25-anchor-k"' in text

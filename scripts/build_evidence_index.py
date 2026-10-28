@@ -1,23 +1,3 @@
-"""Index results/metrics/ and flag what needs attention.
-
-`results/metrics/` contains experiment and acceptance evidence across several
-datasets and project phases. It is the
-project's evidence, so nothing is deleted by this script — the point is that a
-reader can tell which file to open, and that duplicates and stale copies are
-visible rather than discovered by accident.
-
-What it reports:
-
-- an inventory grouped by the investigation that produced it
-- `.json` files with no companion `.md`, i.e. a number with no written note
-  explaining what it measured
-- near-duplicates: a dated artifact plus a later replica of the same thing
-- files whose recorded numbers contradict the frozen baseline
-
-Run:  python scripts/build_evidence_index.py [--check]
-      --check exits non-zero when the index on disk is stale.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -38,7 +18,6 @@ INDEX_MD = METRICS / "INDEX.md"
 BASELINE = REPO_ROOT / "results" / "metrics" / "k1_baseline_freeze.json"
 
 # Which investigation produced each artifact. Anything unmatched lands in
-# "other" rather than being hidden.
 GROUPS = [
     ("k1", "K1 — baseline freeze, generation stability, coverage audits"),
     ("k2", "K2 — RAGAS lineage and evidence integrity"),
@@ -125,8 +104,7 @@ def build() -> dict:
         "by_group": {label: grouped[label] for label in sorted(grouped)},
         "json_without_companion_md": sorted(unexplained),
         "replica_pairs": {k: sorted(v) for k, v in sorted(replicas.items())},
-        "known_stale": {k: v for k, v in sorted(KNOWN_STALE.items())
-                        if (METRICS / k).exists()},
+        "known_stale": {k: v for k, v in sorted(KNOWN_STALE.items()) if (METRICS / k).exists()},
         "baseline_reference": str(BASELINE.relative_to(REPO_ROOT)),
         "baseline_stage_count": len(baseline),
     }
@@ -146,9 +124,13 @@ def render_md(payload: dict) -> str:
         "",
     ]
 
-    out += ["## Needs a written note", "",
-            "`.json` files with no companion `.md` — a number with no record of what",
-            "it measured or whether it still holds.", ""]
+    out += [
+        "## Needs a written note",
+        "",
+        "`.json` files with no companion `.md` — a number with no record of what",
+        "it measured or whether it still holds.",
+        "",
+    ]
     if payload["json_without_companion_md"]:
         out += [f"- `{n}`" for n in payload["json_without_companion_md"]]
     else:
@@ -180,8 +162,7 @@ def render_md(payload: dict) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true",
-                        help="exit non-zero if INDEX.json is stale")
+    parser.add_argument("--check", action="store_true", help="exit non-zero if INDEX.json is stale")
     args = parser.parse_args()
 
     payload = build()
@@ -189,12 +170,14 @@ def main() -> int:
 
     if args.check:
         if not INDEX_JSON.exists():
-            print("FAIL: results/metrics/INDEX.json does not exist. "
-                  "Run with no --check to generate it.", file=sys.stderr)
+            print(
+                "FAIL: results/metrics/INDEX.json does not exist. "
+                "Run with no --check to generate it.",
+                file=sys.stderr,
+            )
             return 1
         if INDEX_JSON.read_text(encoding="utf-8") != serialised:
-            print("FAIL: results/metrics/INDEX.json is stale; regenerate it.",
-                  file=sys.stderr)
+            print("FAIL: results/metrics/INDEX.json is stale; regenerate it.", file=sys.stderr)
             return 1
         print(f"    {payload['total_files']} files indexed, index current")
         return 0

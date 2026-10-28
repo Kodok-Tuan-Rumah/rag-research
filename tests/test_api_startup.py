@@ -1,5 +1,3 @@
-"""Startup auto-seed must use the processed canonical corpus, never ingestion."""
-
 from __future__ import annotations
 
 import hashlib
@@ -20,14 +18,14 @@ class FakeStore:
         self.require_calls = []
         self.indexed = []
 
-    def require_nonempty_index(
-        self, *, expected_corpus_chunks, consumer, query_probe=None
-    ):
-        self.require_calls.append({
-            "expected_corpus_chunks": expected_corpus_chunks,
-            "consumer": consumer,
-            "query_probe": query_probe,
-        })
+    def require_nonempty_index(self, *, expected_corpus_chunks, consumer, query_probe=None):
+        self.require_calls.append(
+            {
+                "expected_corpus_chunks": expected_corpus_chunks,
+                "consumer": consumer,
+                "query_probe": query_probe,
+            }
+        )
         outcome = self.outcomes.pop(0)
         if isinstance(outcome, Exception):
             raise outcome
@@ -100,10 +98,12 @@ def test_load_canonical_corpus_rejects_wrong_fingerprint(tmp_path):
 
 def test_ensure_startup_index_seeds_only_an_empty_collection():
     chunks = [_chunk("c1"), _chunk("c2")]
-    store = FakeStore([
-        IndexEmptyError("empty"),
-        {"vector_count": 2, "collection": "test_collection"},
-    ])
+    store = FakeStore(
+        [
+            IndexEmptyError("empty"),
+            {"vector_count": 2, "collection": "test_collection"},
+        ]
+    )
 
     diagnostics = main._ensure_startup_index(
         store,

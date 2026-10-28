@@ -1,22 +1,5 @@
 name: Quality gate
 
-# Manual, not on push.
-#
-# Answer-quality measurement calls Groq and takes minutes: 2 samples took 5m53s
-# for the RAGAS stage alone. That does not belong in a per-push gate, and it
-# cannot be a *quality* gate yet either.
-#
-# PROJECT_GOALS.md §2.1 sets Faithfulness >= 0.88, Answer Relevancy >= 0.88 and
-# Hallucination Rate 0%. Those are targets, not measured baselines. The only
-# measurement taken so far is a 2-sample smoke on the canonical configuration,
-# which returned Faithfulness 0.75 and Answer Relevancy 0.32. Gating against an
-# unmeasured target would fail forever for reasons that say nothing about a
-# change under test, which is how the previous CI job became decorative.
-#
-# So this workflow REPORTS. It records the numbers and uploads the artifact.
-# Phase 2 must produce a calibrated baseline before thresholds can gate; until
-# then the correct signal is the measurement, not a red X.
-
 on:
   workflow_dispatch:
     inputs:
@@ -55,10 +38,6 @@ jobs:
 
       - name: Install the project itself
         run: python -m pip install -e . --no-deps
-
-      # The Qdrant index lives in data/qdrant_storage and is not in git, so the
-      # pipeline must be rebuilt before it can answer anything. That step is
-      # not automated yet; this workflow assumes the index has been built.
       - name: Run answer-quality evaluation
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}

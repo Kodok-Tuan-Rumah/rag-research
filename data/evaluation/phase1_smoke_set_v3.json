@@ -4,7 +4,7 @@
   "expected_cases": 20,
   "expected_answerable": 15,
   "expected_abstain": 5,
-  "expected_qdrant_vectors": 642,
+  "expected_qdrant_vectors": 796,
   "canonical_chunks_sha256": "f3068181943f850762a8e66856b802f56c440ce41f192bb03ac12dfb54a3754b",
   "notes": "Phase 1 remains frozen at 20 cases (15 answerable, 5 abstain). Answerable gold evidence IDs were remapped to full v3 chunks and checked against their text; v1/v2 reports and corpus remain unchanged.",
   "records": [

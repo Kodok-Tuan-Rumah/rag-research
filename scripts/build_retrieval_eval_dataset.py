@@ -1,22 +1,3 @@
-"""Build the retrieval-only eval dataset.
-
-Sumber evidence: ``data/debug/failure_analysis.json`` (query, ground_truth).
-Gold chunk harus dibuktikan ada di corpus — bukan diasumsikan.
-
-Aturan derivasi (deterministic):
-1. strong match: ground_truth (normalized) adalah substring dari teks chunk
-   → match_type = "exact_span"
-2. else: chunk dengan token recall >= 0.70 kandungan jawaban terhadap chunk
-   (pilih recall tertinggi, tie-break F1 tertinggi, lalu chunk_id terkecil)
-   → match_type = "token_recall_ge_0.7"
-3. else: item tidak bisa dibuktikan gold-nya → status
-   ``evaluation_data_error``, tidak masuk dataset.
-
-Output:
-- data/evaluation/retrieval_eval_dataset.json
-- results/metrics/gold_data_audit.json (hasil validator)
-"""
-
 from __future__ import annotations
 
 import json
@@ -39,9 +20,13 @@ def question_type(question: str) -> str:
     """Heuristic-only labelling. Not treated as ground truth."""
     q = question.lower().strip()
     words = q.split()
-    if any(word in words for word in ("what", "who", "when", "where", "which")) or q.endswith("who?"):
+    if any(word in words for word in ("what", "who", "when", "where", "which")) or q.endswith(
+        "who?"
+    ):
         return "factual"
-    if any(signal in q for signal in ("why", "how", "explain", "describe", "compare", "difference")):
+    if any(
+        signal in q for signal in ("why", "how", "explain", "describe", "compare", "difference")
+    ):
         return "reasoning"
     return "general"
 
@@ -116,20 +101,22 @@ def main() -> None:
         if derived is None:
             unmapped.append({"question": question, "reason": "no_chunk_matched_answer_span"})
             continue
-        dataset.append({
-            "query_id": f"q{i + 1:02d}",
-            "question": question,
-            "gold_answer": ground_truth,
-            "gold_chunk_id": derived["gold_chunk_id"],
-            "gold_doc_id": derived["gold_doc_id"],
-            "match_type": derived["match_type"],
-            "provenance": "derived_from_data/debug/failure_analysis.json",
-            "question_type": question_type(question),
-            "difficulty": difficulty_for(question),
-            "difficulty_method": "heuristic_v1",
-            "should_abstain": False,
-            "answer_span": ground_truth if derived["match_type"] == "exact_span" else "",
-        })
+        dataset.append(
+            {
+                "query_id": f"q{i + 1:02d}",
+                "question": question,
+                "gold_answer": ground_truth,
+                "gold_chunk_id": derived["gold_chunk_id"],
+                "gold_doc_id": derived["gold_doc_id"],
+                "match_type": derived["match_type"],
+                "provenance": "derived_from_data/debug/failure_analysis.json",
+                "question_type": question_type(question),
+                "difficulty": difficulty_for(question),
+                "difficulty_method": "heuristic_v1",
+                "should_abstain": False,
+                "answer_span": ground_truth if derived["match_type"] == "exact_span" else "",
+            }
+        )
 
     OUTPUT_DATASET.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_DATASET.write_text(json.dumps(dataset, indent=2, ensure_ascii=False), encoding="utf-8")

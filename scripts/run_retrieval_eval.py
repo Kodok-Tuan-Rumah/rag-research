@@ -52,7 +52,16 @@ STAGE_LATENCY_KEYS = {
 }
 
 
-def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) -> dict:
+def run(
+    dataset_path: Path,
+    chunks_path: Path,
+    out_path: Path,
+    top_k: int = 10,
+    dense_weight: float = 0.5,
+    bm25_weight: float = 0.5,
+    rerank: bool = True,
+    bm25_anchor_k: int = 0,
+) -> dict:
     import src._compat  # noqa: F401
     from src.retrieval.qdrant_store import QdrantVectorStore
     from src.retrieval.hybrid_retriever import MasterHybridRetriever
@@ -73,7 +82,14 @@ def run(dataset_path: Path, chunks_path: Path, out_path: Path, top_k: int = 10) 
 
     for item in dataset:
         t0 = time.perf_counter()
-        out = retriever.search_with_trace(item["question"], top_k=top_k, rerank=True)
+        out = retriever.search_with_trace(
+            item["question"],
+            top_k=top_k,
+            rerank=rerank,
+            dense_weight=dense_weight,
+            bm25_weight=bm25_weight,
+            bm25_anchor_k=bm25_anchor_k,
+        )
         elapsed = (time.perf_counter() - t0) * 1000.0
         trace = out["trace"]
         gold_ids = normalize_gold_chunk_ids(item)
@@ -176,10 +192,28 @@ def main() -> None:
     parser.add_argument("--chunks", default=str(CHUNKS_PATH))
     parser.add_argument("--out", default=str(OUTPUT_PATH))
     parser.add_argument("--top-k", type=int, default=10)
+    parser.add_argument("--dense-weight", type=float, default=0.5)
+    parser.add_argument("--bm25-weight", type=float, default=0.5)
+    parser.add_argument("--no-rerank", dest="rerank", action="store_false", default=True)
+    parser.add_argument(
+        "--bm25-anchor-k",
+        type=int,
+        default=0,
+        help="Promote this many top BM25 hits to the front of the fused list (0 = off)",
+    )
     parser.add_argument("--include-adversarial", action="store_true")
     args = parser.parse_args()
 
-    payload = run(Path(args.dataset), Path(args.chunks), Path(args.out), top_k=args.top_k)
+    payload = run(
+        Path(args.dataset),
+        Path(args.chunks),
+        Path(args.out),
+        top_k=args.top_k,
+        dense_weight=args.dense_weight,
+        bm25_weight=args.bm25_weight,
+        rerank=args.rerank,
+        bm25_anchor_k=args.bm25_anchor_k,
+    )
 
     if args.include_adversarial:
         ADV_PATH = REPO_ROOT / "data" / "adversarial" / "adversarial_queries.json"

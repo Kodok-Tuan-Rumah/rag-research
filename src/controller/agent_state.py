@@ -4,8 +4,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-
-# One retrieval retry is the shared Phase 1 contract for API and Agent paths.
 MAX_RETRIEVAL_RETRIES = 1
 
 
@@ -32,21 +30,20 @@ class AgentState:
     source_chunk_id: str | None = None
     last_tool: str | None = None
     last_result: Any = None
-    # Machine-readable cause when the loop ends in a non-answer outcome, so
-    # PROJECT_GOALS.md §4 failure classification is available to callers.
     failure_reason: str | None = None
 
     @property
     def retry_attempted(self) -> bool:
-        """Compatibility signal for callers that only need retry/no-retry."""
         return self.retrieval_retries > 0
 
     def add_observation(self, tool: str, result: Any):
-        self.scratchpad.append({
-            "step": self.step_count,
-            "tool": tool,
-            "result": result,
-        })
+        self.scratchpad.append(
+            {
+                "step": self.step_count,
+                "tool": tool,
+                "result": result,
+            }
+        )
         self.step_count += 1
         self.last_tool = tool
         self.last_result = result

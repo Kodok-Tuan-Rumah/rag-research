@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, remediation/2026-10-24, "remediation/**"]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, remediation/2026-10-24, "remediation/**"]
 
 jobs:
   test:

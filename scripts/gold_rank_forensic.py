@@ -1,12 +1,3 @@
-"""Phase D1: ranking forensic and cutoff diagnostics.
-
-Produces:
-  results/metrics/q15_rank_forensic.json/.md
-  results/metrics/gold_rank_movement.json/.md
-  results/metrics/retrieval_recall_k_diag.json/.md
-  results/metrics/per_query_regression_recovery.json/.md
-"""
-
 from __future__ import annotations
 
 import json
@@ -17,10 +8,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import src._compat  # noqa: F401
-from src.retrieval.qdrant_store import QdrantVectorStore
-from src.retrieval.hybrid_retriever import MasterHybridRetriever, rrf_fuse
-from src.evaluation.gold_matching import chunk_ids_match, gold_rank
+from src.evaluation.gold_matching import chunk_ids_match
 from src.retrieval.chunk_filters import is_low_quality_chunk as _cf_is_low_quality
+from src.retrieval.hybrid_retriever import MasterHybridRetriever
+from src.retrieval.qdrant_store import QdrantVectorStore
 
 DATASET = ROOT / "data" / "evaluation" / "retrieval_eval_dataset.json"
 
@@ -72,10 +63,14 @@ def main() -> None:
         bm25_hits = retriever.bm25_search(question, k=40)
 
         # candidate list seperti di _run_search/fused (pakai _rrf_fuse real)
-        fused_results = retriever._rrf_fuse([dense_hits], [bm25_hits], candidate_k=40, dense_weight=0.5, bm25_weight=0.5)
+        fused_results = retriever._rrf_fuse(
+            [dense_hits], [bm25_hits], candidate_k=40, dense_weight=0.5, bm25_weight=0.5
+        )
         fused_filtered = [
-            c for c in fused_results
-            if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "score", 0.0)) >= 0.0
+            c
+            for c in fused_results
+            if (c.get("retrieval_score", 0.0) if isinstance(c, dict) else getattr(c, "score", 0.0))
+            >= 0.0
         ]
 
         dense_pairs = [
@@ -100,7 +95,9 @@ def main() -> None:
         candidates = [c for c in fused_filtered if not _cf_is_low_quality(c)]
         rerank_candidates = sorted(
             candidates,
-            key=lambda x: x.get("retrieval_score", 0.0) if isinstance(x, dict) else getattr(x, "score", 0.0),
+            key=lambda x: (
+                x.get("retrieval_score", 0.0) if isinstance(x, dict) else getattr(x, "score", 0.0)
+            ),
             reverse=True,
         )[:20]
 
@@ -114,17 +111,28 @@ def main() -> None:
         reranked = retriever.rerank(question, rerank_candidates)
         reranked_hits = []
         for hit in reranked:
-            score = hit.get("rerank_score") if isinstance(hit, dict) else getattr(hit, "rerank_score", 0.0)
+            score = (
+                hit.get("rerank_score")
+                if isinstance(hit, dict)
+                else getattr(hit, "rerank_score", 0.0)
+            )
             cid = hit.get("chunk_id") if isinstance(hit, dict) else getattr(hit, "chunk_id", "")
             reranked_hits.append((cid, float(score) if score is not None else 0.0))
         rerank_rank, rerank_score = rank_of(gold, reranked_hits)
 
         # Recall@K accumulation
-        for stage, rankval in [("dense", dense_rank), ("bm25", bm25_rank), ("rrf", rrf_rank), ("reranked", rerank_rank)]:
+        for stage, rankval in [
+            ("dense", dense_rank),
+            ("bm25", bm25_rank),
+            ("rrf", rrf_rank),
+            ("reranked", rerank_rank),
+        ]:
             for k in TOP_KS:
                 recall_rows[stage][k].append(1 if hits_match(rankval, k) else 0)
             mrr = 0.0 if rankval is None else 1.0 / rankval
-            recall_rows[stage]["mrr10"].append(mrr if rankval is not None and rankval <= 10 else 0.0)
+            recall_rows[stage]["mrr10"].append(
+                mrr if rankval is not None and rankval <= 10 else 0.0
+            )
 
         # Determine failure stage / classification
         in_rrf = rrf_rank is not None
@@ -164,8 +172,12 @@ def main() -> None:
                 "rrf_score": rrf_score,
                 "reranker_score": rerank_score,
                 "final_status": "in" if final_ok else "out",
-                "rank_delta_rrf": (rrf_rank - bm25_rank) if (rrf_rank is not None and bm25_rank is not None) else None,
-                "rank_delta_reranker": (rerank_rank - rrf_rank) if (rerank_rank is not None and rrf_rank is not None) else None,
+                "rank_delta_rrf": (rrf_rank - bm25_rank)
+                if (rrf_rank is not None and bm25_rank is not None)
+                else None,
+                "rank_delta_reranker": (rerank_rank - rrf_rank)
+                if (rerank_rank is not None and rrf_rank is not None)
+                else None,
                 "failure_stage": classification,
             }
         )
@@ -179,8 +191,12 @@ def main() -> None:
                 "rrf_rank": rrf_rank,
                 "reranker_rank": rerank_rank,
                 "final_status": "in" if final_ok else "out",
-                "rank_delta_rrf": (rrf_rank - bm25_rank) if (rrf_rank is not None and bm25_rank is not None) else None,
-                "rank_delta_reranker": (rerank_rank - rrf_rank) if (rerank_rank is not None and rrf_rank is not None) else None,
+                "rank_delta_rrf": (rrf_rank - bm25_rank)
+                if (rrf_rank is not None and bm25_rank is not None)
+                else None,
+                "rank_delta_reranker": (rerank_rank - rrf_rank)
+                if (rerank_rank is not None and rrf_rank is not None)
+                else None,
                 "failure_stage": classification,
             }
         )
@@ -201,10 +217,17 @@ def main() -> None:
                 "final_included": final_ok,
                 "classification": classification,
                 "rank_movement": {
-                    "dense_to_rrf": (rrf_rank - dense_rank) if (rrf_rank is not None and dense_rank is not None) else None,
-                    "rrf_to_reranked": (rerank_rank - rrf_rank) if (rerank_rank is not None and rrf_rank is not None) else None,
+                    "dense_to_rrf": (rrf_rank - dense_rank)
+                    if (rrf_rank is not None and dense_rank is not None)
+                    else None,
+                    "rrf_to_reranked": (rerank_rank - rrf_rank)
+                    if (rerank_rank is not None and rrf_rank is not None)
+                    else None,
                 },
-                "top10_reranked": [{"rank": i + 1, "chunk_id": cid, "score": score} for i, (cid, score) in enumerate(reranked_hits[:10])],
+                "top10_reranked": [
+                    {"rank": i + 1, "chunk_id": cid, "score": score}
+                    for i, (cid, score) in enumerate(reranked_hits[:10])
+                ],
             }
         )
 
@@ -213,12 +236,23 @@ def main() -> None:
     # q15-specific
     q15_row = next((r for r in per_query if r["query_id"] == "q15"), None)
     OUT_Q15_JSON.write_text(json.dumps(q15_row, indent=2, ensure_ascii=False))
-    OUT_Q15_MD.write_text("# q15 Rank Forensic\n\n```json\n" + json.dumps(q15_row, indent=2, ensure_ascii=False) + "\n```\n")
+    OUT_Q15_MD.write_text(
+        "# q15 Rank Forensic\n\n```json\n"
+        + json.dumps(q15_row, indent=2, ensure_ascii=False)
+        + "\n```\n"
+    )
 
     OUT_MOV_JSON.write_text(json.dumps(rank_movement_rows, indent=2, ensure_ascii=False))
-    mov_lines = ["# Gold Rank Movement", "", "| query_id | gold_chunk_id | dense_rank | bm25_rank | rrf_rank | reranker_rank | final_status | Δrrf(vs bm25) | Δreranker(vs rrf) | failure_stage |", "|---|---|---|---|---|---|---|---|---|---|"]
+    mov_lines = [
+        "# Gold Rank Movement",
+        "",
+        "| query_id | gold_chunk_id | dense_rank | bm25_rank | rrf_rank | reranker_rank | final_status | Δrrf(vs bm25) | Δreranker(vs rrf) | failure_stage |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
     for row in rank_movement_rows:
-        mov_lines.append(f"| {row['query_id']} | {row['gold_chunk_id']} | {row['dense_rank']} | {row['bm25_rank']} | {row['rrf_rank']} | {row['reranker_rank']} | {row['final_status']} | {row['rank_delta_rrf']} | {row['rank_delta_reranker']} | {row['failure_stage']} |")
+        mov_lines.append(
+            f"| {row['query_id']} | {row['gold_chunk_id']} | {row['dense_rank']} | {row['bm25_rank']} | {row['rrf_rank']} | {row['reranker_rank']} | {row['final_status']} | {row['rank_delta_rrf']} | {row['rank_delta_reranker']} | {row['failure_stage']} |"
+        )
     OUT_MOV_MD.write_text("\n".join(mov_lines) + "\n")
 
     recall_summary: dict[str, dict[str, float]] = {}
@@ -230,12 +264,23 @@ def main() -> None:
         mrr = recall_rows[stage]["mrr10"]
         recall_summary[stage]["mrr@10"] = round(sum(mrr) / len(mrr), 4) if mrr else 0.0
     OUT_RECALL_JSON.write_text(json.dumps(recall_summary, indent=2, ensure_ascii=False))
-    OUT_RECALL_MD.write_text("# Retrieval Recall@K Diagnostic\n\n" + json.dumps(recall_summary, indent=2, ensure_ascii=False) + "\n")
+    OUT_RECALL_MD.write_text(
+        "# Retrieval Recall@K Diagnostic\n\n"
+        + json.dumps(recall_summary, indent=2, ensure_ascii=False)
+        + "\n"
+    )
 
     OUT_PER_JSON.write_text(json.dumps(per_query_rows, indent=2, ensure_ascii=False))
-    per_lines = ["# Per-query Regression / Recovery", "", "| query_id | dense_rank | bm25_rank | rrf_rank | reranker_rank | final_status | failure_stage |", "|---|---|---|---|---|---|---|"]
+    per_lines = [
+        "# Per-query Regression / Recovery",
+        "",
+        "| query_id | dense_rank | bm25_rank | rrf_rank | reranker_rank | final_status | failure_stage |",
+        "|---|---|---|---|---|---|---|",
+    ]
     for row in per_query_rows:
-        per_lines.append(f"| {row['query_id']} | {row['dense_rank']} | {row['bm25_rank']} | {row['rrf_rank']} | {row['reranker_rank']} | {row['final_status']} | {row['failure_stage']} |")
+        per_lines.append(
+            f"| {row['query_id']} | {row['dense_rank']} | {row['bm25_rank']} | {row['rrf_rank']} | {row['reranker_rank']} | {row['final_status']} | {row['failure_stage']} |"
+        )
     OUT_PER_MD.write_text("\n".join(per_lines) + "\n")
 
     print("[saved] all forensic artifacts")

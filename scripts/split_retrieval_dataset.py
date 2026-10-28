@@ -1,5 +1,3 @@
-"""Deterministic split of retrieval eval dataset into train/holdout."""
-
 from __future__ import annotations
 
 import json
@@ -51,9 +49,7 @@ def main() -> None:
     HOLDOUT.write_text(json.dumps(holdout, indent=2, ensure_ascii=False))
 
     overlap_q = {i["question"].lower() for i in train} & {i["question"].lower() for i in holdout}
-    overlap_pair = {
-        (i["question"].lower(), i["gold_chunk_id"]) for i in train
-    } & {
+    overlap_pair = {(i["question"].lower(), i["gold_chunk_id"]) for i in train} & {
         (i["question"].lower(), i["gold_chunk_id"]) for i in holdout
     }
     print(f"train: {len(train)}, holdout: {len(holdout)}")

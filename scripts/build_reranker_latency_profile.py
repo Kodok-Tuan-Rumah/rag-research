@@ -1,5 +1,3 @@
-"""Build reranker latency profile from per-query retrieval trace + tokenizer."""
-
 from __future__ import annotations
 
 import json
@@ -9,9 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-import src._compat  # noqa: F401
-from src.retrieval.qdrant_store import QdrantVectorStore
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
+from src.retrieval.qdrant_store import QdrantVectorStore
 
 DATASET = ROOT / "data" / "evaluation" / "retrieval_eval_dataset.json"
 CHUNKS = ROOT / "data" / "processed" / "chunks_semantic_v2.json"
@@ -82,7 +79,9 @@ def main() -> None:
     stats = {
         "n_queries": len(rows),
         "avg_candidate_count": round(sum(counts) / len(counts), 4),
-        "candidate_count_variance": round(statistics.variance(counts), 4) if len(counts) > 1 else 0.0,
+        "candidate_count_variance": round(statistics.variance(counts), 4)
+        if len(counts) > 1
+        else 0.0,
         "avg_total_candidate_text_tokens": round(sum(tokens) / len(tokens), 2),
         "median_total_candidate_text_tokens": statistics.median(tokens),
         "max_candidate_text_length": max(tokens) if tokens else 0,

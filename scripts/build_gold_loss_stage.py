@@ -1,5 +1,3 @@
-"""Build gold lifecycle and filter audit artifacts from existing diagnosis."""
-
 from __future__ import annotations
 
 import json
@@ -70,15 +68,26 @@ def main() -> None:
     payload = {"summary": {**stage_gold_counts, "total": len(rows)}, "lifecycle": lifecycle}
     GOLD_OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
 
-    lines = ["# Gold Loss by Stage", "", "| query_id | gold_chunk_id | in_rrf | in_reranked | in_final | lost_stage | loss_reason | filter_rule |", "|---|---|---:|---:|---:|---|---|---|"]
+    lines = [
+        "# Gold Loss by Stage",
+        "",
+        "| query_id | gold_chunk_id | in_rrf | in_reranked | in_final | lost_stage | loss_reason | filter_rule |",
+        "|---|---|---:|---:|---:|---|---|---|",
+    ]
     for r in lifecycle:
         lines.append(
             f"| {r['query_id']} | {r['gold_chunk_id']} | {r['in_rrf']} | {r['in_reranked']} | {r['in_final']} | {r['lost_stage'] or '-'} | {r['loss_reason'] or '-'} | {r['filter_rule'] or '-'} |"
         )
     lines.append("")
-    lines.append(f"- retrieval/rrf gold present: {stage_gold_counts['rrf']}/{len(rows)} ({recall['retrieval_rrf']:.4f})")
-    lines.append(f"- reranked gold present: {stage_gold_counts['reranked']}/{len(rows)} ({recall['reranker']:.4f})")
-    lines.append(f"- final gold present: {stage_gold_counts['final']}/{len(rows)} ({recall['final']:.4f})")
+    lines.append(
+        f"- retrieval/rrf gold present: {stage_gold_counts['rrf']}/{len(rows)} ({recall['retrieval_rrf']:.4f})"
+    )
+    lines.append(
+        f"- reranked gold present: {stage_gold_counts['reranked']}/{len(rows)} ({recall['reranker']:.4f})"
+    )
+    lines.append(
+        f"- final gold present: {stage_gold_counts['final']}/{len(rows)} ({recall['final']:.4f})"
+    )
     GOLD_MD.write_text("\n".join(lines) + "\n")
 
     # simple filter audit view from classification
@@ -106,7 +115,7 @@ def main() -> None:
     }
     FILTER_OUT.write_text(json.dumps(filter_payload, indent=2, ensure_ascii=False))
 
-    f_lines = ["# Filter Precision Audit", "", "| filter_rule | count |", "|---|---:|"] 
+    f_lines = ["# Filter Precision Audit", "", "| filter_rule | count |", "|---|---:|"]
     for verdict, count in sorted(verdict_counts.items(), key=lambda x: str(x[0])):
         f_lines.append(f"| {verdict} | {count} |")
     f_lines.append("")

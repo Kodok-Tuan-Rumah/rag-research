@@ -1,9 +1,3 @@
-"""Build retrieval evaluation dataset v3 from all known sources.
-
-EXACT_ANSWER_SPAN > TOKEN_RECALL_0.8 only when demonstrable.
-No manufactured gold.
-"""
-
 from __future__ import annotations
 
 import json
@@ -14,7 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.evaluation.gold_matching import is_gold_hit, gold_rank
 from src.evaluation.gold_data_validator import validate_dataset
 
 FAIL = ROOT / "data" / "debug" / "failure_analysis.json"
@@ -66,7 +59,9 @@ def derive_fields(idx: int, row: dict, match_type: str, chunk: dict) -> dict:
         "gold_doc_id": chunk["doc_id"],
         "match_type": match_type,
         "provenance": row.get("provenance", "build_v3"),
-        "question_type": "factual" if "what" in row.get("question", "").lower() and "?" in row.get("question", "") else "general",
+        "question_type": "factual"
+        if "what" in row.get("question", "").lower() and "?" in row.get("question", "")
+        else "general",
         "difficulty": "medium",
         "should_abstain": False,
         "expected_behavior": row.get("expected_behavior", "answer"),
@@ -123,21 +118,29 @@ def main() -> None:
     valid = []
     row_only = []
     for row in candidates:
-        if "matched_json" in row and row["matched_json"]:
+        if row.get("matched_json"):
             mj = row["matched_json"]
-            valid.append({
-                "query_id": row.get("query_id") or f"esti",
-                "question": row.get("question") or row.get("query", ""),
-                "gold_answer": row.get("ground_truth") or row.get("answer", ""),
-                "gold_chunk_id": mj["chunk_id"],
-                "gold_doc_id": mj["doc_id"],
-                "match_type": mj["match_type"],
-                "provenance": {"source": row.get("source", "failure_analysis.json"), "matched_chunk": mj["chunk_id"], "match_type": mj["match_type"]},
-                "question_type": "factual" if "what" in row.get("question", "").lower() else "general",
-                "difficulty": "medium",
-                "should_abstain": bool(row.get("should_abstain", False)),
-                "expected_behavior": row.get("expected_behavior", "answer"),
-            })
+            valid.append(
+                {
+                    "query_id": row.get("query_id") or "esti",
+                    "question": row.get("question") or row.get("query", ""),
+                    "gold_answer": row.get("ground_truth") or row.get("answer", ""),
+                    "gold_chunk_id": mj["chunk_id"],
+                    "gold_doc_id": mj["doc_id"],
+                    "match_type": mj["match_type"],
+                    "provenance": {
+                        "source": row.get("source", "failure_analysis.json"),
+                        "matched_chunk": mj["chunk_id"],
+                        "match_type": mj["match_type"],
+                    },
+                    "question_type": "factual"
+                    if "what" in row.get("question", "").lower()
+                    else "general",
+                    "difficulty": "medium",
+                    "should_abstain": bool(row.get("should_abstain", False)),
+                    "expected_behavior": row.get("expected_behavior", "answer"),
+                }
+            )
         else:
             row_only.append({**row, "status": "evaluation_row_only"})
 
@@ -146,7 +149,8 @@ def main() -> None:
     for v in valid:
         key = (v["question"].lower(), v["gold_chunk_id"])
         if key not in seen:
-            seen.add(key); clean_rows.append(v)
+            seen.add(key)
+            clean_rows.append(v)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(clean_rows, indent=2, ensure_ascii=False))
@@ -155,8 +159,12 @@ def main() -> None:
     AUDIT.write_text(json.dumps(audit, indent=2, ensure_ascii=False))
 
     print(f"rows inspected={len(candidates)}")
-    print(f"exact span derived={sum(1 for r in candidates if isinstance(r.get('matched_json'), dict) and r['matched_json'].get('match_type') == 'EXACT_ANSWER_SPAN')}")
-    print(f"token recall derived={sum(1 for r in candidates if isinstance(r.get('matched_json'), dict) and r['matched_json'].get('match_type') == 'TOKEN_RECALL_0.8')}")
+    print(
+        f"exact span derived={sum(1 for r in candidates if isinstance(r.get('matched_json'), dict) and r['matched_json'].get('match_type') == 'EXACT_ANSWER_SPAN')}"
+    )
+    print(
+        f"token recall derived={sum(1 for r in candidates if isinstance(r.get('matched_json'), dict) and r['matched_json'].get('match_type') == 'TOKEN_RECALL_0.8')}"
+    )
     print(f"evaluation_row_only={len(row_only)}")
     print(f"final valid gold rows={len(clean_rows)}")
     print(f"gold audit -> {AUDIT}")

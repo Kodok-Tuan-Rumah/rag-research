@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""Index a Phase 1 corpus into its isolated Qdrant collection."""
-
 from __future__ import annotations
 
 import argparse
@@ -18,11 +15,13 @@ from src.retrieval.qdrant_store import QdrantVectorStore
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--chunks", type=Path,
+        "--chunks",
+        type=Path,
         default=ROOT / "data/processed/chunks_semantic_v3.json",
     )
     parser.add_argument(
-        "--collection", default="rag_research_phase1_v3",
+        "--collection",
+        default="rag_research_phase1_v3",
         help="Dedicated collection. Existing non-empty collections are never reset.",
     )
     args = parser.parse_args()
