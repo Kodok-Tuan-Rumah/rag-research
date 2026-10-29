@@ -19,7 +19,7 @@ class FakeConfidenceEngine:
     def __init__(self, decisions):
         self.decisions = decisions
 
-    def calculate_confidence(self, chunks, query_type=None, query=None):
+    def calculate_confidence(self, chunks, query_type=None, query=None, **kwargs):
         return self.decisions.pop(0)
 
 

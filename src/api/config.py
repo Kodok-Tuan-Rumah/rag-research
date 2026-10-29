@@ -73,12 +73,12 @@ class Settings(BaseSettings):
     # and Appendix A recorded them as not overridable. Same values, now
     # configurable. Adjusted per query type by TYPE_ADJUSTMENTS in
     # src/controller/confidence_engine.py.
-    confidence_reject_threshold: float = 0.25
+    confidence_reject_threshold: float = 0.35
     confidence_partial_threshold: float = 0.65
     # Calibrated decision thresholds (applied to calibrated probability).
     # Defaults mirror heuristic thresholds; after calibration these can be
     # re-tuned to the calibrated probability distribution.
-    calibrated_reject_threshold: float = 0.25
+    calibrated_reject_threshold: float = 0.35
     calibrated_partial_threshold: float = 0.65
     # Calibration method: "isotonic" or "platt"
     calibration_method: str = "isotonic"
