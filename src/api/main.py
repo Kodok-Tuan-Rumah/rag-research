@@ -311,6 +311,45 @@ class GenerateResponse(BaseModel):
     context_chunk_ids: list[str] = Field(default_factory=list)
 
 
+
+# ---------------------------------------------------------------- verify_claim
+class VerifyClaimRequest(BaseModel):
+    claim: str = Field(..., min_length=3, max_length=1000)
+    top_k: int | None = Field(default=5, ge=1, le=20)
+
+
+class EvidenceItem(BaseModel):
+    chunk_id: str
+    source_id: str
+    text: str
+    score: float
+
+
+class SpanAttributionItem(BaseModel):
+    claim: str
+    chunk_id: str | None = None
+    score: float = 0.0
+
+
+class VerifyClaimResponse(BaseModel):
+    decision: str
+    calibrated_confidence: float
+    confidence_zone: str
+    evidence: list[EvidenceItem] = Field(default_factory=list)
+    span_level_attribution: list[SpanAttributionItem] = Field(default_factory=list)
+    failure_type: str = "none"
+
+
+class VerifyClaimsRequest(BaseModel):
+    claims: list[str] = Field(..., min_length=1, max_length=50)
+    top_k: int | None = Field(default=5, ge=1, le=20)
+
+
+class VerifyClaimsResponse(BaseModel):
+    results: list[VerifyClaimResponse] = Field(default_factory=list)
+    count: int = 0
+
+
 # Helpers
 def _format_chunks(chunks: list, limit: int | None = None) -> list[ChunkResult]:
     target = chunks[:limit] if limit else chunks
@@ -1051,6 +1090,102 @@ async def generate_answer(req: GenerateRequest):
             confidence=0.0,
         )
         return result
+
+
+
+@app.post("/verify_claim", response_model=VerifyClaimResponse)
+async def verify_claim(req: VerifyClaimRequest):
+    if not all([retriever, confidence_engine]):
+        raise HTTPException(status_code=503, detail="Engine not ready")
+    rid = str(uuid.uuid4())[:8]
+    t_start = time.time()
+
+    plan = policy_engine.initial_plan(req.claim)
+    query_type = plan.query_type
+    top_k = req.top_k if req.top_k is not None else plan.top_k_hint
+
+    search_kwargs = {
+        "query": req.claim,
+        "top_k": top_k,
+        "rerank": False,
+        "allow_references": plan.allow_references,
+        "max_ref_ratio": plan.max_ref_ratio,
+        "use_multi_query": plan.allow_multi_query,
+        "use_hyde": plan.allow_hyde,
+    }
+    search_result = await run_in_threadpool(retriever.search_with_trace, **search_kwargs)
+    chunks = search_result["results"]
+
+    conf_eval = confidence_engine.calculate_confidence(
+        chunks, query_type=query_type, query=req.claim, use_retrieval_score=True,
+    )
+    confidence = conf_eval["confidence_score"]
+    decision_raw = conf_eval.get("calibrated_decision", conf_eval["decision"])
+    calibrated_confidence = conf_eval.get("calibrated_confidence", confidence)
+    is_calibrated = conf_eval.get("is_calibrated", False)
+
+    # Map decision to zone
+    if decision_raw == "REJECT":
+        zone = "red"
+    elif decision_raw == "PARTIAL_TRUST":
+        zone = "yellow"
+    else:
+        zone = "green"
+
+    abstained = decision_raw == "REJECT"
+
+    evidence_list = []
+    for c in (chunks if not abstained else chunks[:2]):
+        evidence_list.append(EvidenceItem(
+            chunk_id=c.get("chunk_id", "unk"),
+            source_id=c.get("doc_id", "unk"),
+            text=c.get("text", ""),
+            score=round(float(c.get("retrieval_score", 0)), 4),
+        ))
+
+    attributions = []
+    if not abstained:
+        for a in attribute_claims_to_chunks(req.claim, chunks):
+            attributions.append(SpanAttributionItem(
+                claim=a.get("claim_span", req.claim),
+                chunk_id=a.get("chunk_id"),
+                score=float(a.get("score", 0.0)),
+            ))
+
+    failure_type = "none"
+    if abstained:
+        failure_type = "insufficient_context"
+    if not chunks:
+        failure_type = "retrieval_miss"
+        decision_raw = "REJECT"
+        zone = "red"
+        calibrated_confidence = 0.0
+
+    result = VerifyClaimResponse(
+        decision="abstain" if abstained or not chunks else "answer",
+        calibrated_confidence=round(float(calibrated_confidence), 4),
+        confidence_zone=zone,
+        evidence=evidence_list,
+        span_level_attribution=attributions,
+        failure_type=failure_type,
+    )
+
+    latency_ms = round((time.time() - t_start) * 1000, 2)
+    logger.info(f"[{rid}] VERIFY_CLAIM done | decision={result.decision} | zone={zone} | latency_ms={latency_ms}")
+    return result
+
+
+@app.post("/verify_claims", response_model=VerifyClaimsResponse)
+async def verify_claims(req: VerifyClaimsRequest):
+    if not all([retriever, confidence_engine]):
+        raise HTTPException(status_code=503, detail="Engine not ready")
+    # Cap enforced by schema (max_length=50)
+    results = []
+    for claim in req.claims:
+        single = VerifyClaimRequest(claim=claim, top_k=req.top_k)
+        res = await verify_claim(single)
+        results.append(res)
+    return VerifyClaimsResponse(results=results, count=len(results))
 
 
 @app.get("/metrics")
