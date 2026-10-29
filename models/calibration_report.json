@@ -1,21 +1,21 @@
 {
   "dataset": "data/evaluation/calibration_dataset.json",
   "dataset_name": "calibration_v1",
-  "n_samples": 151,
+  "n_samples": 206,
   "methods": {
     "isotonic": {
-      "n_samples": 151,
-      "ece_before": 0.1903,
-      "ece_after": 0.139,
-      "brier_before": 0.1929,
-      "brier_after": 0.0248
+      "n_samples": 206,
+      "ece_before": 0.1832,
+      "ece_after": 0.0781,
+      "brier_before": 0.2011,
+      "brier_after": 0.0775
     },
     "platt": {
-      "n_samples": 151,
-      "ece_before": 0.1903,
-      "ece_after": 0.239,
-      "brier_before": 0.1929,
-      "brier_after": 0.0665
+      "n_samples": 206,
+      "ece_before": 0.1832,
+      "ece_after": 0.1609,
+      "brier_before": 0.2011,
+      "brier_after": 0.1013
     }
   }
 }
