@@ -14,6 +14,42 @@ class FakeRetriever:
         return {"results": outcome, "trace": {"latency_ms": {"reranker": 0.0}}}
 
 
+class KeyedRetriever:
+    """Deterministic retriever keyed on the claim text — immune to task interleaving."""
+
+    def __init__(self, boom_claims=()):
+        self._boom = set(boom_claims)
+
+    def search_with_trace(self, query=None, **kwargs):
+        if query in self._boom:
+            raise ValueError("qdrant exploded")
+        return {"results": _chunks(), "trace": {"latency_ms": {"reranker": 0.0}}}
+
+
+class KeyedConfidenceEngine:
+    """Deterministic per-claim engine: claims containing ``strong`` answer, others abstain."""
+
+    def calculate_confidence(self, chunks, query_type=None, query=None, **kwargs):
+        if "strong" in (query or ""):
+            return {"confidence_score": 0.8, "decision": "GENERATE", "calibrated_decision": "GENERATE",
+                    "calibrated_confidence": 0.85, "is_calibrated": True, "signals": {}}
+        return {"confidence_score": 0.1, "decision": "REJECT", "calibrated_decision": "REJECT",
+                "calibrated_confidence": 0.1, "is_calibrated": False, "signals": {}}
+
+
+def _probe_runner(telemetry):
+    """run_in_threadpool double that tracks concurrent in-flight calls (runs func inline)."""
+    async def runner(func, *args, **kwargs):
+        telemetry["current"] += 1
+        telemetry["max"] = max(telemetry["max"], telemetry["current"])
+        try:
+            await asyncio.sleep(0.02)
+            return func(*args, **kwargs)
+        finally:
+            telemetry["current"] -= 1
+    return runner
+
+
 class FakeConfidenceEngine:
     def __init__(self, decisions):
         self.decisions = decisions
@@ -84,3 +120,121 @@ def test_verify_claims_batch_cap(monkeypatch):
 def test_verify_claims_rejects_over_cap():
     with pytest.raises(Exception):
         main.VerifyClaimsRequest(claims=["c"] * 51)
+
+
+def test_verify_claims_preserves_claim_order_with_mixed_decisions(monkeypatch):
+    monkeypatch.setattr(main, "retriever", KeyedRetriever())
+    monkeypatch.setattr(main, "confidence_engine", KeyedConfidenceEngine())
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **e: None)
+
+    resp = asyncio.run(main.verify_claims(main.VerifyClaimsRequest(claims=[
+        "weak claim alpha here", "strong claim beta here",
+        "strong claim gamma here", "weak claim delta here",
+    ])))
+    assert resp.count == 4
+    assert [r.decision for r in resp.results] == ["abstain", "answer", "answer", "abstain"]
+    assert [r.confidence_zone for r in resp.results] == ["red", "green", "green", "red"]
+
+
+def test_verify_claims_runs_concurrently_within_bound(monkeypatch):
+    telemetry = {"current": 0, "max": 0}
+    monkeypatch.setattr(main, "retriever", KeyedRetriever())
+    monkeypatch.setattr(main, "confidence_engine", KeyedConfidenceEngine())
+    monkeypatch.setattr(main, "run_in_threadpool", _probe_runner(telemetry))
+    monkeypatch.setattr(main, "_log_query_event", lambda **e: None)
+
+    resp = asyncio.run(main.verify_claims(main.VerifyClaimsRequest(claims=[f"claim number {i} here" for i in range(6)])))
+    assert resp.count == 6
+    # Parallel execution must be observable...
+    assert telemetry["max"] >= 2, f"batch ran sequentially: max_inflight={telemetry['max']}"
+    # ...but never past the concurrency bound (8).
+    assert telemetry["max"] <= 8
+
+
+def test_verify_claims_isolates_claim_failure(monkeypatch):
+    monkeypatch.setattr(main, "retriever", KeyedRetriever(boom_claims={"boom claim here"}))
+    monkeypatch.setattr(main, "confidence_engine", KeyedConfidenceEngine())
+    monkeypatch.setattr(main, "run_in_threadpool", _run_inline)
+    monkeypatch.setattr(main, "_log_query_event", lambda **e: None)
+
+    resp = asyncio.run(main.verify_claims(main.VerifyClaimsRequest(claims=[
+        "strong claim alpha here", "boom claim here", "weak claim gamma here",
+    ])))
+    assert resp.count == 3  # N→N despite one failure
+    good_a, failed, good_b = resp.results[0], resp.results[1], resp.results[2]
+    assert good_a.decision == "answer"  # survives, position preserved
+    assert good_b.failure_type == "insufficient_context"
+    assert failed.decision == "abstain"
+    assert failed.failure_type == "internal_error"
+    assert failed.calibrated_confidence == 0.0
+    assert failed.evidence == [] and failed.span_level_attribution == []
+
+
+# ---------------------------------------------------------------- R-4 schema contract tests
+import pytest
+from pydantic import ValidationError
+
+
+def test_verify_claim_request_requires_claim():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimRequest()
+
+
+def test_verify_claim_request_rejects_short_claim():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimRequest(claim="ab")
+
+
+def test_verify_claim_request_rejects_empty_claim():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimRequest(claim="")
+
+
+def test_verify_claim_request_top_k_bounds():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimRequest(claim="some claim text here", top_k=0)
+    with pytest.raises(ValidationError):
+        main.VerifyClaimRequest(claim="some claim text here", top_k=21)
+
+
+def test_verify_claims_request_requires_claims():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimsRequest()
+
+
+def test_verify_claims_request_rejects_empty_list():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimsRequest(claims=[])
+
+
+def test_verify_claims_request_cap_50():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimsRequest(claims=["c"] * 51)
+
+
+def test_verify_claim_response_required_fields():
+    r = main.VerifyClaimResponse(
+        decision="abstain",
+        calibrated_confidence=0.1,
+        confidence_zone="red",
+    )
+    assert r.decision == "abstain"
+    assert r.confidence_zone == "red"
+    assert r.evidence == []
+    assert r.span_level_attribution == []
+    assert r.failure_type == "none"
+
+
+def test_verify_claims_response_count_matches():
+    single = main.VerifyClaimResponse(
+        decision="answer", calibrated_confidence=0.8, confidence_zone="green",
+    )
+    resp = main.VerifyClaimsResponse(results=[single, single], count=2)
+    assert resp.count == 2
+    assert len(resp.results) == 2
+
+
+def test_verify_claim_response_rejects_missing_decision():
+    with pytest.raises(ValidationError):
+        main.VerifyClaimResponse(calibrated_confidence=0.1, confidence_zone="red")

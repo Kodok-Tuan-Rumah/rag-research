@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -1115,6 +1116,9 @@ async def verify_claim(req: VerifyClaimRequest):
     }
     search_result = await run_in_threadpool(retriever.search_with_trace, **search_kwargs)
     chunks = search_result["results"]
+    # Normalize nested result sets (some retrievers return list-of-lists).
+    if chunks and isinstance(chunks, list) and chunks and isinstance(chunks[0], list):
+        chunks = [item for sub in chunks for item in (sub or [])]
 
     conf_eval = confidence_engine.calculate_confidence(
         chunks, query_type=query_type, query=req.claim, use_retrieval_score=True,
@@ -1180,12 +1184,22 @@ async def verify_claims(req: VerifyClaimsRequest):
     if not all([retriever, confidence_engine]):
         raise HTTPException(status_code=503, detail="Engine not ready")
     # Cap enforced by schema (max_length=50)
-    results = []
-    for claim in req.claims:
-        single = VerifyClaimRequest(claim=claim, top_k=req.top_k)
-        res = await verify_claim(single)
-        results.append(res)
-    return VerifyClaimsResponse(results=results, count=len(results))
+    async def _one(claim: str):
+        try:
+            single = VerifyClaimRequest(claim=claim, top_k=req.top_k)
+            return await verify_claim(single)
+        except Exception:
+            return VerifyClaimResponse(
+                decision="abstain",
+                calibrated_confidence=0.0,
+                confidence_zone="red",
+                evidence=[],
+                span_level_attribution=[],
+                failure_type="internal_error",
+            )
+
+    results = await asyncio.gather(*[_one(c) for c in req.claims])
+    return VerifyClaimsResponse(results=list(results), count=len(results))
 
 
 @app.get("/metrics")

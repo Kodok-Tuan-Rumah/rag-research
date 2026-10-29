@@ -1,4 +1,4 @@
-.PHONY: setup rust-build ingest index eval viz phase1-smoke phase1-review phase1-check all clean
+.PHONY: setup rust-build ingest index eval viz phase1-smoke phase1-review phase1-check all clean refit-calibration
 
 # Vars
 PYTHON = python
@@ -39,8 +39,13 @@ phase1-review:
 phase1-check:
 	$(PYTHON) $(SCRIPTS)/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json
 
-# THE MASTER COMMAND
-all: rust-build ingest index eval viz
+refit-calibration:
+	@$(PYTHON) $(SCRIPTS)/build_calibration_from_audit.py --min-samples 50 || true
+	@if [ -f data/evaluation/calibration_dataset_from_audit.json ]; then \
+		$(PYTHON) $(SCRIPTS)/fit_calibration.py --dataset data/evaluation/calibration_dataset_from_audit.json --out models; \
+	else \
+		echo "skip: calibration dataset not produced (insufficient data or DB unavailable)"; \
+	fi
 
 # Start the dashboard 
 dashboard:
