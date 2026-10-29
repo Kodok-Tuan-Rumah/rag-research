@@ -43,6 +43,9 @@ def test_verify_claim_abstains_when_low_confidence(monkeypatch):
     assert resp.decision == "abstain"
     assert resp.confidence_zone == "red"
     assert resp.failure_type == "insufficient_context"
+    assert resp.calibrated_confidence == 0.1
+    # Abstain mirror F-01: no generator dependency, no span attribution emitted.
+    assert resp.span_level_attribution == []
 
 
 def test_verify_claim_answers_when_high_confidence(monkeypatch):
@@ -59,6 +62,9 @@ def test_verify_claim_answers_when_high_confidence(monkeypatch):
     assert resp.confidence_zone == "green"
     assert len(resp.evidence) == 1
     assert resp.failure_type == "none"
+    assert resp.calibrated_confidence == 0.85
+    assert len(resp.span_level_attribution) == 1
+    assert resp.span_level_attribution[0].chunk_id == "c1"
 
 
 def test_verify_claims_batch_cap(monkeypatch):
