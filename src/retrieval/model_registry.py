@@ -33,12 +33,6 @@ def _load_local_embedder(model_name: str):
     return SentenceTransformer(model_name)
 
 
-def _load_local_reranker(model_name: str):
-    from sentence_transformers import CrossEncoder
-
-    return CrossEncoder(model_name)
-
-
 def _embedder_probe(embedder, model_name: str) -> None:
     """Fail loud bila embedder menghasilkan vektor kosong/NaN."""
     if hasattr(embedder, "encode"):
