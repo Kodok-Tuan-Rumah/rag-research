@@ -26,7 +26,7 @@ viz:
 
 phase1-smoke:
 	QDRANT_COLLECTION=rag_research_phase1_v3 \
-	BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json \
+	BM25_CHUNKS_PATH=data/processed/chunks_semantic_v2.json \
 	$(PYTHON) $(SCRIPTS)/phase1_smoke.py \
 		--dataset data/evaluation/phase1_smoke_set_v3.json \
 		--output results/metrics/phase1_smoke_v3.json
