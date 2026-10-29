@@ -56,11 +56,11 @@ def _passing_report() -> dict:
 def test_phase1_acceptance_set_is_frozen_and_balanced():
     dataset = load_cases(V3_DATASET)
 
-    assert dataset["dataset_version"] == "phase1-smoke-v3"
+    assert dataset["dataset_version"] == "phase1-smoke-v3.1"
     assert len(dataset["records"]) == 20
     assert sum(row["should_abstain"] is False for row in dataset["records"]) == 15
     assert sum(row["should_abstain"] is True for row in dataset["records"]) == 5
-    assert dataset["expected_qdrant_vectors"] == 642
+    assert dataset["expected_qdrant_vectors"] == 796
     assert dataset["records"][-6]["query_id"] == "p1_answer_15_attention"
 
 

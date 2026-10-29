@@ -59,6 +59,7 @@ def load_cases(dataset_path: Path = DEFAULT_DATASET) -> dict[str, Any]:
         "phase1-smoke-v1",
         "phase1-smoke-v2",
         "phase1-smoke-v3",
+        "phase1-smoke-v3.1",
     }:
         raise ValueError("Unsupported Phase 1 smoke dataset version")
     if len(cases) != 20 or payload.get("expected_cases") != 20:
