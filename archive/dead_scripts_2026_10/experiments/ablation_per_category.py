@@ -13,19 +13,16 @@ load_dotenv()
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 METHODS = ["bm25_only", "hybrid_rrf", "hybrid_mq_hyde_rerank"]
-
 CATEGORIES = {
     "paraphrase": "data/processed/paraphrase_queries.json",
     "multihop": "data/processed/multihop_queries.json",
     "adversarial": "data/processed/adversarial_queries.json",
     "lexical": "data/processed/ground_truth_qa.json",
 }
-
 LEXICAL_LIMIT = 20
 OUTPUT_PATH = "results/metrics/ablation_per_category.json"
 TOP_K = 10
 MAX_RERANK_CHARS = 600
-
 MULTI_QUERY_PROMPT = """Generate 2 alternative search queries for the following question.
 Return ONLY the queries, one per line, no numbering, no explanation.
 
@@ -39,7 +36,6 @@ Be specific and technical. Write as if you are an expert answering from a resear
 Question: {query}
 
 Hypothetical passage:"""
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def compute_context_overlap(answer: str, contexts: list[str]) -> float:
@@ -83,7 +79,6 @@ def compute_context_overlap(answer: str, contexts: list[str]) -> float:
         return 0.0
     return round(len(answer_words & context_words) / len(answer_words), 4)
 
-
 def is_hit(retrieved: list, source_chunk_id: str) -> bool:
     base = source_chunk_id.rsplit("_sub", 1)[0]
     for r in retrieved:
@@ -99,18 +94,15 @@ def is_hit(retrieved: list, source_chunk_id: str) -> bool:
             return True
     return False
 
-
 def is_hit_multihop(retrieved: list, item: dict) -> bool:
     hit1 = is_hit(retrieved, item.get("source_chunk", ""))
     hit2 = is_hit(retrieved, item.get("source_chunk_2", "")) if item.get("source_chunk_2") else True
     return hit1 or hit2
 
-
 def both_hit_multihop(retrieved: list, item: dict) -> bool:
     hit1 = is_hit(retrieved, item.get("source_chunk", ""))
     hit2 = is_hit(retrieved, item.get("source_chunk_2", "")) if item.get("source_chunk_2") else True
     return hit1 and hit2
-
 
 def mrr_score(retrieved: list, source_chunk_id: str) -> float:
     base = source_chunk_id.rsplit("_sub", 1)[0]
@@ -120,7 +112,6 @@ def mrr_score(retrieved: list, source_chunk_id: str) -> float:
         if cid == source_chunk_id or cid_base == base:
             return 1.0 / (i + 1)
     return 0.0
-
 
 def best_window(text: str, query: str, window: int = MAX_RERANK_CHARS) -> str:
     if len(text) <= window:
@@ -135,22 +126,16 @@ def best_window(text: str, query: str, window: int = MAX_RERANK_CHARS) -> str:
             best_score, best_start = score, start
     return text[best_start : best_start + window]
 
-
 # Components
 _components = None
-
-
 def get_components():
     global _components
     if _components is None:
         from groq import Groq
-
         from src.generation.generator import GroqGenerator
         from src.retrieval.hybrid_retriever import MasterHybridRetriever
-        from src.retrieval.model_registry import ModelRegistry
         from src.retrieval.qdrant_store import QdrantVectorStore
 
-        registry = ModelRegistry.get()
         store = QdrantVectorStore()
         retriever = MasterHybridRetriever(vector_store=store)
         generator = GroqGenerator(model="llama-3.3-70b-versatile")
@@ -158,7 +143,6 @@ def get_components():
         _components = (store, retriever, generator, groq)
         print("[INIT] All components loaded.\n")
     return _components
-
 
 # Retrieval per method
 def retrieve(query: str, method: str, store, retriever, groq, top_k: int) -> tuple[list, float]:
@@ -253,7 +237,6 @@ def retrieve(query: str, method: str, store, retriever, groq, top_k: int) -> tup
             )
         if hyde_text:
             all_dense.append(store.search(hyde_text, k=candidate_k))
-
         fused = retriever._rrf_fuse(all_dense, all_bm25, candidate_k)
         candidates = fused[:10]
         pairs = [
@@ -283,16 +266,13 @@ def retrieve(query: str, method: str, store, retriever, groq, top_k: int) -> tup
         raise ValueError(f"Unknown method: {method}")
     return results, round((time.time() - t0) * 1000, 2)
 
-
 # Per-sample evaluation
 def evaluate_sample(
     item: dict, method: str, category: str, store, retriever, generator, groq, top_k: int = TOP_K
 ) -> dict:
-
     query = item["question"]
     source_chunk = item.get("source_chunk", "")
     is_multihop = category == "multihop"
-
     try:
         chunks, latency_ms = retrieve(query, method, store, retriever, groq, top_k)
     except Exception as e:
@@ -354,7 +334,6 @@ def evaluate_sample(
         "latency_total_ms": round(latency_ms + gen_latency, 2),
         "answer_preview": answer[:150],
     }
-
 
 # Category runner
 def run_category(
@@ -424,7 +403,6 @@ def run_category(
     )
     return summary
 
-
 # Main ablation
 def run_ablation_per_category(
     methods: list[str] = METHODS,
@@ -459,13 +437,11 @@ def run_ablation_per_category(
     print(f"\n[DONE] Total elapsed: {elapsed}s ({elapsed / 60:.1f} min)")
     return all_results
 
-
 # I/O
 def _save(results: dict):
     Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH, "w") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-
 
 def _print_leaderboard(results: dict, top_k: int):
     print(f"\n{'=' * 75}")
@@ -507,7 +483,6 @@ def _print_leaderboard(results: dict, top_k: int):
             f"worst={worst[0]} "
             f"(P@{top_k}={worst[1].get(f'precision@{top_k}', 0):.3f})"
         )
-
 
 if __name__ == "__main__":
     import argparse

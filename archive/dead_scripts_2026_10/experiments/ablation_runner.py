@@ -15,21 +15,18 @@ OUTPUT_PATH       = "results/metrics/ablation_sprint2.json"
 MAX_SAMPLES       = 55
 TOP_K             = 5
 MAX_RERANK_CHARS  = 600
-
 MULTI_QUERY_PROMPT = """Generate 2 alternative search queries for the following question.
 Return ONLY the queries, one per line, no numbering, no explanation.
 
 Original query: {query}
 
 Alternative queries:"""
-
 HYDE_PROMPT = """Write a short hypothetical passage (2-3 sentences) that would directly answer this question.
 Be specific and technical. Write as if you are an expert answering from a research paper.
 
 Question: {query}
 
 Hypothetical passage:"""
-
 
 # Helpers 
 def compute_context_overlap(answer: str, contexts: list[str]) -> float:
@@ -44,9 +41,7 @@ def compute_context_overlap(answer: str, contexts: list[str]) -> float:
         return 0.0
     return round(len(answer_words & context_words) / len(answer_words), 4)
 
-
 def is_hit(retrieved: list, source_chunk_id: str) -> bool:
-    base = source_chunk_id.replace("_rs_", "_rs_")
     for r in retrieved:
         cid = r.get("chunk_id", "") if isinstance(r, dict) else getattr(r, "chunk_id", "")
         if cid == source_chunk_id:
@@ -225,7 +220,7 @@ def retrieve(
                               for i in ti if sc[i] > 0])
         if hyde_text:
             all_dense.append(store.search(hyde_text, k=candidate_k))
-
+            
         fused = retriever._rrf_fuse(all_dense, all_bm25, candidate_k)
         results = [{"chunk_id": r.chunk_id if hasattr(r,"chunk_id") else r["chunk_id"],
                     "doc_id":   r.doc_id   if hasattr(r,"doc_id")   else r["doc_id"],

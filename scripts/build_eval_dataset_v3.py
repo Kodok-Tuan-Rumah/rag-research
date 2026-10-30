@@ -101,6 +101,7 @@ def main() -> None:
     for path in RAGAS_DIR.glob("ragas_phase2_postfix*.json"):
         try:
             d = json.loads(path.read_text())
+            
         except Exception:
             continue
         samples = []
