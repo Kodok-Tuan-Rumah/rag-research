@@ -144,12 +144,13 @@ def test_verify_claims_runs_concurrently_within_bound(monkeypatch):
     monkeypatch.setattr(main, "run_in_threadpool", _probe_runner(telemetry))
     monkeypatch.setattr(main, "_log_query_event", lambda **e: None)
 
-    resp = asyncio.run(main.verify_claims(main.VerifyClaimsRequest(claims=[f"claim number {i} here" for i in range(6)])))
-    assert resp.count == 6
+    # 12 claims > concurrency bound (8): the bound must actually clamp the fan-out.
+    resp = asyncio.run(main.verify_claims(main.VerifyClaimsRequest(claims=[f"claim number {i} here" for i in range(12)])))
+    assert resp.count == 12
     # Parallel execution must be observable...
     assert telemetry["max"] >= 2, f"batch ran sequentially: max_inflight={telemetry['max']}"
     # ...but never past the concurrency bound (8).
-    assert telemetry["max"] <= 8
+    assert telemetry["max"] <= 8, f"unbounded fan-out: max_inflight={telemetry['max']}"
 
 
 def test_verify_claims_isolates_claim_failure(monkeypatch):

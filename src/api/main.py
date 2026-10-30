@@ -1179,24 +1179,33 @@ async def verify_claim(req: VerifyClaimRequest):
     return result
 
 
+# Bounded fan-out for batch verification. The gateway calls /verify_claims with
+# a 60s timeout (DefaultRAGTimeout); 50 claims / 8 concurrent ≈ 7 waves keeps a
+# full-cap batch well inside that budget without flooding the shared threadpool.
+VERIFY_CLAIMS_CONCURRENCY = 8
+
+
 @app.post("/verify_claims", response_model=VerifyClaimsResponse)
 async def verify_claims(req: VerifyClaimsRequest):
     if not all([retriever, confidence_engine]):
         raise HTTPException(status_code=503, detail="Engine not ready")
     # Cap enforced by schema (max_length=50)
+    semaphore = asyncio.Semaphore(VERIFY_CLAIMS_CONCURRENCY)
+
     async def _one(claim: str):
-        try:
-            single = VerifyClaimRequest(claim=claim, top_k=req.top_k)
-            return await verify_claim(single)
-        except Exception:
-            return VerifyClaimResponse(
-                decision="abstain",
-                calibrated_confidence=0.0,
-                confidence_zone="red",
-                evidence=[],
-                span_level_attribution=[],
-                failure_type="internal_error",
-            )
+        async with semaphore:
+            try:
+                single = VerifyClaimRequest(claim=claim, top_k=req.top_k)
+                return await verify_claim(single)
+            except Exception:
+                return VerifyClaimResponse(
+                    decision="abstain",
+                    calibrated_confidence=0.0,
+                    confidence_zone="red",
+                    evidence=[],
+                    span_level_attribution=[],
+                    failure_type="internal_error",
+                )
 
     results = await asyncio.gather(*[_one(c) for c in req.claims])
     return VerifyClaimsResponse(results=list(results), count=len(results))
