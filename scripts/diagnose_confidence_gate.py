@@ -1,29 +1,13 @@
-#!/usr/bin/env python3
-"""Diagnose pre-generation confidence gate for Phase 1 answerable cases.
-
-Runs the 15 answerable cases from the frozen Phase 1 smoke set through the
-real retrieval + confidence path and writes a JSON summary of the confidence
-decision, score, retrieval overlap, and top-k outcome. The script never calls
-the LLM when the gate rejects; it records the rejection reason instead.
-
-Usage (from rag-research/):
-    QDRANT_URL=http://localhost:6333 \\
-    QDRANT_COLLECTION=rag_research_phase1_v3 \\
-    BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json \\
-    PYTHONPATH=. python scripts/diagnose_confidence_gate.py
-"""
-
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts import run_single_query as runner  # noqa: E402
+from scripts import run_single_query as runner
 
 DATASET = REPO_ROOT / "data/evaluation/phase1_smoke_set_v3.json"
 OUTPUT = REPO_ROOT / "results/metrics/confidence_gate_diagnosis.json"
@@ -112,4 +96,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-EOF

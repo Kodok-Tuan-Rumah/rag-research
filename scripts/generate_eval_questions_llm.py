@@ -103,7 +103,6 @@ def usable_chunks(chunks: list[dict]) -> list[dict]:
 
 
 def balanced_sample(chunks: list[dict], per_doc: int, rng: random.Random) -> list[dict]:
-    """Equal quota per document, so no paper dominates the eval set."""
     by_doc: dict[str, list[dict]] = {}
     for chunk in chunks:
         by_doc.setdefault(chunk["doc_id"], []).append(chunk)
@@ -391,8 +390,6 @@ def main() -> int:
                 rejected.append({"reason": bad, "question": question, "answer": answer})
                 continue
 
-            # Grounding: the answer must be supported by the evidence handed to
-            # the model, which for this mode is the pair.
             matched, match_type = match_gold_chunk(answer, list(pair))
             if matched is None:
                 rejected.append(
@@ -500,7 +497,6 @@ def main() -> int:
         )
         if i % 10 == 0 or i == limit:
             print(f"  [{i}/{limit}] kept={len(kept)} rejected={len(rejected)}")
-
     return _finish(args, kept, rejected, limit)
 
 

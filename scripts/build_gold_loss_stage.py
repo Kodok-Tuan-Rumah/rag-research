@@ -89,8 +89,6 @@ def main() -> None:
         f"- final gold present: {stage_gold_counts['final']}/{len(rows)} ({recall['final']:.4f})"
     )
     GOLD_MD.write_text("\n".join(lines) + "\n")
-
-    # simple filter audit view from classification
     from collections import Counter
 
     verdict_counts = Counter(r.get("filter_verdict") for r in rows)
@@ -100,7 +98,6 @@ def main() -> None:
             r["classification"] = "NOT_FILTER_FAILURE"
 
     classification_counts = Counter(r.get("classification") for r in rows)
-    # postprocess missing rows with verdict ok: treat as potential rank-cutoff, not filter failure
     overrides: dict[str, str] = {}
     for r in rows:
         if r.get("classification") == "UNKNOWN" and r.get("filter_verdict") == "ok":

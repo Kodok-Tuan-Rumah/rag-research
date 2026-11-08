@@ -16,8 +16,6 @@ METRICS = REPO_ROOT / "results" / "metrics"
 INDEX_JSON = METRICS / "INDEX.json"
 INDEX_MD = METRICS / "INDEX.md"
 BASELINE = REPO_ROOT / "results" / "metrics" / "k1_baseline_freeze.json"
-
-# Which investigation produced each artifact. Anything unmatched lands in
 GROUPS = [
     ("k1", "K1 — baseline freeze, generation stability, coverage audits"),
     ("k2", "K2 — RAGAS lineage and evidence integrity"),

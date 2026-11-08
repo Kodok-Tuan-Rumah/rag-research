@@ -17,7 +17,6 @@ TOKEN_RECALL_THRESHOLD = 0.70
 
 
 def question_type(question: str) -> str:
-    """Heuristic-only labelling. Not treated as ground truth."""
     q = question.lower().strip()
     words = q.split()
     if any(word in words for word in ("what", "who", "when", "where", "which")) or q.endswith(

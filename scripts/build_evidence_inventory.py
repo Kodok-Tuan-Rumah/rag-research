@@ -104,8 +104,6 @@ def main() -> None:
         pat = pat_row[0]
         for path in sorted(glob.glob(pat, recursive=True)):
             rows.append(_inspect(path))
-
-    # filter huge py scripts duplicated entries (TARGET includes json only)
     INV.parent.mkdir(parents=True, exist_ok=True)
     INV.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
 

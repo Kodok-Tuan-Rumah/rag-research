@@ -1,16 +1,20 @@
 import json
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
+
 from sklearn.model_selection import train_test_split
 
+
 def load_json(filepath):
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         return json.load(f)
 
+
 def save_json(data, filepath):
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         json.dump(data, f, indent=2)
     print(f"Saved {len(data)} samples to {filepath}")
+
 
 def main():
     # Define paths
@@ -36,10 +40,7 @@ def main():
     # Stratified 80/20 split
     print("\nPerforming stratified 80/20 split by question_type...")
     train_samples, holdout_samples = train_test_split(
-        samples,
-        test_size=0.2,
-        random_state=42,
-        stratify=question_types
+        samples, test_size=0.2, random_state=42, stratify=question_types
     )
 
     print(f"Train set: {len(train_samples)} samples")

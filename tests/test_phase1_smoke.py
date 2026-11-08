@@ -6,7 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.phase1_smoke import archive_existing_report, load_cases, summarize
+from scripts.phase1_smoke import archive_existing_report, load_cases, review_report, summarize
+from scripts.phase1_smoke_review import pending_rows
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 V3_DATASET = REPO_ROOT / "data/evaluation/phase1_smoke_set_v3.json"
@@ -46,7 +47,8 @@ def _passing_report() -> dict:
             "human_review": {
                 "answer_correct": None if should_abstain else True,
                 "grounded": None if should_abstain else True,
-                "reviewer": None if should_abstain else "reviewer-1",
+                "abstention_correct": True if should_abstain else None,
+                "reviewer": "reviewer-1",
                 "failure_categories": [],
             },
         })
@@ -60,7 +62,7 @@ def test_phase1_acceptance_set_is_frozen_and_balanced():
     assert len(dataset["records"]) == 20
     assert sum(row["should_abstain"] is False for row in dataset["records"]) == 15
     assert sum(row["should_abstain"] is True for row in dataset["records"]) == 5
-    assert dataset["expected_qdrant_vectors"] == 796
+    assert dataset["expected_qdrant_vectors"] == 642
     assert dataset["records"][-6]["query_id"] == "p1_answer_15_attention"
 
 
@@ -147,6 +149,61 @@ def test_phase1_gate_stays_pending_until_answerable_cases_are_reviewed():
     assert summary["human_review_complete"] is False
     assert summary["correct_final_decisions"] is None
     assert summary["phase1_pass"] is False
+
+
+def test_phase1_gate_requires_human_review_for_abstain_cases():
+    report = _passing_report()
+    report["records"][15]["human_review"]["abstention_correct"] = None
+
+    summary = summarize(report)
+
+    assert summary["human_review_complete"] is False
+    assert summary["correct_final_decisions"] is None
+    assert summary["phase1_pass"] is False
+
+
+def test_failed_abstention_review_requires_a_failure_category():
+    report = _passing_report()
+    report["records"][15]["human_review"].update({
+        "abstention_correct": False,
+        "failure_categories": [],
+    })
+
+    summary = summarize(report)
+
+    assert summary["human_review_complete"] is True
+    assert summary["failure_reasons_complete"] is False
+    assert summary["phase1_pass"] is False
+
+
+def test_review_queue_includes_unreviewed_abstain_cases():
+    report = _passing_report()
+    report["records"][15]["human_review"]["abstention_correct"] = None
+
+    pending = pending_rows(report)
+
+    assert [row["query_id"] for row in pending] == ["q15"]
+
+
+def test_review_report_collects_human_abstention_review(tmp_path):
+    report = _passing_report()
+    report["report_version"] = "phase1-smoke-report-v1"
+    report["summary"] = {}
+    record = report["records"][15]
+    record["query"] = "Out-of-corpus question"
+    record["human_review"]["abstention_correct"] = None
+    report_path = tmp_path / "report.json"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    answers = iter(["y", ""])
+    output = []
+
+    review_report(report_path, input_fn=lambda _: next(answers), output_fn=output.append)
+
+    saved_report = json.loads(report_path.read_text(encoding="utf-8"))
+    saved_review = saved_report["records"][15]["human_review"]
+    assert saved_review["abstention_correct"] is True
+    assert saved_review["reviewer"] == "reviewer-1"
+    assert any("Review 16/20" in line for line in output)
 
 
 def test_p1_answer_02_ungrounded_generate_is_a_hard_acceptance_failure():

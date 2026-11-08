@@ -1,7 +1,3 @@
-"""Benchmark: Rust vs Python cross-encoder reranker.
-
-Measures latency for 100+ query-document pairs using both backends.
-"""
 from __future__ import annotations
 
 import json
@@ -9,9 +5,7 @@ import os
 import time
 from pathlib import Path
 
-# Import Rust extension FIRST (before onnxruntime) to avoid "only one environment" conflict
 try:
-    import cross_encoder_reranker
     RUST_AVAILABLE = True
 except ImportError:
     RUST_AVAILABLE = False
@@ -20,6 +14,7 @@ except ImportError:
 if "ORT_DYLIB_PATH" not in os.environ:
     try:
         import onnxruntime
+
         ort_lib = os.path.join(
             os.path.dirname(onnxruntime.__file__),
             "capi",
@@ -30,11 +25,8 @@ if "ORT_DYLIB_PATH" not in os.environ:
     except ImportError:
         pass
 
-import numpy as np
-
 
 def generate_pairs(n: int) -> list:
-    """Generate n diverse query-document pairs."""
     queries = [
         "What is self-attention in Transformers?",
         "How does RAG reduce hallucination?",
@@ -71,10 +63,8 @@ def generate_pairs(n: int) -> list:
 
 
 def benchmark_rust(pairs: list, warmup: int = 5) -> dict:
-    """Benchmark Rust reranker."""
     if not RUST_AVAILABLE:
         return {"error": "Rust extension not importable", "backend": "rust"}
-
     from src.retrieval.reranker_rust import RustCrossEncoderReranker
 
     reranker = RustCrossEncoderReranker()
@@ -102,19 +92,13 @@ def benchmark_rust(pairs: list, warmup: int = 5) -> dict:
 
 
 def benchmark_python(pairs: list, warmup: int = 5) -> dict:
-    """Benchmark Python sentence-transformers reranker."""
     from sentence_transformers import CrossEncoder
 
     ce = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-
-    # Warm up
     ce.predict(pairs[:warmup])
-
-    # Benchmark
     t0 = time.perf_counter()
     scores = ce.predict(pairs)
     t1 = time.perf_counter()
-
     total_ms = (t1 - t0) * 1000
     per_pair_ms = total_ms / len(pairs)
 
@@ -131,7 +115,6 @@ def main():
     print("=" * 60)
     print("Rust vs Python Cross-Encoder Reranker Benchmark")
     print("=" * 60)
-
     results = {}
     for n in [10, 50, 100, 200]:
         print(f"\n--- {n} pairs ---")
@@ -142,11 +125,15 @@ def main():
         if "error" in rust_result:
             print(f"  Rust:   ERROR - {rust_result['error']}")
         else:
-            print(f"  Rust:   {rust_result['total_ms']:.2f}ms total, {rust_result['per_pair_ms']:.2f}ms/pair")
+            print(
+                f"  Rust:   {rust_result['total_ms']:.2f}ms total, {rust_result['per_pair_ms']:.2f}ms/pair"
+            )
 
         # Python
         python_result = benchmark_python(pairs)
-        print(f"  Python: {python_result['total_ms']:.2f}ms total, {python_result['per_pair_ms']:.2f}ms/pair")
+        print(
+            f"  Python: {python_result['total_ms']:.2f}ms total, {python_result['per_pair_ms']:.2f}ms/pair"
+        )
 
         if "error" not in rust_result:
             speedup = python_result["per_pair_ms"] / rust_result["per_pair_ms"]
@@ -177,7 +164,9 @@ def main():
     for n in [10, 50, 100, 200]:
         r = results[n]
         if "error" not in r.get("rust", {}):
-            print(f"{n:>6} {r['rust']['per_pair_ms']:>16.2f} {r['python']['per_pair_ms']:>18.2f} {r['speedup']:>9.2f}x")
+            print(
+                f"{n:>6} {r['rust']['per_pair_ms']:>16.2f} {r['python']['per_pair_ms']:>18.2f} {r['speedup']:>9.2f}x"
+            )
         else:
             print(f"{n:>6} {'ERROR':>16} {r['python']['per_pair_ms']:>18.2f} {'N/A':>10}")
 

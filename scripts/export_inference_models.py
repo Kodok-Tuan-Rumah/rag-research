@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-import onnx
 import torch
 from transformers import AutoModel, AutoModelForSequenceClassification, AutoTokenizer
 
@@ -61,7 +60,9 @@ def _export_common(wrapper, tokenizer, dummy, output_dir: Path, output_name: str
             "input_ids": {0: "batch", 1: "seq"},
             "attention_mask": {0: "batch", 1: "seq"},
             "token_type_ids": {0: "batch", 1: "seq"},
-            output_name: {0: "batch", 1: "seq"} if output_name == "last_hidden_state" else {0: "batch"},
+            output_name: {0: "batch", 1: "seq"}
+            if output_name == "last_hidden_state"
+            else {0: "batch"},
         },
         opset_version=17,
         dynamo=False,
@@ -70,15 +71,19 @@ def _export_common(wrapper, tokenizer, dummy, output_dir: Path, output_name: str
     tokenizer.save_pretrained(str(output_dir))
     # validate
     import onnxruntime as ort
+
     sess = ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     # pytorch reference
     with torch.no_grad():
         pt_out = wrapper(*dummy).cpu().numpy()
-    ort_out = sess.run(None, {
-        "input_ids": dummy[0].cpu().numpy().astype("int64"),
-        "attention_mask": dummy[1].cpu().numpy().astype("int64"),
-        "token_type_ids": dummy[2].cpu().numpy().astype("int64"),
-    })[0]
+    ort_out = sess.run(
+        None,
+        {
+            "input_ids": dummy[0].cpu().numpy().astype("int64"),
+            "attention_mask": dummy[1].cpu().numpy().astype("int64"),
+            "token_type_ids": dummy[2].cpu().numpy().astype("int64"),
+        },
+    )[0]
     assert np.allclose(pt_out, ort_out, atol=1e-4), "ONNX parity check failed"
     return onnx_path
 

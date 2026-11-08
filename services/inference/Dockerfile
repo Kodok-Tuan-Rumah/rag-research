@@ -1,8 +1,6 @@
-# syntax=docker/dockerfile:1
-
-ARG PYTHON_IMAGE=python:3.12-slim
-ARG RUST_IMAGE=rust:1.99-bookworm
-ARG RUNTIME_IMAGE=debian:bookworm-slim
+ARG PYTHON_IMAGE=python:3.12.16-slim@sha256:4840d514c583a4d3d8cad3940e68dee6f0f6f3635c12fcd0a3d74c21a5b93a54
+ARG RUST_IMAGE=rust:1.99.1-bookworm@sha256:e6f2cff35d0f309acf8433b4f05878ed77092602c5065cc81801177da0bb3a9c
+ARG RUNTIME_IMAGE=debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 
 FROM ${PYTHON_IMAGE} AS models
 ENV PIP_NO_CACHE_DIR=1
@@ -25,7 +23,7 @@ RUN apt-get update \
 ARG ORT_VERSION=1.31.0
 COPY services/inference/onnxruntime.sha256 /onnxruntime.sha256
 RUN curl -fsSL -o /tmp/ort.tgz \
-      "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz" \
+    "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-linux-x64-${ORT_VERSION}.tgz" \
     && echo "$(cat /onnxruntime.sha256)  /tmp/ort.tgz" | sha256sum -c - \
     && tar -xzf /tmp/ort.tgz -C /usr/local --strip-components=1 \
     && ldconfig \
@@ -37,5 +35,5 @@ RUN useradd --system --uid 10001 --create-home inference
 USER 10001
 EXPOSE 8081
 HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=12 \
-  CMD curl -fsS http://127.0.0.1:8081/ready || exit 1
+    CMD curl -fsS http://127.0.0.1:8081/ready || exit 1
 ENTRYPOINT ["/usr/local/bin/rag-inference"]

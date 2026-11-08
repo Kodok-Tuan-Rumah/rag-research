@@ -4,7 +4,7 @@ import argparse
 import hashlib
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -80,7 +80,10 @@ def build_report(
     query_rows: dict[str, dict[str, Any]] = {}
     for mode in ("rrf_only", "reranker5"):
         rows = k79["modes"][mode]["per_query_results"]
-        _require([row["query_id"] for row in rows] == dataset_ids, f"K7.9 {mode} query IDs/order mismatch")
+        _require(
+            [row["query_id"] for row in rows] == dataset_ids,
+            f"K7.9 {mode} query IDs/order mismatch",
+        )
         mode_rows: dict[str, Any] = {}
         for row in rows:
             query_id = row["query_id"]
@@ -138,7 +141,9 @@ def build_report(
                         k79["modes"]["rrf_only"]["per_query_results"], query_id
                     ).get("final_rank"),
                     "rrf_only_hit_at_10": bool(
-                        query_by_id(k79["modes"]["rrf_only"]["per_query_results"], query_id).get("hit@10")
+                        query_by_id(k79["modes"]["rrf_only"]["per_query_results"], query_id).get(
+                            "hit@10"
+                        )
                     ),
                 }
         modes[mode] = {
@@ -151,13 +156,15 @@ def build_report(
     rank_gt1_count = sum(rank is not None and rank > 1 for rank in rrf_ranks)
     exposed = [row for row in query_rows.values() if row["gold_in_reranker_input"]]
     regressions = [
-        row for row in exposed
+        row
+        for row in exposed
         if row["final_gold_rank"] is not None
         and row["rrf_gold_rank"] is not None
         and row["final_gold_rank"] > row["rrf_gold_rank"]
     ]
     improvements = [
-        row for row in exposed
+        row
+        for row in exposed
         if row["final_gold_rank"] is not None
         and row["rrf_gold_rank"] is not None
         and row["final_gold_rank"] < row["rrf_gold_rank"]
@@ -177,16 +184,17 @@ def build_report(
             f"{query_id}: K7.8 and K7.9 RRF gold ranks differ",
         )
         row["candidate_count_final_ranks"] = {
-            str(count): k78_row.get(f"final_rank_{count}")
-            for count in (5, 10, 15, 20)
+            str(count): k78_row.get(f"final_rank_{count}") for count in (5, 10, 15, 20)
         }
 
     difficulty_counts = dict(Counter(str(row.get("difficulty", "UNKNOWN")) for row in dataset_rows))
-    answer_type_counts = dict(Counter(str(row.get("answer_type", "UNKNOWN")) for row in dataset_rows))
+    answer_type_counts = dict(
+        Counter(str(row.get("answer_type", "UNKNOWN")) for row in dataset_rows)
+    )
     n = len(dataset_rows)
     return {
         "audit": "K7.10 canonical retrieval evaluation coverage",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "sources": {
             "dataset": str(dataset_path.relative_to(ROOT)),
             "k79_artifact": str(k79_path.relative_to(ROOT)),
@@ -321,7 +329,7 @@ def main() -> None:
     parser.add_argument("--out-md", type=Path)
     args = parser.parse_args()
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out_json = args.out_json or ROOT / f"results/metrics/k710_coverage_audit_{stamp}.json"
     out_md = args.out_md or ROOT / f"results/metrics/k710_coverage_audit_{stamp}.md"
     report = build_report(args.dataset, args.k79, args.k78)
@@ -331,9 +339,11 @@ def main() -> None:
     out_md.write_text(render_markdown(report), encoding="utf-8")
     print(f"[saved] {out_json}")
     print(f"[saved] {out_md}")
-    print(f"[validated] {report['validation']['query_count']} queries; "
-          f"{report['coverage_summary']['rrf_gold_rank_1_count']} gold rank-1; "
-          f"{report['coverage_summary']['gold_rank_gt1_and_in_reranker5_input_count']} rank>1 gold in reranker@5 input")
+    print(
+        f"[validated] {report['validation']['query_count']} queries; "
+        f"{report['coverage_summary']['rrf_gold_rank_1_count']} gold rank-1; "
+        f"{report['coverage_summary']['gold_rank_gt1_and_in_reranker5_input_count']} rank>1 gold in reranker@5 input"
+    )
 
 
 if __name__ == "__main__":

@@ -1,26 +1,7 @@
-#!/usr/bin/env python3
-"""Fit and persist the confidence-calibration models from a labeled dataset.
-
-The ``joblib`` artifacts under ``models/`` are build outputs, not tracked
-inputs. The Dockerfile runs this script during the image build so that a fresh
-clone cannot start with an uncalibrated or stale model, and so the artifact can
-always be traced back to one dataset revision.
-
-Failed pipeline runs must not reach the fitter. A row marked ``ERROR`` carries a
-sentinel ``raw_confidence`` (0.0) that means "the run broke", not "the evidence
-was weak"; fitting it would teach isotonic regression that a supported query is
-worth zero confidence. ``load_samples`` therefore refuses such rows instead of
-silently dropping them.
-
-Usage (from rag-research/):
-
-    PYTHONPATH=. python scripts/fit_calibration.py \
-        --dataset data/evaluation/calibration_dataset.json --out models
-"""
-
 from __future__ import annotations
 
 import argparse
+import datetime as _dt
 import json
 import sys
 from pathlib import Path
@@ -37,13 +18,6 @@ class DatasetError(ValueError):
 
 
 def load_samples(path: str | Path) -> tuple[dict, list[CalibrationSample]]:
-    """Read a calibration dataset and return its metadata and usable samples.
-
-    Raises ``DatasetError`` when a row is an ERROR sentinel or when the declared
-    counts disagree with the rows actually present. Both conditions mean the
-    dataset is not fit for calibration, and fitting it anyway would produce a
-    model that looks valid but is trained on corrupted observations.
-    """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     rows = data.get("samples", [])
     if not rows:
@@ -64,9 +38,7 @@ def load_samples(path: str | Path) -> tuple[dict, list[CalibrationSample]]:
 
     declared = data.get("total_samples")
     if declared is not None and declared != len(rows):
-        raise DatasetError(
-            f"{path}: total_samples={declared} but {len(rows)} rows present"
-        )
+        raise DatasetError(f"{path}: total_samples={declared} but {len(rows)} rows present")
     supported = sum(1 for row in rows if bool(row.get("is_supported")))
     if data.get("supported_count") is not None and data["supported_count"] != supported:
         raise DatasetError(
@@ -86,19 +58,26 @@ def load_samples(path: str | Path) -> tuple[dict, list[CalibrationSample]]:
     return data, samples
 
 
-def fit_all(samples: list[CalibrationSample]) -> dict:
+def fit_all(samples: list[CalibrationSample], dataset_path: str | Path = None) -> dict:
     results = {}
     for method in METHODS:
         engine = CalibrationEngine(method=method)
-        result = engine.fit(samples)
+        result = engine.fit(samples, dataset_path=dataset_path)
         results[method] = {
             "n_samples": result.n_samples,
+            "holdout_n": result.holdout_n,
             "ece_before": result.ece_before,
             "ece_after": result.ece_after,
+            "ece_ci_low": result.ece_ci_low,
+            "ece_ci_high": result.ece_ci_high,
+            "cv_ece": result.cv_ece,
             "brier_before": result.brier_before,
             "brier_after": result.brier_after,
+            "dataset_hash": result.dataset_hash,
+            "code_version": result.code_version,
+            "fitted_at": result.fitted_at,
+            "_engine": engine,
         }
-        results[method]["_engine"] = engine
     return results
 
 
@@ -120,11 +99,13 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
-    results = fit_all(samples)
+    results = fit_all(samples, dataset_path=args.dataset)
     report = {
         "dataset": str(args.dataset),
         "dataset_name": data.get("dataset_name"),
         "n_samples": len(samples),
+        "fit_at": _dt.datetime.now(_dt.UTC).isoformat(),
+        "code_version": None,
         "methods": {},
     }
     for method, metrics in results.items():
@@ -132,9 +113,14 @@ def main(argv: list[str] | None = None) -> int:
         target = out / f"calibration_{method}.joblib"
         engine.save(target)
         report["methods"][method] = metrics
+        # Carry code_version up to report top level (same for all methods).
+        if report["code_version"] is None and metrics.get("code_version"):
+            report["code_version"] = metrics["code_version"]
         print(
-            f"{method}: n={metrics['n_samples']} "
-            f"ECE {metrics['ece_before']} -> {metrics['ece_after']} | "
+            f"{method}: n={metrics['n_samples']} holdout={metrics['holdout_n']} "
+            f"ECE {metrics['ece_before']} -> {metrics['ece_after']} "
+            f"(CI {metrics['ece_ci_low']}-{metrics['ece_ci_high']}, "
+            f"CV {metrics['cv_ece']}) | "
             f"Brier {metrics['brier_before']} -> {metrics['brier_after']} "
             f"-> {target}"
         )

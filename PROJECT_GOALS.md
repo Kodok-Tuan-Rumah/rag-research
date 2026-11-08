@@ -393,7 +393,7 @@ This must be implemented as a circuit breaker, not a manual toggle.
 - [x] Runtime output for every case has status `ANSWERED` or `INSUFFICIENT_CONTEXT`, confidence finite and within `[0.0, 1.0]`, at most 2 generation attempts, complete §4 JSON log fields, and complete retrieval/generation latency fields.
 - [x] The run verifies the live Qdrant collection/path, exact vector count (642 for v3), and a non-empty dense probe. Dense/BM25 source and stage counts are recorded.
 - [x] Runtime/pipeline/provider exceptions are either prevented or explicitly classified and logged; no unhandled exception or `None` failure state escapes to the API.
-- [ ] Human review confirms at least 18/20 correct final decisions: answerable cases must be answered correctly and grounded in retrieved evidence; abstain cases must return a reasoned abstention. No wrong or ungrounded answer may have the effective `GENERATE` confidence decision. Review is pending; four rows in the current run are provider errors and require a clean rerun before review.
+- [ ] Human review covers all 20 cases and confirms at least 18/20 correct final decisions: answerable cases must be answered correctly and grounded in prompt evidence; abstain cases must be judged correct with a reason consistent with the evidence. No wrong or ungrounded answer may have the effective `GENERATE` confidence decision.
 - [x] `sanity_check_answer()` passes its five manual cases: short answer, verbatim copy, high overlap, normal grounded answer, and empty answer.
 
 **Acceptance procedure:** Run the v3 workflow in [`docs/evaluation_guide.md`](docs/evaluation_guide.md), using `QDRANT_COLLECTION=rag_research_phase1_v3` and `BM25_CHUNKS_PATH=data/processed/chunks_semantic_v3.json`. The report path is `results/metrics/phase1_smoke_v3.json`; prior reports are archived. Review the fresh run with `python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json`, then run `python scripts/phase1_smoke.py --check-report results/metrics/phase1_smoke_v3.json`. The checker exits successfully only when runtime, dataset, Qdrant, complete review, failure reasons, 18/20, and zero-confident-wrong gates all pass. A run with `SMOKE_STOP_BEFORE_GEN` is not acceptance evidence.
@@ -1026,8 +1026,8 @@ not an acceptance substitute.
   "hyde_enabled": false,
   "multi_query_enabled": false,
   "llm_model": "openai/gpt-oss-20b",
-  "confidence_reject_threshold": 0.35,
-  "confidence_partial_threshold": 0.65,
+  "confidence_reject_threshold": 0.25,
+  "confidence_partial_threshold": 0.50,
   "api_retrieval_attempts": "one initial attempt plus at most one BM25-heavy retry",
   "context_max_chars": 6000
 }

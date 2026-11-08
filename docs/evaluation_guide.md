@@ -37,7 +37,8 @@ dataset provenance.
 
    The runner archives an existing report before replacing it. The report
    records dataset identity, runtime gates, per-case outputs, and the summary.
-3. Review every answerable case interactively:
+3. Review all 20 cases interactively, including every answerable case and all
+   five expected abstentions:
 
    ```bash
    python scripts/phase1_smoke.py --review-report results/metrics/phase1_smoke_v3.json
@@ -49,7 +50,8 @@ dataset provenance.
    context; the presence of a gold chunk alone is insufficient. Record the
    reviewer identifier. For any incorrect or ungrounded answer, add at least
    one failure category and useful notes. Do not mark a response correct merely
-   because its decision status was `ANSWERED`.
+   because its decision status was `ANSWERED`. For abstain cases, confirm the
+   abstention is correct and has a reason consistent with the evidence shown.
 4. Check the complete report:
 
    ```bash
@@ -57,7 +59,7 @@ dataset provenance.
    ```
 
    Phase 1 passes only when all runtime/dataset/Qdrant gates pass, all required
-   answerable cases are reviewed, at least 18/20 final decisions are correct,
+   all 20 cases have human review, at least 18/20 final decisions are correct,
    and there are zero wrong or ungrounded answers with effective `GENERATE`
    decisions. Failed reviews must include a failure reason. The checker output
    and report are the evidence; do not infer a pass from a successful process
@@ -77,7 +79,7 @@ dataset provenance.
 The Phase 1 runner and `make phase1-check` now target the v3 dataset and the
 642-chunk semantic v3 corpus. `results/metrics/phase1_smoke_v3.json` has not
 been produced yet, so there is no v3 acceptance evidence. Do not claim a Phase 1
-pass until the 20-case run is complete, all 15 answerable cases are reviewed,
+pass until the 20-case run is complete and all 20 cases are reviewed,
 and `--check-report` exits `0` with `phase1_pass: true`.
 
 ### Historical v1 report (2026-10-22)

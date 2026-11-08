@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import src._compat  # noqa: F401  must precede qdrant_client on 3.14
+import src._compat  # noqa: F401
 from src.evaluation.gold_schema import dataset_records, normalize_gold_chunk_ids
 
 CHUNKS_PATH = REPO_ROOT / "data" / "processed" / "chunks_semantic_v2.json"

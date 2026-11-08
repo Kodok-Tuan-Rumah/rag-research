@@ -114,7 +114,7 @@ class MasterHybridRetriever:
     def __init__(
         self,
         vector_store: QdrantVectorStore,
-        bm25_chunks_path: str = "data/processed/chunks_semantic_v2.json",
+        bm25_chunks_path: str = settings.bm25_chunks_path,
         reranker_model: Optional[str] = None,
         rrf_k: int = 60,
     ):

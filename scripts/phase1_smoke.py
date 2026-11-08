@@ -163,7 +163,6 @@ def _make_event(query_id: str, result: dict[str, Any]) -> dict[str, Any]:
 
 
 def run_smoke(dataset: dict[str, Any]) -> dict[str, Any]:
-    # Acceptance runs must always exercise the real generation path.
     os.environ.pop("SMOKE_STOP_BEFORE_GEN", None)
     corpus_path = REPO_ROOT / dataset.get(
         "canonical_chunks_path", "data/processed/chunks_semantic_v2.json"
@@ -193,6 +192,7 @@ def run_smoke(dataset: dict[str, Any]) -> dict[str, Any]:
             "human_review": {
                 "answer_correct": None,
                 "grounded": None,
+                "abstention_correct": None,
                 "reviewer": None,
                 "notes": None,
                 "failure_categories": [],
@@ -300,11 +300,26 @@ def summarize(report: dict[str, Any]) -> dict[str, Any]:
         provider_error = _is_provider_error(result)
         provider_errors += int(provider_error)
         if row.get("should_abstain") is True:
-            decision_correct = (
-                result.get("status") == "INSUFFICIENT_CONTEXT"
-                and bool(result.get("abstain_reason"))
-                and not provider_error
-            )
+            abstention_correct = review.get("abstention_correct")
+            reviewer = review.get("reviewer")
+            if (
+                not isinstance(abstention_correct, bool)
+                or not isinstance(reviewer, str)
+                or not reviewer.strip()
+            ):
+                reviewed = False
+                decision_correct = False
+            else:
+                failed_review = (
+                    not abstention_correct
+                    or result.get("status") != "INSUFFICIENT_CONTEXT"
+                    or not result.get("abstain_reason")
+                    or provider_error
+                )
+                categories = review.get("failure_categories")
+                if failed_review and not _valid_failure_categories(categories):
+                    failure_reasons_complete = False
+                decision_correct = not failed_review
         else:
             answer_correct = review.get("answer_correct")
             grounded = review.get("grounded")
@@ -401,7 +416,6 @@ def review_report(
     input_fn=input,
     output_fn=print,
 ) -> dict[str, Any]:
-    """Collect explicit human annotations for answerable acceptance cases."""
     report = json.loads(report_path.read_text(encoding="utf-8"))
     if report.get("report_version") != "phase1-smoke-report-v1":
         raise ValueError("Not a Phase 1 smoke report v1")
@@ -409,24 +423,35 @@ def review_report(
     if not isinstance(records, list) or len(records) != 20:
         raise ValueError("Human review requires a completed 20-case acceptance report")
 
-    answerable = [row for row in records if row.get("should_abstain") is False]
-    if len(answerable) != 15:
-        raise ValueError("Human review requires exactly 15 answerable cases")
-
     pending = []
-    for row in answerable:
+    for row in records:
         review = row.get("human_review") or {}
-        labels_present = (
-            isinstance(review.get("answer_correct"), bool)
-            and isinstance(review.get("grounded"), bool)
-            and isinstance(review.get("reviewer"), str)
-            and bool(review.get("reviewer", "").strip())
+        reviewer_present = (
+            isinstance(review.get("reviewer"), str) and bool(review["reviewer"].strip())
         )
-        has_failure = labels_present and (
-            review["answer_correct"] is False
-            or review["grounded"] is False
-            or (row.get("result") or {}).get("status") != "ANSWERED"
-        )
+        if row.get("should_abstain") is True:
+            abstention_correct = review.get("abstention_correct")
+            labels_present = isinstance(abstention_correct, bool) and reviewer_present
+            result = row.get("result") or {}
+            has_failure = labels_present and (
+                not abstention_correct
+                or result.get("status") != "INSUFFICIENT_CONTEXT"
+                or not result.get("abstain_reason")
+                or _is_provider_error(result)
+            )
+        else:
+            answer_correct = review.get("answer_correct")
+            grounded = review.get("grounded")
+            labels_present = (
+                isinstance(answer_correct, bool)
+                and isinstance(grounded, bool)
+                and reviewer_present
+            )
+            has_failure = labels_present and (
+                not answer_correct
+                or not grounded
+                or (row.get("result") or {}).get("status") != "ANSWERED"
+            )
         has_failure_categories = _valid_failure_categories(review.get("failure_categories"))
         if not labels_present or (has_failure and not has_failure_categories):
             pending.append(row)
@@ -447,23 +472,28 @@ def review_report(
         "penting dari gold answer (parafrasa boleh); grounded=yes hanya jika setiap klaim "
         "material didukung konteks yang benar-benar dikirim ke generator. Chunk gold yang "
         "terambil tetapi tidak masuk prompt tidak membuktikan groundedness. Jika pertanyaan "
-        "answerable tetapi sistem abstain, pilih answer_correct=no dan kategori false_abstention."
+        "answerable tetapi sistem abstain, pilih answer_correct=no dan kategori false_abstention. "
+        "Untuk kasus di luar cakupan korpus, nilai apakah abstention dengan alasan yang diberikan "
+        "memang tepat berdasarkan bukti yang ditampilkan."
     )
 
     for row in pending:
-        position = answerable.index(row) + 1
+        position = records.index(row) + 1
         result = row.get("result") or {}
         output_fn("\n" + "=" * 78)
-        output_fn(f"Review {position}/15 | {row.get('query_id')}")
+        output_fn(f"Review {position}/20 | {row.get('query_id')}")
         output_fn(f"Question: {row.get('query')}")
-        output_fn(f"Expected answer (full): {row.get('gold_answer')}")
-        output_fn(f"Gold chunk: {row.get('gold_chunk_id')}")
-        for gold_chunk in row.get("gold_evidence_chunks") or []:
-            output_fn(
-                f"Gold evidence (full): {gold_chunk.get('chunk_id')} | "
-                f"{gold_chunk.get('doc_id')} | {gold_chunk.get('section')}\n"
-                f"{gold_chunk.get('text', '')}"
-            )
+        if row.get("should_abstain") is True:
+            output_fn("Expected decision: reasoned abstention (out-of-corpus case)")
+        else:
+            output_fn(f"Expected answer (full): {row.get('gold_answer')}")
+            output_fn(f"Gold chunk: {row.get('gold_chunk_id')}")
+            for gold_chunk in row.get("gold_evidence_chunks") or []:
+                output_fn(
+                    f"Gold evidence (full): {gold_chunk.get('chunk_id')} | "
+                    f"{gold_chunk.get('doc_id')} | {gold_chunk.get('section')}\n"
+                    f"{gold_chunk.get('text', '')}"
+                )
         retrieval_confidence = result.get("retrieval_confidence") or {}
         output_fn(
             f"System status: {result.get('status')} | answer confidence: "
@@ -495,24 +525,41 @@ def review_report(
                 )
 
         review = row.setdefault("human_review", {})
-        labels_present = (
-            isinstance(review.get("answer_correct"), bool)
-            and isinstance(review.get("grounded"), bool)
-            and isinstance(review.get("reviewer"), str)
-            and bool(review.get("reviewer", "").strip())
-        )
-        if not labels_present:
-            review["answer_correct"] = _ask_yes_no("Is the answer correct and complete?", input_fn)
-            review["grounded"] = _ask_yes_no(
-                "Is every material claim supported by the retrieved evidence?", input_fn
+        if row.get("should_abstain") is True:
+            if not isinstance(review.get("abstention_correct"), bool):
+                review["abstention_correct"] = _ask_yes_no(
+                    "Is this a correct, reasoned abstention given the evidence?",
+                    input_fn,
+                )
+            if not isinstance(review.get("reviewer"), str) or not review["reviewer"].strip():
+                review["reviewer"] = reviewer
+            failed_review = (
+                not review["abstention_correct"]
+                or result.get("status") != "INSUFFICIENT_CONTEXT"
+                or not result.get("abstain_reason")
+                or _is_provider_error(result)
             )
-            review["reviewer"] = reviewer
+        else:
+            labels_present = (
+                isinstance(review.get("answer_correct"), bool)
+                and isinstance(review.get("grounded"), bool)
+                and isinstance(review.get("reviewer"), str)
+                and bool(review.get("reviewer", "").strip())
+            )
+            if not labels_present:
+                review["answer_correct"] = _ask_yes_no(
+                    "Is the answer correct and complete?", input_fn
+                )
+                review["grounded"] = _ask_yes_no(
+                    "Is every material claim supported by the retrieved evidence?", input_fn
+                )
+                review["reviewer"] = reviewer
 
-        failed_review = (
-            not review["answer_correct"]
-            or not review["grounded"]
-            or result.get("status") != "ANSWERED"
-        )
+            failed_review = (
+                not review["answer_correct"]
+                or not review["grounded"]
+                or result.get("status") != "ANSWERED"
+            )
         if failed_review and not review.get("failure_categories"):
             review["failure_categories"] = _ask_failure_categories(input_fn, output_fn)
         elif not failed_review:
@@ -534,14 +581,11 @@ def review_report(
             break
         if not entered_notes and not previous_notes:
             review["notes"] = None
-
-        # Save after every case so an interrupted terminal session preserves
-        # completed human work. The checker can be run after the final case.
         _save_report(report_path, report)
         output_fn("Review saved.")
 
     _save_report(report_path, report)
-    output_fn(f"\nReviewed or resumed {len(pending)} pending answerable case(s).")
+    output_fn(f"\nReviewed or resumed {len(pending)} pending case(s).")
     output_fn(json.dumps(report["summary"], indent=2, ensure_ascii=False))
     output_fn(
         "Run --review-report again to continue pending reviews, then --check-report "
@@ -562,7 +606,7 @@ def main() -> int:
     parser.add_argument(
         "--review-report",
         type=Path,
-        help="Interactively review answerable cases and save human_review annotations",
+        help="Interactively review all 20 cases and save human_review annotations",
     )
     parser.add_argument(
         "--review-pack",
@@ -628,7 +672,6 @@ def main() -> int:
 
 
 def archive_existing_report(report_path: Path) -> Path | None:
-    """Copy an existing acceptance report before a fresh run replaces it."""
     if not report_path.exists():
         return None
     archive_dir = report_path.parent / "archive"

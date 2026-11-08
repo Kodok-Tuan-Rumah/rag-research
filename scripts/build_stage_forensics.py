@@ -30,7 +30,6 @@ def _rank_row(rows: list[dict], gold_id: str) -> tuple[int | None, dict | None]:
 def _recall_from(
     rows_lists: list[list[dict]], gold_id: str, current_rows: list[dict] | None = None
 ) -> dict:
-    # recall@K per stage after building rows for one stage
     return {}
 
 
@@ -46,7 +45,6 @@ def main() -> None:
 
     rank_movement_rows = []
     per_query_rows = []
-    per_query_stage_scores = []
 
     # latent order for statistical eval: list pipeline input identical fold
     for item in dataset:
@@ -80,7 +78,7 @@ def main() -> None:
             for k in KS:
                 recall[stage][k].append(1 if rank is not None and rank <= k else 0)
 
-        # candidate recall: does gold appear in the rrf candidates pool (candidate_k=40 typically)
+        # candidate recall: does gold appear in the rrf candidates pool
         for k in KS:
             candidate_recall[f"candidate@{k}"].append(
                 1 if rrf_rank is not None and rrf_rank <= k else 0
@@ -106,7 +104,6 @@ def main() -> None:
                 cls = "TOP_K_CUTOFF"
         elif not final_included:
             cls = "CROSS_MISS"
-        # NO_FAILURE stays default when final_included True and final_ids has gold
 
         row = {
             "query_id": item["query_id"],
@@ -174,8 +171,6 @@ def main() -> None:
         "",
     ]
     (OUT_DIR / "retrieval_recall_k_diag.md").write_text("\n".join(md))
-
-    # Per-query stages & regression counts
     import statistics
 
     deltas_rrf = []
@@ -216,7 +211,6 @@ def main() -> None:
         )
     (OUT_DIR / "per_query_regression_recovery.md").write_text("\n".join(md) + "\n")
 
-    # q15 forensic artifact (reuse stage scores)
     q15 = next((r for r in rank_movement_rows if r["query_id"] == "q15"), None)
     if q15:
         (OUT_DIR / "q15_rank_forensic.json").write_text(
@@ -228,7 +222,6 @@ def main() -> None:
             + "\n```\n"
         )
 
-    # Latency diag for stages from trace latency_ms entries
     lat_entries = []
     for r in rank_movement_rows:
         lat = r.get("latency_trace", {})
@@ -266,7 +259,6 @@ def main() -> None:
             + json.dumps(latency_summary, indent=2, ensure_ascii=False)
             + "\n```\n"
         )
-
     print("[done] phase-d2 artifacts written")
 
 

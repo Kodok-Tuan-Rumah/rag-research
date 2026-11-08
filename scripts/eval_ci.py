@@ -22,6 +22,7 @@ class RAGSample:
     contexts: list[str]
     ground_truth: str
 
+
 THRESHOLDS = {
     "faithfulness": 0.88,
     "answer_relevancy": 0.88,
@@ -63,11 +64,16 @@ def load_samples(path: Path) -> list[RAGSample]:
         contexts = item.get("contexts") or item.get("context") or []
         if isinstance(contexts, str):
             contexts = [contexts]
-        if not isinstance(contexts, list) or any(not isinstance(context, str) for context in contexts):
-            raise ValueError(f"Evaluation row {index} contexts/context must be a string or list of strings.")
+        if not isinstance(contexts, list) or any(
+            not isinstance(context, str) for context in contexts
+        ):
+            raise ValueError(
+                f"Evaluation row {index} contexts/context must be a string or list of strings."
+            )
         ground_truth = item.get("ground_truth")
         missing = [
-            field for field, value in (
+            field
+            for field, value in (
                 ("question/query", question),
                 ("answer/response", answer),
                 ("contexts/context", contexts),
@@ -80,13 +86,14 @@ def load_samples(path: Path) -> list[RAGSample]:
                 f"Evaluation row {index} is not RAGAS-ready; missing/non-empty fields: "
                 f"{', '.join(missing)}."
             )
-        samples.append(RAGSample(
-            question=question,
-            answer=answer,
-            contexts=contexts,
-            ground_truth=ground_truth,
-        ))
-
+        samples.append(
+            RAGSample(
+                question=question,
+                answer=answer,
+                contexts=contexts,
+                ground_truth=ground_truth,
+            )
+        )
     return samples
 
 

@@ -58,11 +58,11 @@ def main() -> None:
         gold = item["gold_chunk_id"]
         question = item["question"]
 
-        # gunakan representasi sesungguhnya seperti yang diproses _run_search():
+        # fungsi _run_search():
         dense_hits = retriever.dense_search(question, k=40)
         bm25_hits = retriever.bm25_search(question, k=40)
 
-        # candidate list seperti di _run_search/fused (pakai _rrf_fuse real)
+        # candidate list (pakai _rrf_fuse real)
         fused_results = retriever._rrf_fuse(
             [dense_hits], [bm25_hits], candidate_k=40, dense_weight=0.5, bm25_weight=0.5
         )
@@ -90,8 +90,6 @@ def main() -> None:
 
         dense_rank, dense_score = rank_of(gold, dense_pairs)
         bm25_rank, bm25_score = rank_of(gold, bm25_pairs)
-
-        # candidatorder mengikuti logic _run_search (score sort) untuk rerank candidates
         candidates = [c for c in fused_filtered if not _cf_is_low_quality(c)]
         rerank_candidates = sorted(
             candidates,

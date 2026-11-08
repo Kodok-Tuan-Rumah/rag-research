@@ -17,8 +17,6 @@ DEFAULT_DATASET = "data/evaluation/retrieval_eval_dataset.json"
 
 
 class LogCapture(logging.Handler):
-    """Collect log messages emitted during a single generation call."""
-
     def __init__(self) -> None:
         super().__init__(level=logging.DEBUG)
         self.records: list[str] = []
@@ -37,7 +35,6 @@ class LogCapture(logging.Handler):
 
 
 def classify(capture: LogCapture, response, exc: BaseException | None) -> tuple[str, str]:
-    """Map one generation call to one of the terminal paths."""
     if exc is not None:
         text = f"{type(exc).__name__}: {exc}"
         if (
@@ -192,7 +189,7 @@ def main() -> int:
 
     from dotenv import load_dotenv
 
-    import src._compat  # noqa: F401  (must precede qdrant_client on Python 3.14)
+    import src._compat  # noqa: F401
 
     load_dotenv(dotenv_path=REPO_ROOT / ".env")
 

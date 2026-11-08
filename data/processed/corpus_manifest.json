@@ -1,0 +1,16 @@
+{
+  "corpus_version": "v3",
+  "path": "data/processed/chunks_semantic_v3.json",
+  "chunk_count": 642,
+  "sha256": "f3068181943f850762a8e66856b802f56c440ce41f192bb03ac12dfb54a3754b",
+  "created_at": "2026-10-31T22:45:00Z",
+  "note": "Single source of truth for the RAG corpus. All components (config, hybrid_retriever, qdrant_store, api/main) read this manifest. v2 (chunks_semantic_v2.json, 796 chunks) is FROZEN/read-only and must not be re-indexed.",
+  "frozen_versions": {
+    "v2": {
+      "path": "data/processed/chunks_semantic_v2.json",
+      "chunk_count": 796,
+      "sha256": "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6",
+      "status": "frozen — superseded by v3"
+    }
+  }
+}

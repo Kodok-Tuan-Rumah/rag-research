@@ -1,7 +1,3 @@
-"""Export sentence-transformers cross-encoder to ONNX format with regression head.
-
-Uses torch.jit.trace for compatibility.
-"""
 from __future__ import annotations
 
 import logging
@@ -23,16 +19,13 @@ def main() -> None:
     logger.info(f"Loading {model_name} ...")
     model = CrossEncoder(model_name)
     model.eval()
-
-    # The CrossEncoder wraps BertForSequenceClassification
-    bert_model = model.model  # BertForSequenceClassification
-    classifier = bert_model.classifier  # Linear layer
-
-    # Create dummy inputs
+    bert_model = model.model
+    classifier = bert_model.classifier
     dummy_query = "What is self-attention?"
     dummy_text = "Self-attention allows the model to attend to different positions."
 
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     inputs = tokenizer(
         dummy_query,
@@ -46,7 +39,6 @@ def main() -> None:
     input_ids = inputs["input_ids"]
     attention_mask = inputs["attention_mask"]
     token_type_ids = inputs["token_type_ids"]
-
     logger.info(f"Input shapes: {input_ids.shape}")
 
     class CrossEncoderWrapper(torch.nn.Module):
@@ -61,18 +53,15 @@ def main() -> None:
                 attention_mask=attention_mask,
                 token_type_ids=token_type_ids,
             )
-            # BertForSequenceClassification returns (loss, logits) or just logits
-            # But we want to do our own classifier application for ONNX compatibility
-            # Get base model output
             base_outputs = self.bert_model.base_model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 token_type_ids=token_type_ids,
             )
-            last_hidden_state = base_outputs[0]  # [batch_size, seq_len, hidden_dim]
-            cls_embedding = last_hidden_state[:, 0, :]  # [batch_size, hidden_dim]
-            logits = self.classifier(cls_embedding)  # [batch_size, 1]
-            return logits.squeeze(-1)  # [batch_size]
+            last_hidden_state = base_outputs[0]
+            cls_embedding = last_hidden_state[:, 0, :]
+            logits = self.classifier(cls_embedding)
+            return logits.squeeze(-1)
 
     wrapper = CrossEncoderWrapper(bert_model, classifier)
     wrapper.eval()
@@ -108,16 +97,15 @@ def main() -> None:
 
     # Save tokenizer
     tokenizer.save_pretrained(output_dir)
-
     logger.info(f"Model saved to {output_dir / 'model.onnx'}")
     logger.info(f"Tokenizer saved to {output_dir / 'tokenizer.json'}")
 
     # Verify with onnxruntime
-    import onnxruntime as ort
     import numpy as np
+    import onnxruntime as ort
 
     sess = ort.InferenceSession(str(output_dir / "model.onnx"))
-    print(f"\nVerification:")
+    print("\nVerification:")
     print(f"  Input names: {[i.name for i in sess.get_inputs()]}")
     print(f"  Output names: {[o.name for o in sess.get_outputs()]}")
     print(f"  Output shapes: {[o.shape for o in sess.get_outputs()]}")

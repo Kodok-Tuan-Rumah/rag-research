@@ -4,14 +4,16 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
 
@@ -19,6 +21,7 @@ from src.api.cache import cache
 from src.api.config import settings
 from src.controller.agent_state import MAX_RETRIEVAL_RETRIES
 from src.controller.policy_engine import PolicyEngine
+from src.retrieval.corpus_manifest import CORPUS_CHUNK_COUNT, CORPUS_SHA256
 from src.utils.attribution import attribute_claims_to_chunks
 from src.generation.generator import PARTIAL_TRUST_CHUNK_LIMIT, apply_partial_trust_policy
 
@@ -33,8 +36,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("rag.api")
 
-CANONICAL_CORPUS_CHUNKS = 796
-CANONICAL_CORPUS_SHA256 = "4375a26668366674473a8917a3d0bc4ce7a2e53ace913457b80ff09be3481ba6"
+CANONICAL_CORPUS_CHUNKS = CORPUS_CHUNK_COUNT
+CANONICAL_CORPUS_SHA256 = CORPUS_SHA256
 
 
 def _resolve_corpus_path(corpus_path: str | Path) -> Path:
@@ -165,11 +168,13 @@ store = None
 retriever = None
 generator = None
 confidence_engine = None
+calibration_status = "uncalibrated"   # "calibrated" | "degraded" | "uncalibrated"
+calibration_version = None            # code version / dataset hash of loaded model
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global store, retriever, generator, confidence_engine
+    global store, retriever, generator, confidence_engine, calibration_status, calibration_version
     logger.info("[STARTUP] Initializing RAG Research Master Engine (PHASE 1 - BASELINE)...")
 
     try:
@@ -186,15 +191,29 @@ async def lifespan(app: FastAPI):
             confidence_engine = CalibratedConfidenceEngine.load_from_settings(settings.calibration_model_path)
             if not getattr(confidence_engine, "is_calibrated", False):
                 raise RuntimeError("calibration model unavailable")
-            logger.info("[STARTUP] Calibration model loaded from %s", settings.calibration_model_path)
+            metadata = getattr(confidence_engine.calibration_engine, "_last_result", None) or {}
+            calibration_status = "calibrated"
+            calibration_version = (
+                metadata.get("code_version")
+                or metadata.get("dataset_hash")
+                or settings.calibration_model_path
+            )
+            logger.info(
+                "[STARTUP] Calibration model loaded from %s (status=%s, version=%s)",
+                settings.calibration_model_path,
+                calibration_status,
+                calibration_version,
+            )
         except Exception as e:
             logger.warning(
-                "[STARTUP] Calibration model unavailable (%s: %s); falling back to uncalibrated ConfidenceEngine",
+                "[STARTUP] Calibration model unavailable (%s: %s); falling back to uncalibrated ConfidenceEngine — API stays up but confidence zones are NOT calibrated",
                 type(e).__name__,
                 e,
                 exc_info=True,
             )
             confidence_engine = ConfidenceEngine()
+            calibration_status = "degraded"
+            calibration_version = None
         tracing_enabled = init_tracing()
         if tracing_enabled:
             instrument_fastapi(app)
@@ -252,6 +271,28 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+# Registered as middleware: internal_service_auth is invoked by FastAPI
+async def internal_service_auth(request: Request, call_next):
+    exempt = {"/health", "/metrics", "/docs", "/openapi.json", "/favicon.ico"}
+    if request.url.path in exempt:
+        return await call_next(request)
+
+    expected = os.getenv("INTERNAL_SERVICE_TOKEN", "").strip()
+    if not expected:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "service not configured"},
+        )
+    got = request.headers.get("X-Internal-Service-Token", "").strip()
+    if got != expected:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "invalid internal service token"},
+        )
+    return await call_next(request)
+
+
 # Pydantic Models
 class ChunkResult(BaseModel):
     chunk_id: str
@@ -292,6 +333,8 @@ class GenerateResponse(BaseModel):
     calibrated_decision: str | None = None
     is_calibrated: bool = False
     calibration_method: str | None = None
+    calibration_status: str = Field(default_factory=lambda: calibration_status)
+    calibration_version: str | None = Field(default_factory=lambda: calibration_version)
     claim_attributions: list[ClaimAttribution] = Field(default_factory=list)
     retrieval_confidence: float | None = None
     post_generation_confidence: float | None = None
@@ -441,7 +484,9 @@ def _abstain_response(
 async def health():
     if not store:
         raise HTTPException(status_code=503, detail="Store not initialized")
-    count = store.client.count(store.collection_name).count
+    count = await run_in_threadpool(
+        lambda: store.client.count(store.collection_name).count
+    )
     # Health polling must not load the optional CrossEncoder as a side effect.
     reranker_model_loaded = getattr(retriever, "reranker_loaded", False)
     return {
@@ -457,6 +502,8 @@ async def health():
         "inference_ready": _inference_ready(),
         "embedding_model": settings.embed_model,
         "reranker_model": settings.reranker_model,
+        "calibration_status": calibration_status,
+        "calibration_version": calibration_version,
     }
 
 

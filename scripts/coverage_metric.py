@@ -6,17 +6,16 @@ import logging
 import os
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dotenv import load_dotenv
 
 load_dotenv()
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 # ── Logger ────────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -29,21 +28,21 @@ logger = logging.getLogger("coverage_metric")
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-EVAL_DIR     = PROJECT_ROOT / "data" / "evaluation"
+EVAL_DIR = PROJECT_ROOT / "data" / "evaluation"
 PRIMARY_FILE = PROJECT_ROOT / "results/failure_cases/failure_analysis.json"
-LOG_DIR      = PROJECT_ROOT / "results/logs"
-RAGAS_DIR    = PROJECT_ROOT / "results/metrics"
-GT_FILE      = EVAL_DIR / "retrieval_eval_dataset_v2.json"
-OUTPUT_DIR   = PROJECT_ROOT / "results/debug"
-OUTPUT_JSON  = OUTPUT_DIR / "coverage_report.json"
-OUTPUT_MD    = OUTPUT_DIR / "coverage_report.md"
+LOG_DIR = PROJECT_ROOT / "results/logs"
+RAGAS_DIR = PROJECT_ROOT / "results/metrics"
+GT_FILE = EVAL_DIR / "retrieval_eval_dataset_v2.json"
+OUTPUT_DIR = PROJECT_ROOT / "results/debug"
+OUTPUT_JSON = OUTPUT_DIR / "coverage_report.json"
+OUTPUT_MD = OUTPUT_DIR / "coverage_report.md"
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
-HARD_GAP_THRESHOLD       = 0.0   
-RETRIEVAL_FAIL_THRESHOLD = 0.2  
-FAITHFULNESS_THRESHOLD   = 0.5   
-DEFAULT_API_URL          = "http://localhost:8000"
-DEFAULT_MAX_WORKERS      = 3
+HARD_GAP_THRESHOLD = 0.0
+RETRIEVAL_FAIL_THRESHOLD = 0.2
+FAITHFULNESS_THRESHOLD = 0.5
+DEFAULT_API_URL = "http://localhost:8000"
+DEFAULT_MAX_WORKERS = 3
 
 ABSTENTION_PHRASES = [
     "does not contain enough information",
@@ -78,15 +77,11 @@ Respond with ONLY a JSON object, nothing else:
 
 
 # 1. CLASSIFIERS
-
 def get_top_score(record: dict) -> float:
     chunks = record.get("retrieved_chunks", [])
     if not chunks:
         return 0.0
-    return max(
-        c.get("retrieval_score", c.get("score", 0.0))
-        for c in chunks
-    )
+    return max(c.get("retrieval_score", c.get("score", 0.0)) for c in chunks)
 
 
 def is_abstention(answer: str) -> bool:
@@ -109,7 +104,7 @@ def classify_retrieval(top_score: float) -> str:
 
 
 def classify_record(record: dict) -> str:
-    top_score       = get_top_score(record)
+    top_score = get_top_score(record)
     retrieval_class = classify_retrieval(top_score)
 
     if retrieval_class in ("hard_gap", "retrieval_fail"):
@@ -117,19 +112,18 @@ def classify_record(record: dict) -> str:
 
     if is_abstention(record.get("answer", "")):
         return "abstained"
-
     return "answered"
 
 
 # 2. FAITHFULNESS EVALUATOR
 class FaithfulnessEvaluator:
     def __init__(self, mode: str = "offline", sample_size: int = 20):
-        self.mode         = mode
-        self.sample_size  = sample_size
+        self.mode = mode
+        self.sample_size = sample_size
         self._cache: dict[str, float] = {}
-        self._groq        = None
+        self._groq = None
         self._judge_calls = 0
-        self._judge_429   = 0
+        self._judge_429 = 0
 
         if mode in ("offline", "hybrid"):
             self._load_ragas_cache()
@@ -152,12 +146,7 @@ class FaithfulnessEvaluator:
                 if isinstance(data, list):
                     items = data
                 elif isinstance(data, dict):
-                    items = (
-                        data.get("results")
-                        or data.get("scores")
-                        or data.get("data")
-                        or []
-                    )
+                    items = data.get("results") or data.get("scores") or data.get("data") or []
 
                 for item in items:
                     if not isinstance(item, dict):
@@ -179,19 +168,20 @@ class FaithfulnessEvaluator:
             return
         try:
             from groq import Groq
+
             self._groq = Groq(api_key=api_key)
-            logger.info("Inline judge ready (llama-3.1-8b-instant, sample_size=%d)", self.sample_size)
+            logger.info(
+                "Inline judge ready (llama-3.1-8b-instant, sample_size=%d)", self.sample_size
+            )
         except ImportError:
             logger.warning("groq not installed — inline judge disabled")
 
-    def _judge_inline(self, query: str, answer: str, contexts: list[str]) -> Optional[float]:
+    def _judge_inline(self, query: str, answer: str, contexts: list[str]) -> float | None:
         if not self._groq:
             return None
 
         context_text = "\n\n".join(contexts[:3])[:2000]
-        prompt = FAITHFULNESS_JUDGE_PROMPT.format(
-            query=query, context=context_text, answer=answer
-        )
+        prompt = FAITHFULNESS_JUDGE_PROMPT.format(query=query, context=context_text, answer=answer)
 
         try:
             self._judge_calls += 1
@@ -204,11 +194,14 @@ class FaithfulnessEvaluator:
             raw = resp.choices[0].message.content.strip()
             raw = raw.replace("```json", "").replace("```", "").strip()
             parsed = json.loads(raw)
-            score  = float(parsed.get("score", 0.0))
+            score = float(parsed.get("score", 0.0))
             logger.info(
                 "Judge [%d/%d]: %.2f | %s | %s",
-                self._judge_calls, self.sample_size,
-                score, parsed.get("reason", "")[:50], query[:40],
+                self._judge_calls,
+                self.sample_size,
+                score,
+                parsed.get("reason", "")[:50],
+                query[:40],
             )
             return score
 
@@ -222,9 +215,9 @@ class FaithfulnessEvaluator:
                 logger.warning("Judge error: %s", e)
             return None
 
-    def score(self, record: dict) -> Optional[float]:
-        query    = record.get("query", "").strip()
-        answer   = record.get("answer", "")
+    def score(self, record: dict) -> float | None:
+        query = record.get("query", "").strip()
+        answer = record.get("answer", "")
         contexts = [c.get("text", "") for c in record.get("retrieved_chunks", [])]
 
         if self.mode == "offline":
@@ -244,8 +237,8 @@ class FaithfulnessEvaluator:
             return None
         return None
 
-    def score_batch(self, records: list[dict]) -> dict[str, Optional[float]]:
-        results: dict[str, Optional[float]] = {}
+    def score_batch(self, records: list[dict]) -> dict[str, float | None]:
+        results: dict[str, float | None] = {}
         for r in records:
             q = r.get("query", "")
             if q not in results:
@@ -254,7 +247,11 @@ class FaithfulnessEvaluator:
         scored = sum(1 for v in results.values() if v is not None)
         logger.info(
             "Faithfulness: %d/%d scored (mode=%s, judge_calls=%d, 429s=%d)",
-            scored, len(results), self.mode, self._judge_calls, self._judge_429,
+            scored,
+            len(results),
+            self.mode,
+            self._judge_calls,
+            self._judge_429,
         )
         return results
 
@@ -274,7 +271,7 @@ def load_primary(path: Path) -> list[dict]:
 
 
 def load_secondary(log_dir: Path) -> list[dict]:
-    records   = []
+    records = []
     log_files = sorted(log_dir.glob("*.json"))
     if not log_files:
         logger.warning("No log files in %s", log_dir)
@@ -285,7 +282,7 @@ def load_secondary(log_dir: Path) -> list[dict]:
         try:
             with open(lf) as f:
                 data = json.load(f)
-            items  = data if isinstance(data, list) else [data]
+            items = data if isinstance(data, list) else [data]
             loaded = 0
             for item in items:
                 q = item.get("query", "")
@@ -318,12 +315,14 @@ def load_queries_for_live(gt_path: Path) -> list[str]:
     logger.info("Loaded %d queries ← %s", len(queries), gt_path.name)
     return queries
 
+
 # 4. LIVE API RUNNER  (concurrent + observability)
-def call_generate_api(query: str, api_url: str, timeout: int = 30) -> Optional[dict]:
-    url     = f"{api_url.rstrip('/')}/generate"
+def call_generate_api(query: str, api_url: str, timeout: int = 30) -> dict | None:
+    url = f"{api_url.rstrip('/')}/generate"
     payload = json.dumps({"query": query, "top_k": 5, "use_reranker": True}).encode()
-    req     = urllib.request.Request(
-        url, data=payload,
+    req = urllib.request.Request(
+        url,
+        data=payload,
         headers={"Content-Type": "application/json"},
         method="POST",
     )
@@ -337,28 +336,30 @@ def call_generate_api(query: str, api_url: str, timeout: int = 30) -> Optional[d
         logger.warning("API error: %s", e)
         return None
 
+
 def _normalize_api_response(query: str, resp: dict, elapsed_ms: float) -> dict:
-    method   = resp.get("retrieval_method", "")
+    method = resp.get("retrieval_method", "")
     contexts = resp.get("contexts", [])
 
-    if method == "rejected_low_score":
-        chunks = []
-    elif not contexts:
+    if method == "rejected_low_score" or not contexts:
         chunks = []
     else:
         chunks = [{"text": ctx, "retrieval_score": 0.5} for ctx in contexts]
 
     return {
-        "_source":               "live_api",
-        "query":                 query,
-        "answer":                resp.get("answer", ""),
-        "retrieval_method":      method,
-        "latency_retrieval_ms":  resp.get("latency_retrieval_ms", elapsed_ms),
+        "_source": "live_api",
+        "query": query,
+        "answer": resp.get("answer", ""),
+        "retrieval_method": method,
+        "latency_retrieval_ms": resp.get("latency_retrieval_ms", elapsed_ms),
         "latency_generation_ms": resp.get("latency_generation_ms", 0),
-        "retrieved_chunks":      chunks,
+        "retrieved_chunks": chunks,
     }
 
-def run_live(queries: list[str], api_url: str, max_workers: int = DEFAULT_MAX_WORKERS) -> list[dict]:
+
+def run_live(
+    queries: list[str], api_url: str, max_workers: int = DEFAULT_MAX_WORKERS
+) -> list[dict]:
     if not queries:
         logger.warning("No queries for live run")
         return []
@@ -375,21 +376,18 @@ def run_live(queries: list[str], api_url: str, max_workers: int = DEFAULT_MAX_WO
 
     logger.info("Live run: %d queries | max_workers=%d", len(queries), max_workers)
 
-    records   = []
-    success   = 0
-    failed    = 0
+    records = []
+    success = 0
+    failed = 0
     start_all = time.time()
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_query = {
-            executor.submit(call_generate_api, q, api_url): q
-            for q in queries
-        }
+        future_to_query = {executor.submit(call_generate_api, q, api_url): q for q in queries}
 
         for i, future in enumerate(as_completed(future_to_query), 1):
             query = future_to_query[future]
             try:
-                t0   = time.time()
+                t0 = time.time()
                 resp = future.result()
                 elapsed = round((time.time() - t0) * 1000, 1)
 
@@ -399,12 +397,15 @@ def run_live(queries: list[str], api_url: str, max_workers: int = DEFAULT_MAX_WO
                     continue
 
                 record = _normalize_api_response(query, resp, elapsed)
-                cls    = classify_record(record)
+                cls = classify_record(record)
                 success += 1
                 logger.info(
                     "[%d/%d] %-14s | %5.0fms | %s",
-                    i, len(queries), cls.upper(),
-                    record["latency_retrieval_ms"], query[:55],
+                    i,
+                    len(queries),
+                    cls.upper(),
+                    record["latency_retrieval_ms"],
+                    query[:55],
                 )
                 records.append(record)
 
@@ -415,27 +416,31 @@ def run_live(queries: list[str], api_url: str, max_workers: int = DEFAULT_MAX_WO
     total_ms = round((time.time() - start_all) * 1000)
     logger.info(
         "Live done: success=%d failed=%d total=%dms avg=%.0fms/query",
-        success, failed, total_ms, total_ms / max(success, 1),
+        success,
+        failed,
+        total_ms,
+        total_ms / max(success, 1),
     )
     return records
+
 
 # 5. AGGREGATION
 def compute_coverage(
     records: list[dict],
-    faith_scores: Optional[dict[str, Optional[float]]] = None,
+    faith_scores: dict[str, float | None] | None = None,
 ) -> dict:
     if not records:
         return _empty_coverage()
 
-    counts    = defaultdict(int)
+    counts = defaultdict(int)
     per_query = []
-    lat_ret   = []
-    lat_gen   = []
+    lat_ret = []
+    lat_gen = []
     answered_and_faithful = 0
 
     for r in records:
-        cls       = classify_record(r)
-        query     = r.get("query", "")
+        cls = classify_record(r)
+        query = r.get("query", "")
         top_score = get_top_score(r)
         counts[cls] += 1
 
@@ -452,108 +457,130 @@ def compute_coverage(
         if lg:
             lat_gen.append(float(lg))
 
-        per_query.append({
-            "query":        query[:100],
-            "class":        cls,
-            "top_score":    round(top_score, 6),
-            "abstention":   is_abstention(r.get("answer", "")),
-            "faithfulness": round(faith, 3) if faith is not None else None,
-            "faithful":     is_faithful if faith is not None else None,
-            "source":       r.get("_source", "unknown"),
-        })
+        per_query.append(
+            {
+                "query": query[:100],
+                "class": cls,
+                "top_score": round(top_score, 6),
+                "abstention": is_abstention(r.get("answer", "")),
+                "faithfulness": round(faith, 3) if faith is not None else None,
+                "faithful": is_faithful if faith is not None else None,
+                "source": r.get("_source", "unknown"),
+            }
+        )
 
-    total      = len(records)
-    hard_gap   = counts["hard_gap"]
-    ret_fail   = counts["retrieval_fail"]
-    abstained  = counts["abstained"]
-    answered   = counts["answered"]
-    answerable = total - hard_gap  
+    total = len(records)
+    hard_gap = counts["hard_gap"]
+    ret_fail = counts["retrieval_fail"]
+    abstained = counts["abstained"]
+    answered = counts["answered"]
+    answerable = total - hard_gap
 
     faith_available = sum(1 for q in per_query if q["faithfulness"] is not None)
 
     return {
-        "total":                    total,
-        "answered":                 answered,
-        "abstained":                abstained,
-        "retrieval_fail":           ret_fail,
-        "hard_gap":                 hard_gap,
-        "answerable":               answerable,
-        "answered_and_faithful":    answered_and_faithful,
-        "coverage":                 round(answered / answerable, 4) if answerable > 0 else None,
-        "effective_coverage":       round(answered_and_faithful / answerable, 4)
-                                    if answerable > 0 and faith_available > 0 else None,
-        "gap_rate":                 round(hard_gap / total, 4) if total > 0 else None,
-        "retrieval_fail_rate":      round(ret_fail / total, 4) if total > 0 else None,
-        "abstention_rate":          round(abstained / answerable, 4) if answerable > 0 else None,
-        "faithfulness_available":   faith_available,
+        "total": total,
+        "answered": answered,
+        "abstained": abstained,
+        "retrieval_fail": ret_fail,
+        "hard_gap": hard_gap,
+        "answerable": answerable,
+        "answered_and_faithful": answered_and_faithful,
+        "coverage": round(answered / answerable, 4) if answerable > 0 else None,
+        "effective_coverage": round(answered_and_faithful / answerable, 4)
+        if answerable > 0 and faith_available > 0
+        else None,
+        "gap_rate": round(hard_gap / total, 4) if total > 0 else None,
+        "retrieval_fail_rate": round(ret_fail / total, 4) if total > 0 else None,
+        "abstention_rate": round(abstained / answerable, 4) if answerable > 0 else None,
+        "faithfulness_available": faith_available,
         "avg_latency_retrieval_ms": round(sum(lat_ret) / len(lat_ret), 1) if lat_ret else None,
         "avg_latency_generation_ms": round(sum(lat_gen) / len(lat_gen), 1) if lat_gen else None,
-        "per_query":                per_query,
+        "per_query": per_query,
     }
+
 
 def _empty_coverage() -> dict:
     return {
-        "total": 0, "answered": 0, "abstained": 0,
-        "retrieval_fail": 0, "hard_gap": 0, "answerable": 0,
-        "answered_and_faithful": 0, "coverage": None, "effective_coverage": None,
-        "gap_rate": None, "retrieval_fail_rate": None, "abstention_rate": None,
+        "total": 0,
+        "answered": 0,
+        "abstained": 0,
+        "retrieval_fail": 0,
+        "hard_gap": 0,
+        "answerable": 0,
+        "answered_and_faithful": 0,
+        "coverage": None,
+        "effective_coverage": None,
+        "gap_rate": None,
+        "retrieval_fail_rate": None,
+        "abstention_rate": None,
         "faithfulness_available": 0,
-        "avg_latency_retrieval_ms": None, "avg_latency_generation_ms": None,
+        "avg_latency_retrieval_ms": None,
+        "avg_latency_generation_ms": None,
         "per_query": [],
     }
+
 
 def split_by_source(records: list[dict]) -> dict[str, list[dict]]:
     groups: dict[str, list] = defaultdict(list)
     for r in records:
         src = r.get("_source", "unknown")
-        key = "primary" if src == "primary" else \
-              "logs"    if src.startswith("log:") else \
-              "live"    if src == "live_api" else "other"
+        key = (
+            "primary"
+            if src == "primary"
+            else "logs"
+            if src.startswith("log:")
+            else "live"
+            if src == "live_api"
+            else "other"
+        )
         groups[key].append(r)
     return dict(groups)
 
 
 # 6. RENDERERS
-def _bar(value: Optional[float], width: int = 20) -> str:
+def _bar(value: float | None, width: int = 20) -> str:
     if value is None:
         return "N/A"
     filled = int(value * width)
     return f"[{'█' * filled}{'░' * (width - filled)}] {value * 100:.1f}%"
 
-def _pct(value: Optional[float]) -> str:
+
+def _pct(value: float | None) -> str:
     return f"{value * 100:.1f}%" if value is not None else "N/A"
+
 
 def render_json(overall: dict, by_source: dict, ts: str, faith_mode: str) -> dict:
     return {
-        "generated_at":      ts,
+        "generated_at": ts,
         "faithfulness_mode": faith_mode,
         "thresholds": {
-            "hard_gap":          HARD_GAP_THRESHOLD,
-            "retrieval_fail":    RETRIEVAL_FAIL_THRESHOLD,
-            "faithfulness_min":  FAITHFULNESS_THRESHOLD,
+            "hard_gap": HARD_GAP_THRESHOLD,
+            "retrieval_fail": RETRIEVAL_FAIL_THRESHOLD,
+            "faithfulness_min": FAITHFULNESS_THRESHOLD,
         },
         "definition": {
-            "coverage":           "answered / answerable",
+            "coverage": "answered / answerable",
             "effective_coverage": "(answered AND faithful) / answerable",
-            "answerable":         "total - hard_gap",
-            "hard_gap":           "top_score <= 0.0",
-            "retrieval_fail":     "0.0 < top_score < 0.2",
-            "abstained":          "top_score >= 0.2 but LLM abstained",
+            "answerable": "total - hard_gap",
+            "hard_gap": "top_score <= 0.0",
+            "retrieval_fail": "0.0 < top_score < 0.2",
+            "abstained": "top_score >= 0.2 but LLM abstained",
         },
-        "overall":   {k: v for k, v in overall.items() if k != "per_query"},
+        "overall": {k: v for k, v in overall.items() if k != "per_query"},
         "by_source": {
-            src: {k: v for k, v in m.items() if k != "per_query"}
-            for src, m in by_source.items()
+            src: {k: v for k, v in m.items() if k != "per_query"} for src, m in by_source.items()
         },
         "per_query": overall.get("per_query", []),
     }
 
+
 def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
-    cov     = overall["coverage"]
+    cov = overall["coverage"]
     eff_cov = overall["effective_coverage"]
-    gap     = overall["gap_rate"]
-    ret_f   = overall["retrieval_fail_rate"]
-    abst    = overall["abstention_rate"]
+    gap = overall["gap_rate"]
+    ret_f = overall["retrieval_fail_rate"]
+    abst = overall["abstention_rate"]
     faith_n = overall["faithfulness_available"]
 
     if cov is None:
@@ -568,7 +595,10 @@ def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
     lines = [
         "# Coverage Metric Report  ·  v2",
         f"_Generated: {ts}  ·  faithfulness_mode: `{faith_mode}`_",
-        "", "---", "## Core Metrics", "",
+        "",
+        "---",
+        "## Core Metrics",
+        "",
         "| Metric | Value | Bar |",
         "|---|---|---|",
         f"| **Coverage** (answered/answerable) | `{_pct(cov)}` | {_bar(cov)} |",
@@ -576,8 +606,11 @@ def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
         f"| Gap Rate (hard_gap/total) | `{_pct(gap)}` | {_bar(gap)} |",
         f"| Retrieval Fail Rate | `{_pct(ret_f)}` | {_bar(ret_f)} |",
         f"| Abstention Rate (abstained/answerable) | `{_pct(abst)}` | {_bar(abst)} |",
-        "", f"**Health:** {health}", "",
-        "### Count Breakdown", "",
+        "",
+        f"**Health:** {health}",
+        "",
+        "### Count Breakdown",
+        "",
         "| Class | Count | Meaning |",
         "|---|---|---|",
         f"| answered | {overall['answered']} | Retrieved + LLM answered |",
@@ -594,43 +627,53 @@ def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
     lg = overall["avg_latency_generation_ms"]
     if lr or lg:
         lines += [
-            "### Latency", "",
-            "| Stage | Avg ms |", "|---|---|",
+            "### Latency",
+            "",
+            "| Stage | Avg ms |",
+            "|---|---|",
             f"| Retrieval | `{lr}` |",
-            f"| Generation | `{lg}` |", "",
+            f"| Generation | `{lg}` |",
+            "",
         ]
 
     lines += ["---", "## Actionable Insights", ""]
 
     if gap and gap > 0.15:
         lines += [
-            "> ⚠️ **High Gap Rate** → corpus tidak cover topik yang ditanya.",
-            "> Action: jalanin `corpus_audit.py`, tambah dokumen yang missing.", "",
+            "> [ERROR] **High Gap Rate** → corpus tidak cover topik yang ditanya.",
+            "> Action: jalanin `corpus_audit.py`, tambah dokumen yang missing.",
+            "",
         ]
     if ret_f and ret_f > 0.10:
         lines += [
-            "> ⚠️ **High Retrieval Fail Rate** → chunk ada tapi retrieval miss.",
-            "> Action: tune `default_top_k`, chunk overlap, reranker threshold.", "",
+            "> [ERROR] **High Retrieval Fail Rate** → chunk ada tapi retrieval miss.",
+            "> Action: tune `default_top_k`, chunk overlap, reranker threshold.",
+            "",
         ]
     if abst and abst > 0.10:
         lines += [
-            "> ⚠️ **High Abstention Rate** → model terlalu konservatif.",
-            "> Action: review `SYSTEM_PROMPT` di generator.py, cek early reject threshold.", "",
+            "> [ERROR] **High Abstention Rate** → model terlalu konservatif.",
+            "> Action: review `SYSTEM_PROMPT` di generator.py, cek early reject threshold.",
+            "",
         ]
     if eff_cov is not None and cov is not None and (cov - eff_cov) > 0.15:
         lines += [
-            f"> ⚠️ **Coverage-Faithfulness Gap** = `{_pct(cov - eff_cov)}` → kemungkinan hallucination.",
-            "> Action: audit per_query section, tighten SYSTEM_PROMPT.", "",
+            f"> [ERROR] **Coverage-Faithfulness Gap** = `{_pct(cov - eff_cov)}` → kemungkinan hallucination.",
+            "> Action: audit per_query section, tighten SYSTEM_PROMPT.",
+            "",
         ]
     if faith_n == 0:
         lines += [
-            f"> ℹ️  Effective coverage tidak tersedia — tidak ada faithfulness data.",
-            f"> Action: run dengan `--faithfulness-mode offline` atau `inline --sample 20`", "",
+            "> ℹ️  Effective coverage tidak tersedia — tidak ada faithfulness data.",
+            "> Action: run dengan `--faithfulness-mode offline` atau `inline --sample 20`",
+            "",
         ]
 
     if by_source:
         lines += [
-            "---", "## By Source", "",
+            "---",
+            "## By Source",
+            "",
             "| Source | Total | Answered | Faithful | Abstained | Ret.Fail | Gap | Coverage | Eff.Cov |",
             "|---|---|---|---|---|---|---|---|---|",
         ]
@@ -645,7 +688,9 @@ def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
     non_answered = [q for q in overall.get("per_query", []) if q["class"] != "answered"]
     if non_answered:
         lines += [
-            "---", "## Non-Answered Queries", "",
+            "---",
+            "## Non-Answered Queries",
+            "",
             "| Class | Score | Faith | Query | Source |",
             "|---|---|---|---|---|",
         ]
@@ -658,7 +703,9 @@ def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
         lines.append("")
 
     lines += [
-        "---", "## Definition", "",
+        "---",
+        "## Definition",
+        "",
         "```",
         "coverage           = answered / answerable",
         "effective_coverage = (answered AND faithful) / answerable",
@@ -667,17 +714,19 @@ def render_md(overall: dict, by_source: dict, ts: str, faith_mode: str) -> str:
         "retrieval_fail     = 0.0 < top_score < 0.2  (pipeline problem)",
         "abstained          = top_score >= 0.2 but LLM refused",
         "faithful           = faithfulness_score >= 0.5",
-        "```", "",
+        "```",
+        "",
         "**hard_gap vs retrieval_fail:**",
         "hard_gap = exclude dari denominator (bukan salah pipeline).",
-        "retrieval_fail = masuk denominator — pipeline harusnya bisa handle ini.", "",
+        "retrieval_fail = masuk denominator — pipeline harusnya bisa handle ini.",
+        "",
         "**coverage vs effective_coverage:**",
         "Coverage bisa tinggi walau model hallucinating.",
-        "effective_coverage adalah metric yang lebih jujur untuk production readiness.", "",
+        "effective_coverage adalah metric yang lebih jujur untuk production readiness.",
+        "",
         "---",
         "_Script: `scripts/coverage_metric.py` · rag-research v0.2.0_",
     ]
-
     return "\n".join(lines)
 
 
@@ -687,30 +736,36 @@ def main():
         description="RAG Coverage Metric v2",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--live", action="store_true",
-                        help="Hit live API untuk setiap query")
-    parser.add_argument("--queries", type=Path, default=GT_FILE,
-                        help="Query file untuk live test")
+    parser.add_argument("--live", action="store_true", help="Hit live API untuk setiap query")
+    parser.add_argument("--queries", type=Path, default=GT_FILE, help="Query file untuk live test")
     parser.add_argument("--api-url", default=DEFAULT_API_URL)
-    parser.add_argument("--max-workers", type=int, default=DEFAULT_MAX_WORKERS,
-                        help="Concurrent workers (tune ke rate limit Groq)")
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=DEFAULT_MAX_WORKERS,
+        help="Concurrent workers (tune ke rate limit Groq)",
+    )
     parser.add_argument("--primary-only", action="store_true")
     parser.add_argument(
-        "--faithfulness-mode", choices=["offline", "inline", "hybrid"], default="offline",
+        "--faithfulness-mode",
+        choices=["offline", "inline", "hybrid"],
+        default="offline",
         help="offline=ragas files | inline=LLM judge (sampling) | hybrid=offline+inline fallback",
     )
-    parser.add_argument("--sample", type=int, default=20,
-                        help="Max inline LLM judge calls")
+    parser.add_argument("--sample", type=int, default=20, help="Max inline LLM judge calls")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load
-    primary_records   = load_primary(PRIMARY_FILE)
+    primary_records = load_primary(PRIMARY_FILE)
     secondary_records = [] if args.primary_only else load_secondary(LOG_DIR)
-    live_records      = run_live(load_queries_for_live(args.queries), args.api_url, args.max_workers) \
-                        if args.live else []
+    live_records = (
+        run_live(load_queries_for_live(args.queries), args.api_url, args.max_workers)
+        if args.live
+        else []
+    )
 
     all_records = primary_records + secondary_records + live_records
     if not all_records:
@@ -719,23 +774,26 @@ def main():
 
     logger.info(
         "Total: %d records (%d primary, %d logs, %d live)",
-        len(all_records), len(primary_records), len(secondary_records), len(live_records),
+        len(all_records),
+        len(primary_records),
+        len(secondary_records),
+        len(live_records),
     )
 
     # Faithfulness
-    evaluator    = FaithfulnessEvaluator(mode=args.faithfulness_mode, sample_size=args.sample)
+    evaluator = FaithfulnessEvaluator(mode=args.faithfulness_mode, sample_size=args.sample)
     faith_scores = evaluator.score_batch(all_records)
 
     # Compute
-    overall   = compute_coverage(all_records, faith_scores)
+    overall = compute_coverage(all_records, faith_scores)
     by_source = {
         src: compute_coverage(recs, faith_scores)
         for src, recs in split_by_source(all_records).items()
     }
 
     # Write
-    ts       = datetime.now(timezone.utc).isoformat()
-    ts_human = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    ts = datetime.now(UTC).isoformat()
+    ts_human = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     with open(OUTPUT_JSON, "w") as f:
         json.dump(render_json(overall, by_source, ts, args.faithfulness_mode), f, indent=2)
@@ -757,15 +815,21 @@ def main():
     logger.info("─" * 60)
     logger.info(
         "  total=%-4d  answered=%-4d  faithful=%-4d  abstained=%-4d  ret_fail=%-4d  gap=%-4d",
-        overall["total"], overall["answered"], overall["answered_and_faithful"],
-        overall["abstained"], overall["retrieval_fail"], overall["hard_gap"],
+        overall["total"],
+        overall["answered"],
+        overall["answered_and_faithful"],
+        overall["abstained"],
+        overall["retrieval_fail"],
+        overall["hard_gap"],
     )
 
     if args.verbose:
         logger.info("PER-QUERY BREAKDOWN:")
         for q in overall["per_query"]:
             f_s = f"faith={q['faithfulness']:.2f}" if q["faithfulness"] is not None else "faith=N/A"
-            logger.info("  [%-14s] score=%.4f  %s  %s", q["class"], q["top_score"], f_s, q["query"][:55])
+            logger.info(
+                "  [%-14s] score=%.4f  %s  %s", q["class"], q["top_score"], f_s, q["query"][:55]
+            )
 
 
 if __name__ == "__main__":

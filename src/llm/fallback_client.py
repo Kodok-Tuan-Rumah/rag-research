@@ -1,8 +1,14 @@
 """
-LLM Fallback Client - Multi-provider sequential fallback
+LLM Fallback Client - Multi-provider sequential fallback.
 
 This client provides automatic fallback between multiple LLM providers
 when the primary provider fails due to rate limits, timeouts, or errors.
+
+WARNING (P2-9): This module is a stub skeleton. All provider call methods
+(_call_groq, _call_anthropic, _call_openai, _call_ollama) raise NotImplementedError
+because none of the provider SDKs or HTTP clients are wired up. The class is
+imported by rag-research/src/llm/__init__.py but is NOT functional. Do not use
+in production until at least one provider is implemented.
 
 Usage:
     from src.llm.fallback_client import LLMFallbackClient, Provider
@@ -176,59 +182,55 @@ class LLMFallbackClient:
     def _call_groq(
         self, prompt: str, temperature: float, max_tokens: int
     ) -> str:
-        """Call Groq API"""
-        # TODO: Implement Groq API call
-        # For now, raise NotImplementedError
+        """Call Groq API (P2-9: not yet implemented)."""
+        # TODO: Implement Groq API call using groq SDK or raw HTTP.
+        # Requires: `pip install groq` and valid GROQ_API_KEY.
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key or api_key == "gsk_your_actual_key_here":
             raise APIError("GROQ_API_KEY not configured")
-
-        # Placeholder implementation
-        # In production, use:
-        # from groq import Groq
-        # client = Groq(api_key=api_key)
-        # response = client.chat.completions.create(...)
-        raise NotImplementedError("Groq provider not yet implemented")
+        raise APIError(
+            "Groq provider not yet implemented (P2-9). "
+            "Implement _call_groq() or use a different provider."
+        )
 
     def _call_anthropic(
         self, prompt: str, temperature: float, max_tokens: int
     ) -> str:
-        """Call Anthropic API"""
+        """Call Anthropic API (P2-9: not yet implemented)."""
+        # TODO: Implement Anthropic API call using anthropic SDK or raw HTTP.
+        # Requires: `pip install anthropic` and valid ANTHROPIC_API_KEY.
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key or api_key == "sk-ant-your_actual_key_here":
             raise APIError("ANTHROPIC_API_KEY not configured")
-
-        # Placeholder implementation
-        # In production, use:
-        # import anthropic
-        # client = anthropic.Anthropic(api_key=api_key)
-        # response = client.messages.create(...)
-        raise NotImplementedError("Anthropic provider not yet implemented")
+        raise APIError(
+            "Anthropic provider not yet implemented (P2-9). "
+            "Implement _call_anthropic() or use a different provider."
+        )
 
     def _call_openai(
         self, prompt: str, temperature: float, max_tokens: int
     ) -> str:
-        """Call OpenAI API"""
+        """Call OpenAI API (P2-9: not yet implemented)."""
+        # TODO: Implement OpenAI API call using openai SDK or raw HTTP.
+        # Requires: `pip install openai` and valid OPENAI_API_KEY.
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key or api_key == "sk-your_actual_key_here":
             raise APIError("OPENAI_API_KEY not configured")
-
-        # Placeholder implementation
-        # In production, use:
-        # from openai import OpenAI
-        # client = OpenAI(api_key=api_key)
-        # response = client.chat.completions.create(...)
-        raise NotImplementedError("OpenAI provider not yet implemented")
+        raise APIError(
+            "OpenAI provider not yet implemented (P2-9). "
+            "Implement _call_openai() or use a different provider."
+        )
 
     def _call_ollama(
         self, prompt: str, temperature: float, max_tokens: int
     ) -> str:
-        """Call Ollama local API"""
-        # Placeholder implementation
-        # In production, use:
-        # import requests
-        # response = requests.post(...)
-        raise NotImplementedError("Ollama provider not yet implemented")
+        """Call Ollama local API (P2-9: not yet implemented)."""
+        # TODO: Implement Ollama API call using raw HTTP.
+        # Requires: Ollama server running at OLLAMA_HOST.
+        raise APIError(
+            "Ollama provider not yet implemented (P2-9). "
+            "Implement _call_ollama() or use a different provider."
+        )
 
     def _log_provider_used(self, provider: Provider):
         """Log which provider succeeded"""

@@ -16,6 +16,7 @@ from src.controller.policy_engine import PolicyEngine
 from src.api.config import settings
 from src.controller.confidence_engine import ConfidenceEngine
 from src.retrieval.chunk_filters import passes_minimum_filter as _cf_passes_minimum_filter
+from src.retrieval.rerank_order import rank_reranked_chunks
 from groq import Groq
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -211,6 +212,7 @@ def _chunk_to_summary(chunk, rank: int, retrieval_sources=None) -> dict:
         "length": len(text),
         "text": text[:200] + "...",
     }
+
 
 # Chunk validity — pakai filter bersama agar konsisten dengan jalur retrieval utama
 def is_valid_chunk(chunk) -> bool:
@@ -431,7 +433,9 @@ def run_single_query(
             _get_attr(chunk, "chunk_id", ""): _retrieval_score(chunk)
             for chunk in rerank_candidates
         }
-        retrieval_confidence = confidence_engine.calculate_confidence(rerank_candidates, query=query)
+        retrieval_confidence = confidence_engine.calculate_confidence(
+            rerank_candidates, query=query, query_type=q_type
+        )
         print(f"  Dense hits: {len(fused_results)} | Embedding: {timings['embedding_ms']}ms")
         print(f"  [CONF_ENGINE] baseline confidence={retrieval_confidence['confidence_score']:.4f} decision={retrieval_confidence['decision']}")
         log_chunk_quality(fused_results, label="baseline_dense")
@@ -639,9 +643,8 @@ def run_single_query(
                 section     = _get_section(hit)
                 delta       = SECTION_SCORE_DELTA.get(section, 0.0)
                 final_score = base_score + delta
-                # Canonical score fields: rerank_score = pure cross-encoder,
-                # score = rerank + section delta (legacy ordering key),
-                # final_score = same value, explicit name for new consumers.
+                # Keep raw cross-encoder relevance separate from the section-adjusted
+                # score used by legacy consumers and the reference penalty.
                 if isinstance(hit, dict):
                     hit["rerank_score"] = base_score
                     hit["score"] = final_score
@@ -651,11 +654,7 @@ def run_single_query(
                     hit.score = final_score
                     hit.final_score = final_score
 
-            rerank_candidates = sorted(
-                rerank_candidates,
-                key=lambda x: _get_attr(x, "final_score", 0) or 0,
-                reverse=True,
-            )
+            rerank_candidates = rank_reranked_chunks(rerank_candidates)
         before_score_filter = len(rerank_candidates)
         rerank_candidates = [c for c in rerank_candidates if (_get_attr(c, "final_score", 0) or 0) >= 0.0]
         removed_score_filter = before_score_filter - len(rerank_candidates)
@@ -749,7 +748,9 @@ def run_single_query(
                 reason="smoke_stop_before_gen",
             )
             break
-        pre_gen_confidence = confidence_engine.calculate_confidence(final_chunks_full, query=query)
+        pre_gen_confidence = confidence_engine.calculate_confidence(
+            final_chunks_full, query=query, query_type=q_type
+        )
         retrieval_confidence = pre_gen_confidence
         if pre_gen_confidence["decision"] == "REJECT":
             print(f" [PRE_GEN_GATE] Confidence REJECT ({pre_gen_confidence['confidence_score']:.3f}) skip LLM call")
@@ -789,7 +790,9 @@ def run_single_query(
             break
         context_texts = [_get_attr(r, "text", "") or "" for r in final_chunks_full]
         confidence_v1 = compute_context_overlap(response.answer, context_texts)
-        retrieval_confidence = confidence_engine.calculate_confidence(final_chunks_full, query=query)
+        retrieval_confidence = confidence_engine.calculate_confidence(
+            final_chunks_full, query=query, query_type=q_type
+        )
 
         if confidence_v1 >= 0.3:
             print(f"  [RETRY] Success at attempt {retry_count + 1} | overlap={confidence_v1}")

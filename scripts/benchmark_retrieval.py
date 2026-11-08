@@ -1,38 +1,47 @@
 import argparse
-import sys
 import os
+import sys
 import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.retrieval.qdrant_store import QdrantVectorStore
 from src.retrieval.hybrid_retriever import MasterHybridRetriever
+from src.retrieval.qdrant_store import QdrantVectorStore
 
 # Test queries — 3 kategori
 TEST_QUERIES = [
-    ("short",   "what is RAG"),
-    ("medium",  "how does hybrid search improve retrieval quality in RAG"),
-    ("long",    "what are the main architectural differences between dense and sparse "
-                "retrieval methods in modern production RAG systems and how do they "
-                "affect faithfulness scores"),
+    ("short", "what is RAG"),
+    ("medium", "how does hybrid search improve retrieval quality in RAG"),
+    (
+        "long",
+        "what are the main architectural differences between dense and sparse "
+        "retrieval methods in modern production RAG systems and how do they "
+        "affect faithfulness scores",
+    ),
 ]
+
 
 # ── Simulate formulas ─────────────────────────────────────────────────────────
 def _classify_query(query: str) -> int:
     from src.controller.policy_engine import PolicyEngine
+
     return int(PolicyEngine().initial_plan(query).top_k_hint)
+
 
 def simulate_before(top_k_fixed: int = 5):
     candidate_k = min(top_k_fixed * 4, 20)
     rerank_n = 5
     return candidate_k, rerank_n, top_k_fixed
 
+
 def simulate_after(query: str):
     top_k = _classify_query(query)
     from src.api.config import settings
+
     candidate_k = min(max(top_k * 4, 30), max(top_k, settings.candidate_k))
     rerank_n = min(top_k * 2, 10)
     return candidate_k, rerank_n, top_k
+
 
 def print_comparison_table():
     print("\n" + "=" * 70)
@@ -46,11 +55,7 @@ def print_comparison_table():
         words = len(query.split())
         bc, br, bt = simulate_before()
         ac, ar, at = simulate_after(query)
-        print(
-            f"  {qtype:<12} {words:>6} | "
-            f"{f'{bc}/{br}/{bt}':^20} | "
-            f"{f'{ac}/{ar}/{at}':^20}"
-        )
+        print(f"  {qtype:<12} {words:>6} | {f'{bc}/{br}/{bt}':^20} | {f'{ac}/{ar}/{at}':^20}")
 
     print("=" * 70)
     print("""
@@ -60,8 +65,8 @@ def print_comparison_table():
   - LONG query: before sama, after fetch 21 rerank 10 return 7
 """)
 
+
 def run_live_benchmark():
-    """Jalanin benchmark dengan Qdrant aktif."""
     print("\n" + "=" * 70)
     print("  LIVE BENCHMARK — Qdrant retrieval (auto top_k)")
     print("=" * 70)
@@ -85,10 +90,12 @@ def run_live_benchmark():
 
     print("\n  Done.")
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Benchmark RAG retrieval formulas")
     parser.add_argument("--live", action="store_true", help="Run live Qdrant benchmark")
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_args()

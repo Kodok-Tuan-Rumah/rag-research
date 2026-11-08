@@ -30,7 +30,7 @@ class ConfidenceEngine:
         private copy. PROJECT_GOALS.md §5 defines these as calibration
         parameters; Appendix A records that they were not overridable.
 
-        Defaults are unchanged: 0.35 and 0.65, the exact values that were
+        Defaults are 0.25 and 0.50 (tuned for over-abstention fix). Passing a value still overrides, which keeps existing tests
         hardcoded. Passing a value still overrides, which keeps existing tests
         and any caller constructing an engine with explicit numbers working.
         """
@@ -334,13 +334,13 @@ class ConfidenceEngine:
         # menyebabkan query valid pun di-REJECT
         penalty = 0.0
         if mean_top3_norm < 0.4:
-            penalty += 0.15  # was: 0.40
+            penalty += 0.10  # was: 0.15 (further reduced for over-abstention fix)
         if gap < 0.05:
             penalty += 0.08
         if entropy > 0.8:
             penalty += 0.10
         if agreement < 0.2:
-            penalty += 0.25
+            penalty += 0.15  # was: 0.25 (reduced for over-abstention fix)
 
         confidence_score = max(0.0, base_confidence - penalty)
 
@@ -356,7 +356,7 @@ class ConfidenceEngine:
                 for chunk in valid_chunks[:5]
             } - {None}) >= 3
         )
-        weak_evidence = evidence_relevance is not None and evidence_relevance < 0.25
+        weak_evidence = evidence_relevance is not None and evidence_relevance < 0.15
 
         # --- Context overlap + conflicting signal detection (Goals 5.3 / 12.2) ---
         context_overlap = self._context_overlap(answer, contexts)

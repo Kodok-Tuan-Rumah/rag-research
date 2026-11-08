@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.14.10"
 
       - name: Install dependencies
         run: |
@@ -31,7 +31,9 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Build the native Rust chunker
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # immutable action revision
+        with:
+          toolchain: 1.99.1
 
       - name: maturin develop
         run: maturin develop --manifest-path src/ingestion/semantic_chunker_rust/Cargo.toml

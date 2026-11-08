@@ -263,14 +263,14 @@ def test_confidence_engine_prefers_reranker_score_when_available():
 def test_confidence_decision_uses_configured_thresholds():
     engine = ConfidenceEngine()
 
-    assert engine._decision_for_score(0.3499) == "REJECT"
-    assert engine._decision_for_score(0.35) == "PARTIAL_TRUST"
-    assert engine._decision_for_score(0.5555) == "PARTIAL_TRUST"
-    assert engine._decision_for_score(0.65) == "GENERATE"
-    assert engine._decision_for_score(0.39, query_type="factual") == "REJECT"
-    assert engine._decision_for_score(0.4, query_type="factual") == "PARTIAL_TRUST"
-    assert engine._decision_for_score(0.3, query_type="reasoning") == "PARTIAL_TRUST"
-    assert engine._decision_for_score(0.6, query_type="reasoning") == "GENERATE"
+    assert engine._decision_for_score(0.2499) == "REJECT"
+    assert engine._decision_for_score(0.25) == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.375) == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.50) == "GENERATE"
+    assert engine._decision_for_score(0.29, query_type="factual") == "REJECT"
+    assert engine._decision_for_score(0.30, query_type="factual") == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.20, query_type="reasoning") == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.45, query_type="reasoning") == "GENERATE"
 
 
 def test_make_abstain_response_is_structured_and_safe():

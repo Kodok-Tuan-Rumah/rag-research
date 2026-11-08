@@ -304,7 +304,9 @@ class QdrantVectorStore:
 if __name__ == "__main__":
     import json, sys
 
-    chunks_path = Path("data/processed/chunks_semantic_v2.json")
+    from src.retrieval.corpus_manifest import CORPUS_PATH, CORPUS_VERSION
+
+    chunks_path = CORPUS_PATH
     if not chunks_path.exists():
         print(f"[ERROR] Canonical corpus {chunks_path} tidak ditemukan. Jalankan semantic_chunker.py dulu.")
         sys.exit(1)
@@ -312,7 +314,7 @@ if __name__ == "__main__":
     with open(chunks_path, "r", encoding="utf-8") as f:
         chunks = json.load(f)
 
-    print(f"[CLI] Loaded {len(chunks)} chunks dari {chunks_path}")
+    print(f"[CLI] Loaded {len(chunks)} chunks dari {chunks_path} (manifest version={CORPUS_VERSION})")
 
     store = QdrantVectorStore()
     store.index_chunks(chunks, reset=True)

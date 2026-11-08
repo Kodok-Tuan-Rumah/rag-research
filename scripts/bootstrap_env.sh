@@ -1,26 +1,3 @@
-#!/usr/bin/env bash
-# =============================================================================
-# bootstrap_env.sh — rebuild the rag-research Python environment from scratch.
-#
-# WHY THIS EXISTS
-#   The environment used to live in a shared venv OUTSIDE this repo
-#   (~/projects/ai-infra-workspace/venv). It was wiped twice by external events,
-#   which silently broke:
-#     - all Python dependencies        (pip cache still warm, so rebuild is fast)
-#     - the editable install of `src`   (scripts/ could no longer `import src`)
-#     - the maturin-built Rust chunker  (`make ingest` hard-raises without it)
-#
-#   `pip install -r requirements.txt` alone is NOT sufficient. All three steps
-#   below are required.
-#
-# USAGE
-#   bash scripts/bootstrap_env.sh              # rebuild the active interpreter
-#   bash scripts/bootstrap_env.sh --local      # build a repo-local .venv first
-#   bash scripts/bootstrap_env.sh --verify     # check only, install nothing
-#
-# NOTE: run this in the FOREGROUND. Do not background it — a terminal or
-#       agent-host restart mid-install leaves a half-built environment.
-# =============================================================================
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -44,10 +21,6 @@ ok()   { printf '    \033[32mOK\033[0m  %s\n' "$1"; }
 warn() { printf '    \033[33m!\033[0m   %s\n' "$1"; }
 die()  { printf '    \033[31mFAIL\033[0m %s\n' "$1" >&2; exit 1; }
 
-# ---------------------------------------------------------------------------
-# 0. Optional: build an isolated in-repo venv so this repo cannot be broken by
-#    (or break) a sibling project sharing the workspace interpreter.
-# ---------------------------------------------------------------------------
 if [ "$USE_LOCAL" -eq 1 ] && [ "$VERIFY_ONLY" -eq 0 ]; then
     step "Creating repo-local .venv"
     [ -d .venv ] || python3 -m venv .venv
@@ -110,8 +83,6 @@ ok "dependencies installed"
 
 # ---------------------------------------------------------------------------
 # 2. The project itself
-#   requirements.txt lists third-party deps only. Without this, `import src`
-#   fails from inside scripts/ because only scripts/ lands on sys.path.
 # ---------------------------------------------------------------------------
 step "Installing rag-research in editable mode"
 python3 -m pip install -e . --no-deps
@@ -119,8 +90,6 @@ ok "editable install done (src importable)"
 
 # ---------------------------------------------------------------------------
 # 3. Native Rust chunker
-#   src/ingestion/semantic_chunker.py raises ImportError without it, so the
-#   whole ingestion stage is dead if this step is skipped.
 # ---------------------------------------------------------------------------
 step "Building Rust chunker (maturin develop)"
 if ! command -v cargo >/dev/null 2>&1; then

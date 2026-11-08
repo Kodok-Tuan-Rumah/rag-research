@@ -200,14 +200,12 @@ def main() -> None:
                 agg["false_positive_filter"] += 1
             elif verdict == "not_informative":
                 agg["rejected_by_not_informative"] += 1
-                # heuristik: kebanyakan false positive pada chunk pendek/punctuation
                 classification = "FALSE_POSITIVE_FILTER"
                 agg["false_positive_filter"] += 1
             else:
                 classification = "UNKNOWN"
         else:
             classification = "VALID_AT_FINAL"
-            rejected_by = None
             first_reason = None
 
         row = {

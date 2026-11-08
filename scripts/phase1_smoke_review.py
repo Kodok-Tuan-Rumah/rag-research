@@ -30,7 +30,9 @@ RUBRIC = (
     "material didukung chunk yang benar-benar ada di prompt LLM di bawah. Chunk bertanda "
     "[DROPPED] tidak pernah sampai ke LLM dan tidak bisa dijadikan dasar grounded. "
     "Chunk gold yang terambil saja tidak otomatis membuat jawaban grounded. Jika "
-    "jawaban tidak lengkap, pilih answer_correct=no dan kategori incomplete_answer."
+    "jawaban tidak lengkap, pilih answer_correct=no dan kategori incomplete_answer. "
+    "Untuk kasus abstain, abstention_correct=yes hanya jika status dan alasan abstain "
+    "tepat terhadap bukti yang tersedia."
 )
 
 
@@ -139,10 +141,13 @@ def render_case(
 
     output_fn("")
     output_fn("=" * 78)
-    output_fn(f"Review {position}/15 | {row.get('query_id')}")
+    output_fn(f"Review {position}/20 | {row.get('query_id')}")
     output_fn(f"Question: {row.get('query')}")
-    output_fn(f"Expected answer: {row.get('gold_answer')}")
-    output_fn(f"Gold chunk: {row.get('gold_chunk_id')}")
+    if row.get("should_abstain") is True:
+        output_fn("Expected decision: reasoned abstention (out-of-corpus case)")
+    else:
+        output_fn(f"Expected answer: {row.get('gold_answer')}")
+        output_fn(f"Gold chunk: {row.get('gold_chunk_id')}")
     output_fn(
         f"System status: {result.get('status')} | "
         f"confidence: {result.get('confidence_score')} | "
@@ -191,18 +196,24 @@ def render_case(
 def pending_rows(report: dict[str, Any], include_reviewed: bool = False) -> list[dict[str, Any]]:
     pending = []
     for row in report.get("records", []):
-        if row.get("should_abstain") is not False:
-            continue
         review = row.get("human_review") or {}
-        labelled = (
-            isinstance(review.get("answer_correct"), bool)
-            and isinstance(review.get("grounded"), bool)
-            and isinstance(review.get("reviewer"), str)
-            and bool(review["reviewer"].strip())
-        )
+        reviewer = review.get("reviewer")
+        reviewer_present = isinstance(reviewer, str) and bool(reviewer.strip())
+        if row.get("should_abstain") is True:
+            abstention_correct = review.get("abstention_correct")
+            labelled = isinstance(abstention_correct, bool) and reviewer_present
+            failed_review = labelled and not abstention_correct
+        else:
+            answer_correct = review.get("answer_correct")
+            grounded = review.get("grounded")
+            labelled = (
+                isinstance(answer_correct, bool)
+                and isinstance(grounded, bool)
+                and reviewer_present
+            )
+            failed_review = labelled and (not answer_correct or not grounded)
         needs_categories = (
-            labelled
-            and (review["answer_correct"] is False or review["grounded"] is False)
+            failed_review
             and not smoke._valid_failure_categories(review.get("failure_categories"))
         )
         if include_reviewed or not labelled or needs_categories:
@@ -224,7 +235,7 @@ def review(
 
     rows = pending_rows(report, include_reviewed=include_reviewed)
     if not rows:
-        output_fn("No pending answerable cases. Run --check-report to evaluate the gate.")
+        output_fn("No pending cases. Run --check-report to evaluate the gate.")
         return report
 
     output_fn(
@@ -239,9 +250,9 @@ def review(
             output_fn("Nama reviewer wajib diisi.")
             reviewer = input_fn("Nama reviewer manusia: ").strip()
 
-    answerable = [r for r in report["records"] if r.get("should_abstain") is False]
     for row in rows:
-        selection = render_case(row, answerable.index(row) + 1, corpus, output_fn)
+        position = report["records"].index(row) + 1
+        selection = render_case(row, position, corpus, output_fn)
 
         review_entry = row.setdefault("human_review", {})
         if selection["unresolved"]:
@@ -251,12 +262,6 @@ def review(
             )
             continue
 
-        review_entry["answer_correct"] = smoke._ask_yes_no(
-            "Is the answer correct and complete?", input_fn
-        )
-        review_entry["grounded"] = smoke._ask_yes_no(
-            "Is every material claim supported by the prompt evidence above?", input_fn
-        )
         review_entry["reviewer"] = reviewer
         review_entry["evidence_reviewed"] = {
             "chunks_retrieved": len(selection["prompt_ids"]) + len(selection["dropped_ids"]),
@@ -265,7 +270,26 @@ def review(
             "source": "scripts/phase1_smoke_review.py (full corpus text)",
         }
 
-        failed = not review_entry["answer_correct"] or not review_entry["grounded"]
+        if row.get("should_abstain") is True:
+            result = row.get("result") or {}
+            review_entry["abstention_correct"] = smoke._ask_yes_no(
+                "Is this a correct, reasoned abstention given the prompt evidence?",
+                input_fn,
+            )
+            failed = (
+                not review_entry["abstention_correct"]
+                or result.get("status") != "INSUFFICIENT_CONTEXT"
+                or not result.get("abstain_reason")
+                or smoke._is_provider_error(result)
+            )
+        else:
+            review_entry["answer_correct"] = smoke._ask_yes_no(
+                "Is the answer correct and complete?", input_fn
+            )
+            review_entry["grounded"] = smoke._ask_yes_no(
+                "Is every material claim supported by the prompt evidence above?", input_fn
+            )
+            failed = not review_entry["answer_correct"] or not review_entry["grounded"]
         if failed and not review_entry.get("failure_categories"):
             review_entry["failure_categories"] = smoke._ask_failure_categories(input_fn, output_fn)
         elif not failed:
@@ -275,7 +299,6 @@ def review(
         if notes:
             review_entry["notes"] = notes
 
-        # Write after every case so an interrupted session keeps completed work.
         if write:
             smoke._save_report(report_path, report)
         output_fn("Review saved.")

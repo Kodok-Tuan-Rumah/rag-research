@@ -11,17 +11,13 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import src._compat  # noqa: F401  must precede qdrant_client on 3.14
+import src._compat  # noqa: F401
 from src.evaluation.gold_data_validator import validate_dataset
 from src.evaluation.gold_schema import dataset_records, normalize_gold_chunk_ids
 
 CHUNKS_PATH = REPO_ROOT / "data" / "processed" / "chunks_semantic_v2.json"
 DOCUMENTS_PATH = REPO_ROOT / "data" / "processed" / "documents.json"
 EVAL_DIR = REPO_ROOT / "data" / "evaluation"
-
-# Datasets the evaluation code can actually read. adversarial_queries.json is
-# deliberately absent: it holds queries with `should_abstain`, no reference
-# answers, and is used by the retrieval-stage adversarial check instead.
 DATASET_GLOBS = (
     "retrieval_eval_dataset*.json",
     "retrieval_train_eval.json",
@@ -36,9 +32,6 @@ def dataset_paths() -> list[pathlib.Path]:
     return paths
 
 
-# envelope key -> corpus file. Resolved at call time, not import time, so the
-# module-level CHUNKS_PATH / DOCUMENTS_PATH stay overridable (tests, and any
-# caller pointing at an alternative corpus).
 _CORPUS_KEYS = ("corpus_chunks_sha256", "corpus_documents_sha256")
 
 
@@ -164,7 +157,7 @@ def check_query_leakage(
 
     try:
         from src.evaluation.query_leakage import dataset_leakage
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return [f"query leakage check could not be imported: {exc}"]
 
     failures: list[str] = []
@@ -181,11 +174,10 @@ def check_query_leakage(
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            continue  # dataset_records reports the parse failure elsewhere
-
+            continue
         try:
             report = dataset_leakage(payload, chunks, embedder=embedder)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             failures.append(
                 f"{path.name}: leakage check did not run ({type(exc).__name__}: "
                 f"{str(exc)[:120]}). §10.2 is unenforced while this happens."

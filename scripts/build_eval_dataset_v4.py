@@ -51,13 +51,6 @@ def _records(path: Path) -> list[dict]:
 
 
 def _sha256_of_file(path: Path) -> str:
-    """Hash the file exactly as scripts/check_ci_contracts._sha256 does.
-
-    The fingerprint gate hashes the bytes on disk. Hashing a re-serialisation
-    of the parsed JSON yields a different digest, which the gate reports as a
-    replaced corpus and which would invalidate every metric recorded against
-    it.
-    """
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
@@ -72,14 +65,6 @@ def _norm(text: str) -> str:
 
 
 def match_gold_chunk(answer: str, chunks: list[dict]) -> tuple[dict | None, str]:
-    """Locate the chunk that actually contains the answer.
-
-    Returns (chunk, match_type). A chunk is returned only when the answer is
-    demonstrably present in it — verbatim, or with at least
-    TOKEN_RECALL_THRESHOLD of its words. Returning None is the normal case
-    for a candidate, and is what keeps an ungrounded gold answer out of the
-    dataset.
-    """
     needle = _norm(answer)
     if not needle:
         return None, "NO_ANSWER"
@@ -107,7 +92,6 @@ def match_gold_chunk(answer: str, chunks: list[dict]) -> tuple[dict | None, str]
 
 
 def build_paraphrase(chunks: list[dict], rng: random.Random) -> list[dict]:
-    """Reword the unique questions already labelled in v2/v3."""
     chunk_map = {c["chunk_id"]: c for c in chunks}
     seen_sources: set[tuple[str, str]] = set()
     seen_questions: set[str] = set()
@@ -120,7 +104,7 @@ def build_paraphrase(chunks: list[dict], rng: random.Random) -> list[dict]:
             gold = record.get("gold_chunk_id") or (record.get("gold_chunk_ids") or [None])[0]
             if not (question and answer and gold):
                 continue
-            # v3 was derived from v2, so all ten of its rows repeat v2 rows.
+
             source_key = (question.lower(), gold)
             if source_key in seen_sources:
                 continue
@@ -169,16 +153,6 @@ def build_paraphrase(chunks: list[dict], rng: random.Random) -> list[dict]:
 
 
 def build_adversarial() -> tuple[list[dict], list[dict]]:
-    """The hand-written out-of-corpus questions.
-
-    The file mixes two kinds of row. Four are should_abstain=true and need
-    no gold, because the answer is not in the corpus by design. The other two
-    are answerable questions — a cross-document comparison and an
-    underspecified keyword — and carry no answer, so there is nothing to
-    verify a gold chunk against. Inventing one is exactly what this dataset
-    is supposed to avoid, so they are reported as needing manual labelling
-    rather than dropped silently or padded with a guessed chunk.
-    """
     samples: list[dict] = []
     needs_gold: list[dict] = []
     for record in _records(ADVERSARIAL_PATH):
@@ -210,7 +184,6 @@ def build_adversarial() -> tuple[list[dict], list[dict]]:
 
 
 def build_from_failure_log(chunks: list[dict], already_asked: set[str]) -> list[dict]:
-    """Questions recorded during earlier runs, kept only if the answer is in the corpus."""
     samples: list[dict] = []
     for record in _records(FAILURE_PATH):
         question = (record.get("query") or record.get("question") or "").strip()
@@ -248,12 +221,6 @@ def build_from_failure_log(chunks: list[dict], already_asked: set[str]) -> list[
 
 
 def _record_key(record: dict) -> tuple[str, str]:
-    """Identity used for duplicate detection.
-
-    PROJECT_GOALS.md §4 and validate_dataset() both key on
-    (question, gold_chunk_id); matching that exactly means a merge can never
-    introduce a DUPLICATE_IDS the validator would then reject.
-    """
     question = (record.get("question") or record.get("query") or "").strip().lower()
     gold = record.get("gold_chunk_id")
     if gold is None:
@@ -263,7 +230,6 @@ def _record_key(record: dict) -> tuple[str, str]:
 
 
 def _dedupe_ids(records: list[dict]) -> int:
-    """Suffix any query_id already used, in place. Returns how many changed."""
     seen: dict[str, int] = {}
     renamed = 0
     for record in records:
@@ -286,24 +252,6 @@ def merge_fragment(
     embedder=None,
 ) -> dict:
     chunk_ids = {c["chunk_id"] for c in chunks if c.get("chunk_id")}
-    """Merge a generated fragment into `base`, with the checks that matter.
-
-    A fragment is a separate file that no CI gate reads, so anything wrong in
-    it reaches the dataset unexamined. Each protection below maps to a way
-    that has actually gone wrong or would go wrong silently:
-
-    M-1 read          the fragment's `records`, ignoring its own summary fields
-    M-2 duplicates    reject a repeated (question, gold_chunk_id) rather than
-                      letting validate_dataset fail the whole dataset later
-    M-3 id collision  rename, because two sources can legitimately both emit
-                      "q01" and a silent collision makes traces ambiguous
-    M-4 malformed     a row whose gold is absent from the corpus is dropped
-                      here, not written and rejected by the next gate run
-    M-5 leakage       PROJECT_GOALS.md §10.2, run on the merged result
-    M-8 dry run       caller decides whether to persist
-
-    Returns the merged list plus a report; the caller writes it.
-    """
     seen = {_record_key(r) for r in base}
     accepted: list[dict] = []
     report = {
@@ -327,7 +275,6 @@ def merge_fragment(
             continue
 
         if record.get("should_abstain"):
-            # M-4 abstain rows declare no gold; keep them untouched.
             row = dict(record)
         else:
             gold_ids = record.get("gold_chunk_ids") or (
@@ -353,25 +300,14 @@ def merge_fragment(
         accepted.append(row)
 
     merged = base + accepted
-
-    # M-3 after concatenation, so a collision between the two sources is
-    # caught too, not just one within the fragment.
     report["renamed_ids"] += _dedupe_ids(merged)
-
-    # M-5 §10.2 — a fragment that restates its gold chunk is trivially
-    # retrievable and would inflate recall without measuring retrieval.
-    # The real corpus is required here: with an empty lookup every row is
-    # skipped and the gate reports zero leaks while checking nothing.
     leak = None
     try:
         from src.evaluation.query_leakage import dataset_leakage
 
         if chunks:
             leak = dataset_leakage({"records": merged}, chunks, embedder=embedder)
-    except Exception as exc:  # noqa: BLE001
-        # No embedder available (offline, model absent). Say so rather than
-        # let an unrun check read as a passing one.
-        leak = None
+    except Exception as exc:
         report["leakage_check_skipped"] = f"{type(exc).__name__}: {str(exc)[:100]}"
     if leak is not None:
         leaked = {d["query_id"] for d in leak["detail"] if d["leaked"]}
@@ -390,12 +326,6 @@ def merge_fragment(
 
 
 def check_category_floor(records: list[dict], floor: float = 0.20) -> list[str]:
-    """PROJECT_GOALS.md §10.3 — no query category may fall below `floor`.
-
-    Reported, never enforced by dropping rows: the fix is generating the
-    missing category, not deleting the ones that exist. Silently trimming
-    lexical down to reach 20% would destroy the set to satisfy a number.
-    """
     if not records:
         return []
     counts = Counter(r.get("question_type", "unknown") for r in records)
@@ -512,8 +442,6 @@ def main() -> int:
     output = {
         "dataset_version": "v4",
         "dataset_sha256": _sha256_of_records(valid),
-        # PROJECT_GOALS.md §15 / check_ci_contracts.check_corpus_fingerprint
-        # hash the corpus FILES, not a re-serialisation of the parsed JSON.
         "corpus_chunks_sha256": _sha256_of_file(CHUNKS_PATH),
         "corpus_documents_sha256": _sha256_of_file(DOCUMENTS_PATH),
         "created_from": "human_authored_questions_span_verified",
@@ -544,7 +472,6 @@ def main() -> int:
     AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
     AUDIT_PATH.write_text(json.dumps(audit, indent=2, ensure_ascii=False))
     print(f"Audit: {AUDIT_PATH}  valid={summary['VALID_QA']}/{summary['TOTAL_QA']}")
-
     return 0
 
 

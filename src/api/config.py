@@ -4,6 +4,8 @@ from typing import Literal
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
+from src.retrieval.corpus_manifest import CORPUS_PATH
+
 # Retained as type definitions only. Neither is consulted at runtime: Qdrant is
 # the sole backend (the FAISS embedder is archived under archive/legacy_2026_10/)
 # and semantic chunking is the only ingestion entrypoint. Kept because they name
@@ -40,7 +42,7 @@ class Settings(BaseSettings):
 
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    bm25_chunks_path: str = "data/processed/chunks_semantic_v2.json"
+    bm25_chunks_path: str = str(CORPUS_PATH)
     candidate_k: int = 50
     hybrid_rrf_k: int = 60
     # Ablation switch, measured 2026-10-26 on the two retrieval eval sets
@@ -73,8 +75,8 @@ class Settings(BaseSettings):
     # and Appendix A recorded them as not overridable. Same values, now
     # configurable. Adjusted per query type by TYPE_ADJUSTMENTS in
     # src/controller/confidence_engine.py.
-    confidence_reject_threshold: float = 0.35
-    confidence_partial_threshold: float = 0.65
+    confidence_reject_threshold: float = 0.25
+    confidence_partial_threshold: float = 0.50
     # Calibrated decision thresholds (applied to calibrated probability).
     # Defaults mirror heuristic thresholds; after calibration these can be
     # re-tuned to the calibrated probability distribution.

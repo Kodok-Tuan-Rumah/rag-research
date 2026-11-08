@@ -43,7 +43,7 @@ def _original(score: float, query_type, reject: float, partial: float) -> str:
 
 
 @pytest.mark.parametrize("reject,partial", [
-    (0.35, 0.65),   # the shipped defaults
+    (0.25, 0.50),   # the shipped defaults (tuned for over-abstention fix)
     (0.02, 0.04),   # below the adjustment, so both clamps engage
     (0.00, 0.10),
     (0.90, 0.95),
@@ -61,10 +61,10 @@ def test_decisions_are_identical_to_the_original_branch(reject, partial):
 
 def test_defaults_are_unchanged():
     engine = ConfidenceEngine()
-    assert engine.reject_threshold == 0.35
-    assert engine.partial_threshold == 0.65
-    assert settings.confidence_reject_threshold == 0.35
-    assert settings.confidence_partial_threshold == 0.65
+    assert engine.reject_threshold == 0.25
+    assert engine.partial_threshold == 0.50
+    assert settings.confidence_reject_threshold == 0.25
+    assert settings.confidence_partial_threshold == 0.50
 
 
 def test_thresholds_come_from_settings(monkeypatch):
@@ -84,11 +84,11 @@ def test_explicit_argument_overrides_settings(monkeypatch):
 
 
 def test_boundaries_are_strict_less_than():
-    """0.35 is PARTIAL_TRUST, not REJECT; 0.65 is GENERATE, not PARTIAL_TRUST."""
+    """0.25 is PARTIAL_TRUST, not REJECT; 0.50 is GENERATE, not PARTIAL_TRUST."""
     engine = ConfidenceEngine()
-    assert engine._decision_for_score(0.35, "general") == "PARTIAL_TRUST"
-    assert engine._decision_for_score(0.65, "general") == "GENERATE"
-    assert engine._decision_for_score(0.34, "general") == "REJECT"
+    assert engine._decision_for_score(0.25, "general") == "PARTIAL_TRUST"
+    assert engine._decision_for_score(0.50, "general") == "GENERATE"
+    assert engine._decision_for_score(0.24, "general") == "REJECT"
 
 
 def test_type_adjustments_are_the_documented_offsets():

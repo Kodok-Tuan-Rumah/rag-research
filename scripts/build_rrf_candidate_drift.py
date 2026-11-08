@@ -43,13 +43,9 @@ def main() -> None:
 
         gold_id = item["gold_chunk_id"]
         rrf_rank_pre_filter = _ranks(rrf_rows, gold_id)
-        # qualified rank: position in filtered candidates (low-quality dropped) before truncation to 20
         qualified_items = []
         for i, row in enumerate(rrf_rows, 1):
-            text = ""
-            raw_item = None
             qualified_items.append(row)
-        # more realistic: reproduce candidate list as rff filtered low-quality and sorted retrieval_score
         candidates = []
         for row in rrf_rows:
             if not _is_lowq_text(row.get("text", "") or ""):

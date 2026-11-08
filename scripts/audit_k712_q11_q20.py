@@ -1,5 +1,3 @@
-"""Forensically compare RRF and reranker@5 for canonical queries q11 and q20."""
-
 from __future__ import annotations
 
 import argparse
@@ -8,7 +6,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -67,8 +65,9 @@ def text_map(rows: list[dict[str, Any]]) -> dict[str, str]:
 
 def build_report() -> dict[str, Any]:
     if os.getenv("QDRANT_URL"):
-        raise RuntimeError("QDRANT_URL is set; refusing to run forensic retrieval against remote Qdrant")
-
+        raise RuntimeError(
+            "QDRANT_URL is set; refusing to run forensic retrieval against remote Qdrant"
+        )
     envelope = read_json(DATASET_PATH)
     records = envelope["records"]
     dataset_by_id = {row["query_id"]: row for row in records}
@@ -106,8 +105,8 @@ def build_report() -> dict[str, Any]:
     registry.reranker.model.to("cpu")
     registry.reranker.max_seq_length = MAX_LENGTH
 
-    from src.retrieval.qdrant_store import QdrantVectorStore
     from src.retrieval.hybrid_retriever import MasterHybridRetriever
+    from src.retrieval.qdrant_store import QdrantVectorStore
 
     store = QdrantVectorStore()
     retriever = MasterHybridRetriever(vector_store=store, bm25_chunks_path=str(CHUNKS_PATH))
@@ -122,7 +121,9 @@ def build_report() -> dict[str, Any]:
     def rerank_first_five(query: str, candidates: list, text_of=None):
         actual_inputs = list(candidates[:RERANKER_CAP])
         captured["input_ids"] = [
-            str(chunk.get("chunk_id") if isinstance(chunk, dict) else getattr(chunk, "chunk_id", ""))
+            str(
+                chunk.get("chunk_id") if isinstance(chunk, dict) else getattr(chunk, "chunk_id", "")
+            )
             for chunk in actual_inputs
         ]
         ranked, status = original_rerank(query, actual_inputs, text_of=text_of)
@@ -133,8 +134,7 @@ def build_report() -> dict[str, Any]:
     try:
         query_reports = []
         reference_rows = {
-            row["query_id"]: row
-            for row in reference["modes"]["reranker5"]["per_query_results"]
+            row["query_id"]: row for row in reference["modes"]["reranker5"]["per_query_results"]
         }
         for query_id in TARGET_QUERY_IDS:
             item = dataset_by_id[query_id]
@@ -157,13 +157,14 @@ def build_report() -> dict[str, Any]:
             reranked_ids = list(trace.get("reranked_ids") or [])
             final_ids = list(trace.get("final_ids") or [])
             gold_ids = sorted(str(value) for value in item["gold_chunk_ids"])
-
             rrf_scores = score_map(rrf_rows)
             rerank_scores = score_map(reranked_rows)
             rrf_texts = text_map(rrf_rows)
             rerank_texts = text_map(reranked_rows)
             rrf_rank_by_id = {chunk_id: index for index, chunk_id in enumerate(rrf_ids, 1)}
-            reranked_rank_by_id = {chunk_id: index for index, chunk_id in enumerate(reranked_ids, 1)}
+            reranked_rank_by_id = {
+                chunk_id: index for index, chunk_id in enumerate(reranked_ids, 1)
+            }
             final_rank_by_id = {chunk_id: index for index, chunk_id in enumerate(final_ids, 1)}
 
             candidate_ids = list(dict.fromkeys([*actual_input_ids, *gold_ids]))
@@ -183,12 +184,12 @@ def build_report() -> dict[str, Any]:
                         "rank_within_reranker_output": reranked_rank_by_id.get(chunk_id),
                         "final_rank": final_rank_by_id.get(chunk_id),
                         "present_in_final_top10": chunk_id in final_rank_by_id,
-                        "text_excerpt": (rerank_texts.get(chunk_id) or rrf_texts.get(chunk_id) or "")[:200],
+                        "text_excerpt": (
+                            rerank_texts.get(chunk_id) or rrf_texts.get(chunk_id) or ""
+                        )[:200],
                     }
                 )
-            ranked_inputs = [
-                row for row in candidates if row["reranker_input_rank"] is not None
-            ]
+            ranked_inputs = [row for row in candidates if row["reranker_input_rank"] is not None]
             ranked_inputs.sort(key=lambda row: row["rank_within_reranker_output"] or 10**9)
             gold_reranker_rank = next(
                 (row["rank_within_reranker_output"] for row in ranked_inputs if row["is_gold"]),
@@ -217,8 +218,7 @@ def build_report() -> dict[str, Any]:
                     "rrf_order_matches_k79": rrf_ids == expected.get("rrf_ids"),
                     "reranker_input_matches_k79": actual_input_ids
                     == expected.get("effective_reranker_input_ids"),
-                    "reranked_order_matches_k79": reranked_ids
-                    == expected.get("final_ids"),
+                    "reranked_order_matches_k79": reranked_ids == expected.get("final_ids"),
                     "rrf_gold_rank": rank_of(rrf_ids, gold_ids),
                     "reranker_gold_rank": rank_of(reranked_ids, gold_ids),
                     "final_gold_rank": rank_of(final_ids, gold_ids),
@@ -243,8 +243,8 @@ def build_report() -> dict[str, Any]:
 
     return {
         "audit": "K7.12 q11/q20 reranker@5 candidate forensics",
-        "run_id": f"K7.12-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "run_id": f"K7.12-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}",
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "status": "completed",
         "identity": {
             **hashes,
@@ -348,7 +348,7 @@ def main() -> None:
     parser.add_argument("--out-json", type=Path)
     parser.add_argument("--out-md", type=Path)
     args = parser.parse_args()
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out_json = args.out_json or ROOT / f"results/metrics/k712_q11_q20_forensics_{stamp}.json"
     out_md = args.out_md or ROOT / f"results/metrics/k712_q11_q20_forensics_{stamp}.md"
     if out_json.exists() or out_md.exists():

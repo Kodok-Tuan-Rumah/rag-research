@@ -142,8 +142,8 @@ def _run_agent_decision_case(confidence_score):
         async def assess_retrieval_quality(self, chunks, query, query_type=None):
             self.assessment_query_types.append(query_type)
             decision = (
-                "REJECT" if confidence_score < 0.35
-                else "PARTIAL_TRUST" if confidence_score < 0.65
+                "REJECT" if confidence_score < 0.25
+                else "PARTIAL_TRUST" if confidence_score < 0.50
                 else "GENERATE"
             )
             return {
@@ -189,15 +189,15 @@ def test_agent_decision_contract(confidence_score, expected_status, expected_gen
     )
     assert result.status == expected_enum
     assert len(generation_calls) == expected_generation_calls
-    expected_query_types = ["factual", "factual"] if confidence_score < 0.35 else ["factual"]
+    expected_query_types = ["factual", "factual"] if confidence_score < 0.25 else ["factual"]
     assert query_types == expected_query_types
 
     if confidence_score == 0.5:
         assert generation_calls[0]["query_type"] == "factual"
-        assert generation_calls[0]["retrieval_decision"] == "PARTIAL_TRUST"
+        assert generation_calls[0]["retrieval_decision"] == "GENERATE"
         assert generation_calls[0]["retrieval_confidence"] == confidence_score
-        assert len(generation_calls[0]["chunks"]) == 3
-        assert result.answer.startswith("[Low confidence — verify independently] ")
+        assert len(generation_calls[0]["chunks"]) == 4
+        assert result.answer == "grounded answer"
     elif confidence_score == 0.8:
         assert generation_calls[0]["retrieval_decision"] == "GENERATE"
         assert len(generation_calls[0]["chunks"]) == 4
